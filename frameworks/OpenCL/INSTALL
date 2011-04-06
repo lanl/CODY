@@ -1,0 +1,7 @@
+CODY uses the Cmake (http://cmake.org) cross-platform configuration
+and build system.
+
+For simple configurations on Unix systems using "make"
+  cmake .
+  make
+  make test

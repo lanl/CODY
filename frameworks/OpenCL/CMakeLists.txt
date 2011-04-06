@@ -1,0 +1,11 @@
+project(cody)
+cmake_minimum_required(VERSION 2.8)
+enable_testing()
+set(CMAKE_C_COMPILER cc)
+set(CMAKE_C_FLAGS "-Wall -std=c99 -g")
+if (APPLE)
+  set(CMAKE_EXE_LINKER_FLAGS "-framework OpenCL")
+endif(APPLE)
+
+include_directories (${CMAKE_SOURCE_DIR}/src)
+add_subdirectory(src)
