@@ -1,22 +1,34 @@
-          CODY: Continuum Dynamics Evaluation and Test Suite
-                             Version 1.0
+CODY: Continuum Dynamics Evaluation and Test Suite
+===========
 
 Description
 -----------
 
-go-papi provides a Go interface to PAPI, the [Performance Application
-Programming Interface](http://icl.cs.utk.edu/papi/).  PAPI provides
-convenient access to hardware performance counters, primarily those
-provided by the CPU but with others (e.g., various networks) also
-available.
+CODY is a development framework and suite of small applications, or
+"mini-apps", characteristic of continuum dynamics applications that
+will be used for research in new programming models, software
+environments, and the evaluation of new computer architectures.
 
-As the [PAPI(3) man
-page](http://icl.cs.utk.edu/projects/papi/wiki/PAPIC:PAPI.3) explains,
-the PAPI API is split into "high level" and "low level" functions,
-with the former being simpler to use but less flexible and the latter
-providing finer-grained control over the sets of data measured and
-reported.
+On what platforms does it run?
 
+CODY is initially a suite of applications written in C and C++ with
+extensions -- including CUDA and OpenCL -- that enable the use of
+emerging computer architectures.  Our goals are operating system,
+computer architecture, and programming language agnostic, however, so
+we expect evolution over time.
+
+For whom is it designed?
+
+CODY is designed for computer science researchers to assess and
+explore new directions in computer architecture and programming
+models.
+
+Why was it developed?
+
+CODY was developed at Los Alamos National Laboratory to provide a set
+of small, manageable applications that are representative of some
+scientific workloads at LANL, in a form that can be readily shared
+with research partners at other organizations.
 
 Installation
 ------------
@@ -93,28 +105,4 @@ Author
 
 Scott Pakin, <pakin@lanl.gov>
 
-CODY is a development framework and suite of small applications, or
-"mini-apps", characteristic of continuum dynamics applications that
-will be used for research in new programming models, software
-environments, and the evaluation of new computer architectures.
 
-On what platforms does it run?
-
-CODY is initially a suite of applications written in C and C++ with
-extensions -- including CUDA and OpenCL -- that enable the use of
-emerging computer architectures.  Our goals are operating system,
-computer architecture, and programming language agnostic, however, so
-we expect evolution over time.
-
-For whom is it designed?
-
-CODY is designed for computer science researchers to assess and
-explore new directions in computer architecture and programming
-models.
-
-Why was it developed?
-
-CODY was developed at Los Alamos National Laboratory to provide a set
-of small, manageable applications that are representative of some
-scientific workloads at LANL, in a form that can be readily shared
-with research partners at other organizations.
