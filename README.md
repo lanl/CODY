@@ -100,9 +100,10 @@ BSD-ish with a "modifications must be indicated" clause.  See
 text.
 
 
-Author
-------
+Authors
+-------
 
-Scott Pakin, <pakin@lanl.gov>
+Allen McPherson, <al_web_mail@lanl.gov>
+David Daniel, <ddd@lanl.gov>
 
 
