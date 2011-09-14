@@ -103,7 +103,7 @@ text.
 Authors
 -------
 
-Allen McPherson <al_web_mail@lanl.gov>    
-David Daniel <ddd@lanl.gov>
+Allen McPherson al_web_mail@lanl.gov   
+David Daniel ddd@lanl.gov
 
 
