@@ -1,0 +1,16 @@
+This namelist contains various input parameters for HYDRO runs
+
+&RUN
+tend=1.0
+dtoutput=0.05
+nstepmax=1000
+nprtLine=100
+dump_prefix=sib
+init_file=../input/sib.dmp
+/
+
+&HYDRO
+courant_factor=0.9
+niter_riemann=10
+scheme=collela
+/

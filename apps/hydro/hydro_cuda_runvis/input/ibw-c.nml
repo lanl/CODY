@@ -1,0 +1,15 @@
+This namelist contains various input parameters for HYDRO runs
+
+&RUN
+tend=0.34
+nstepmax=1000
+nprtLine=100
+dump_prefix=ibw-c
+init_file=../input/ibw-c.dmp
+/
+
+&HYDRO
+courant_factor=0.9
+niter_riemann=10
+scheme=collela
+/
