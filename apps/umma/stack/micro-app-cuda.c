@@ -4,7 +4,7 @@
 #include "micro-app-cuda.h"
 
 int graph_init_aos(char* graph_type, int npoints, int nedges,
-        struct edge* edges) {
+        struct edge* edges, char* fname) {
     lua_State *L;
     int i, j, k, v;
 
@@ -14,10 +14,16 @@ int graph_init_aos(char* graph_type, int npoints, int nedges,
     lua_pcall(L, 0, 0, 0);
 
     lua_getglobal(L, "create_graph");
-    lua_pushinteger(L, npoints);
-    lua_pushinteger(L, nedges);
     lua_pushstring(L, graph_type);
-    lua_call(L, 3, 1);
+    lua_pushinteger(L, NPOINTS);
+    lua_pushinteger(L, NEDGES);
+
+    if (fname != NULL) {
+        lua_pushstring(L, fname);
+        lua_call(L, 4, 1);
+    } else {
+        lua_call(L, 3, 1);
+    }
 
     /* Table is now sitting at the top of the stack */
     i = 0;
@@ -54,7 +60,7 @@ int graph_init_aos(char* graph_type, int npoints, int nedges,
 }
 
 int graph_init_soa(char* graph_type, int npoints, int nedges,
-        struct graph* gr) {
+        struct graph* gr, char* fname) {
     lua_State *L;
     int i, j, k, v;
 
@@ -64,10 +70,16 @@ int graph_init_soa(char* graph_type, int npoints, int nedges,
     lua_pcall(L, 0, 0, 0);
 
     lua_getglobal(L, "create_graph");
-    lua_pushinteger(L, npoints);
-    lua_pushinteger(L, nedges);
     lua_pushstring(L, graph_type);
-    lua_call(L, 3, 1);
+    lua_pushinteger(L, NPOINTS);
+    lua_pushinteger(L, NEDGES);
+
+    if (fname != NULL) {
+        lua_pushstring(L, fname);
+        lua_call(L, 4, 1);
+    } else {
+        lua_call(L, 3, 1);
+    }
 
     /* Table is now sitting at the top of the stack */
     i = 0;

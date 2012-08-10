@@ -17,8 +17,10 @@ void print_help() {
     printf("\t\t\t pure_random \n");
     printf("\t\t\t regular_random \n");
     printf("\t\t\t contiguous \n");
+    printf("\t\t\t file \n");
     printf("\t --nloops Number of repetitions, must be \n");
     printf("\t          at least one. \n");
+    printf("\t --file File from which to read graph \n");
 }
 
 double timer() {
@@ -122,13 +124,13 @@ __global__ void edge_scatter(float* pt_data, struct edge* edges,
         v0 = edges[i].v0;
         v1 = edges[i].v1;
 
-        pt_data[3*v0+0] += edges[i].v0_pt_data[0];
-        pt_data[3*v0+1] += edges[i].v0_pt_data[1];
-        pt_data[3*v0+2] += edges[i].v0_pt_data[2];
+        atomicAdd(&pt_data[3*v0+0], edges[i].v0_pt_data[0]);
+        atomicAdd(&pt_data[3*v0+1], edges[i].v0_pt_data[1]);
+        atomicAdd(&pt_data[3*v0+2], edges[i].v0_pt_data[2]);
 
-        pt_data[3*v1+0] += edges[i].v1_pt_data[0];
-        pt_data[3*v1+1] += edges[i].v1_pt_data[1];
-        pt_data[3*v1+2] += edges[i].v1_pt_data[2];
+        atomicAdd(&pt_data[3*v1+0], edges[i].v1_pt_data[0]);
+        atomicAdd(&pt_data[3*v1+1], edges[i].v1_pt_data[1]);
+        atomicAdd(&pt_data[3*v1+2], edges[i].v1_pt_data[2]);
     }
 }
 
@@ -139,6 +141,7 @@ int main(int argc, char** argv) {
     int c, opt_i;
     int nloops = 0;
     char* gt = "";
+    char* fname = "";
 
     float* d_pt_data;
     struct edge* d_edges;
@@ -149,7 +152,8 @@ int main(int argc, char** argv) {
     static struct option long_opts[] = {
         {"help",   no_argument,       0, 0},
         {"type",   required_argument, 0, 0},
-        {"nloops", required_argument, 0, 0}
+        {"nloops", required_argument, 0, 0},
+        {"file",   required_argument, 0, 0}
     };
 
     /* Parse command-line arguments */
@@ -172,6 +176,9 @@ int main(int argc, char** argv) {
                 case 2:
                     nloops = atoi(optarg);
                     break;
+                case 3:
+                    fname = optarg;
+                    break;
             }
         } else {
             print_help();
@@ -186,7 +193,7 @@ int main(int argc, char** argv) {
     }
 
     // initialize data structures
-    rv = graph_init_aos(gt, NPOINTS, NEDGES, edges);
+    rv = graph_init_aos(gt, NPOINTS, NEDGES, edges, fname);
     if (rv < 0) {
         printf("Error creating graph. \n");
         exit(0);

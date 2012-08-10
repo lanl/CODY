@@ -32,7 +32,7 @@ function random_pair(upper, ...)
 
 end
 
-function create_graph(npoints, nedges, graph_type)
+function create_graph(graph_type, npoints, nedges, fname)
     --[[--
 
     This function creates different types of graphs with
@@ -41,19 +41,22 @@ function create_graph(npoints, nedges, graph_type)
         nedges edges for pure random graphs
         nedges * npoints edges for regular random graphs
         npoints * 2 edges for contiguous graphs
+        nedges edges for graphs from file
 
     The graph type must be one of 
         
         'pure_random'
         'regular_random'
         'contiguous'
+        'file'
 
     --]]--
 
     local t = {
-        pure_random = pure_random_graph,
+        pure_random    = pure_random_graph,
         regular_random = regular_random_graph,
-        contiguous = regular_contiguous_graph
+        contiguous     = regular_contiguous_graph,
+        file           = graph_from_file
     }
 
     if t[graph_type] == nil then
@@ -61,7 +64,7 @@ function create_graph(npoints, nedges, graph_type)
         return {}
     end
 
-    return t[graph_type](npoints, nedges)
+    return t[graph_type](npoints, nedges, fname)
 
 end
 
@@ -76,6 +79,8 @@ function pure_random_graph(npoints, nedges)
 
     --]]--
 
+    -- seed random number generator
+    math.randomseed(os.time())
 
     local e = {}
 
@@ -100,48 +105,35 @@ end
 function regular_random_graph(npoints, degree)
     --[[--
 
-    Returns a random regular graph, where each vertex has degree
-    'degree'. Edges are sampled uniformly from the interval 
+    Returns a random semi-regular graph, where each vertex has 
+    degree close to 'degree'. Edges are sampled uniformly from 
+    the interval 
 
     [1, npoints] \ v 
 
-    for each vertex v.
+    for each vertex v. Note that there are no duplicate edges,
+    but the degree of each vertex varies about 'degree'.
 
     --]]--
 
+    -- seed random number generator
+    math.randomseed(17)
+
     local e = {}
-    local ct = {}
 
     for i = 1,npoints do
-        ct[i] = 0
-    end
-
-    for i = 1,npoints do
-
-        while ct[i] < degree do
+        for j = 1,degree do
             local v0, v1 = random_pair(npoints, i)
 
-            while e[v0] ~= nil and e[v0][v1] do -- no redundant edges
-                v0, v1 = random_pair(npoints, i)
+            if e[v0] == nil then
+                e[v0] = {}
             end
 
-            if ct[v0] < degree and ct[v1] < degree then
-                if e[v0] == nil then
-                    e[v0] = {}
-                end
-
-                e[v0][v1] = true            
-
-                ct[v0] = ct[v0] + 1
-                ct[v1] = ct[v1] + 1
-            end
-
+            e[v0][v1] = true            
         end
-
     end
 
     return e
-
 end
 
 function regular_contiguous_graph(npoints)
@@ -196,7 +188,7 @@ function graph_to_file(edges, fname)
 
 end
 
-function graph_from_file(fname)
+function graph_from_file(npoints, nedges, fname)
     --[[--
 
     Reads and returns a table of edges from the file 'fname'. Edges,
@@ -205,7 +197,9 @@ function graph_from_file(fname)
     --]]--
 
     local e = {}
+    local p = {}
     local file = io.open(fname, "r")
+    local edge_ct = 0
 
     for line in file:lines() do
         local v0, v1
@@ -216,9 +210,22 @@ function graph_from_file(fname)
         end
 
         e[v0][v1] = true
+        p[v0] = true
+        p[v1] = true
+        edge_ct = edge_ct + 1
     end
 
     file:close()
+
+    --local point_ct = 0
+    --for _ in pairs(p) do point_ct = point_ct + 1 end
+
+    --if edge_ct ~= nedges or point_ct ~= npoints then
+    if edge_ct ~= nedges then
+        print("Error, graph from file", fname, "does not")
+        print("match nedges:", nedges, edge_ct)
+        return {}
+    end
 
     return e
 end

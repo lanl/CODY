@@ -1,12 +1,12 @@
-#ifndef _utilities_h_
-#define _utilities_h_
+#ifndef _micro_app_cuda_h_
+#define __micro_app_cuda_h_
 
 #ifdef __cplusplus
 extern "C" {
 #endif 
 
-#define NEDGES   10
-#define NPOINTS  10
+#define NEDGES   10000
+#define NPOINTS  10000
 #define NTHREADS 128
 
 struct edge {
@@ -26,10 +26,10 @@ struct graph {
 };
 
 int graph_init_aos(char* graph_type, int npoints, int nedges,
-        struct edge* edges);
+        struct edge* edges, char* fname);
 
 int graph_init_soa(char* graph_type, int npoints, int nedges,
-        struct graph* gr);
+        struct graph* gr, char* fname);
 
 #ifdef __cplusplus
 }

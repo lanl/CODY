@@ -7,13 +7,14 @@ OBJ=stack/micro-app-aos-serial.o \
     stack/micro-app-cuda.o
 
 # local machine
-CFLAGS=-I/usr/include/lua5.2 -Iumma/stack \
+#CFLAGS=-I/path/to/lua -I/path/to/micro-app/stack \
        -L/usr/lib/x86_64-linux-gnu -L/usr/local/cuda/lib64 \
        -fopenmp
 
-NVCFLAGS=-Iumma/stack
+NVCFLAGS=-I/path/to/micro-app/stack -L/home/cuda/cuda4.2/lib64 \
+	 -arch=sm_20
 
-LIBS=-llua5.2 -lm -ldl -lcudart
+LIBS=-llua -lm -ldl -lcudart
 
 .SUFFIXES: .c .cu
 

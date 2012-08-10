@@ -28,8 +28,10 @@ void print_help() {
     printf("\t\t\t pure_random \n");
     printf("\t\t\t regular_random \n");
     printf("\t\t\t contiguous \n");
+    printf("\t\t\t file \n");
     printf("\t --nloops Number of repetitions, must be \n");
     printf("\t          at least one. \n");
+    printf("\t --file File from which to read graph \n");
 }
 
 double timer() {
@@ -41,7 +43,7 @@ double timer() {
     return ((double)tp.tv_sec) + ((double) tp.tv_usec) * 1e-6;
 }
 
-int graph_init(char* graph_type) {
+int graph_init(char* graph_type, char* fname) {
     lua_State *L;
     int i, j, k, v;
 
@@ -51,10 +53,16 @@ int graph_init(char* graph_type) {
     lua_pcall(L, 0, 0, 0);
 
     lua_getglobal(L, "create_graph");
+    lua_pushstring(L, graph_type);
     lua_pushinteger(L, NPOINTS);
     lua_pushinteger(L, NEDGES);
-    lua_pushstring(L, graph_type);
-    lua_call(L, 3, 1);
+
+    if (fname != NULL) {
+        lua_pushstring(L, fname);
+        lua_call(L, 4, 1);
+    } else {
+        lua_call(L, 3, 1);
+    }
 
     /* Table is now sitting at the top of the stack */
     i = 0;
@@ -197,11 +205,13 @@ int main(int argc, char** argv) {
     int c, opt_i;
     int nloops = 0;
     char* gt = "";
+    char* fname = "";
 
     static struct option long_opts[] = {
         {"help",   no_argument,       0, 0},
         {"type",   required_argument, 0, 0},
-        {"nloops", required_argument, 0, 0}
+        {"nloops", required_argument, 0, 0},
+        {"file",   required_argument, 0, 0}
     };
 
     /* Parse command-line arguments */
@@ -224,6 +234,9 @@ int main(int argc, char** argv) {
                 case 2:
                     nloops = atoi(optarg);
                     break;
+                case 3:
+                    fname = optarg;
+                    break;
             }
         } else {
             print_help();
@@ -239,7 +252,7 @@ int main(int argc, char** argv) {
 
     
     // initialize data structures
-    rv = graph_init(gt);
+    rv = graph_init(gt, fname);
     if (rv < 0) {
         printf("Error creating graph. \n");
         exit(0);
