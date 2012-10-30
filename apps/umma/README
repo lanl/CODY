@@ -16,6 +16,7 @@ that are further differentiated based on architecture and platform:
     - Serial (reference implementation)
     - OpenMP (multi-core implementation)
     - CUDA   (GPGPU implementation)
+    - ISPC   (alternate multi-core implementation)
 
 NOTES:
 
