@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
-#include <openacc.h>
+//#include <openacc.h>
 #include <time.h>
 #include <sys/time.h>
 #include "hydro.h"
@@ -22,10 +22,20 @@ double slope(double *q,int ind);
 //Utility function to get wall runtime
 double getNow(){
   struct timeval tv;
-  return (double)tv.tv_sec+1e-6*(double)tv.tv_usec;
+  struct timezone tz;
+  double t;
+
+  gettimeofday(&tv, &tz);
+
+  t = (double)tv.tv_sec;
+  t += ((double)tv.tv_usec)/1000000.0;
+
+  return t;
 }
 
-void printArray(char* label,double *arr, int nvar, int nx, int ny, int nHx, int nHy){
+
+static inline void printArray(char* label,double *arr, int nvar, int nx, int ny, int nHx, int nHy){
+#if 0
   int nV,i,j;
   printf("Array %s\n",label);
   for(nV=0;nV<nvar;nV++){
@@ -43,6 +53,7 @@ void printArray(char* label,double *arr, int nvar, int nx, int ny, int nHx, int 
       printf("|\n");
     }
   }
+#endif
 }
 
 double calcDT(double *mesh){
@@ -62,7 +73,8 @@ double calcDT(double *mesh){
   smallr=Ha->smallr;
 
   smallp=Ha->smallc*Ha->smallc/Hp->gamma;
-#pragma acc kernels loop reduction(max:max_denom) private(r,vx,vy,eint,p,c,cx,cy,denom) pcopyin(mesh[0:meshSize]) copyin(smallp,smallr,gamma,nx,ny,dx,dy)
+#pragma acc kernels pcopyin(mesh[0:meshSize]) copyin(smallp,smallr,gamma,nx,ny,dx,dy)
+#pragma acc loop independent reduction(max:max_denom) private(r,vx,vy,eint,p,c,cx,cy,denom) 
   for(i=0; i<nx*ny; i++){
     r   =fmax(mesh[i+nx*ny*VARRHO],smallr);
     vx  =     mesh[i+nx*ny*VARVX ]/r;
@@ -88,13 +100,12 @@ void toPrimX(double *q, double *mesh){
   gamma=Hp->gamma;
   smallr=Ha->smallr;
   smallp=Ha->smallc*Ha->smallc/Hp->gamma;
-//#pragma acc kernels loop independent\
 
-#pragma acc kernels loop\
+#pragma acc kernels \
   pcopyin(mesh[0:meshSize])\
   pcopyout(q[0:primSize])\
-  copyin(nx,ny,gamma,smallr,smallp)\
-  private(i,xI,yI,r,vx,vy,eint,p)
+  copyin(nx,ny,gamma,smallr,smallp)
+#pragma acc loop independent private(i,xI,yI,r,vx,vy,eint,p)
   for(i=0;i<ny*nx;i++){
     xI=i%nx;
     yI=i/nx;
@@ -119,12 +130,11 @@ void toPrimY(double *q, double *mesh){
   gamma=Hp->gamma;
   smallr=Ha->smallr;
   smallp=Ha->smallc*Ha->smallc/Hp->gamma;
-//#pragma acc kernels loop independent pcopyin(mesh[0:meshSize])\
 
-#pragma acc kernels loop pcopyin(mesh[0:meshSize])\
+#pragma acc kernels pcopyin(mesh[0:meshSize])\
   pcopyout(q[0:primSize])\
-  copyin(gamma,smallr,smallp)\
-  private(xI,yI,r,vx,vy,eint,p)
+  copyin(gamma,smallr,smallp)
+#pragma acc loop independent private(xI,yI,r,vx,vy,eint,p)
   for(i=0;i<ny*nx;i++){
     xI=i%nx;
     yI=i/nx;
@@ -147,11 +157,10 @@ void setBndCnd(double* q, int cndL, int cndH, int np, int nt){
 
 
   //printf("Running bnd cnds for %dx%d prims\n",np,nt);
-//#pragma acc kernels loop independent\
 
-#pragma acc kernels loop \
-  pcopy(q[0:primSize])\
-  private(pI,tI,wInd,rInd)
+#pragma acc kernels \
+  pcopy(q[0:primSize])
+#pragma acc loop independent private(pI,tI,wInd,rInd)
   for(i=0;i<2*nt;i++){
     pI=i%2;
     tI=i/2;
@@ -199,9 +208,8 @@ void trace(double *ql, double *qr, double *q, double dtdx, int np, int nt){
 
   gamma=Hp->gamma;
 
-//#pragma acc kernels loop independent pcopyin(q[0:primSize]) pcopyout(qr[0:qSize],ql[0:qSize]) copyin(gamma,dtdx,np,nt)
-
-#pragma acc kernels loop pcopyin(q[0:primSize]) pcopyout(qr[0:qSize],ql[0:qSize]) copyin(gamma,dtdx,np,nt)
+#pragma acc kernels pcopyin(q[0:primSize]) pcopyout(qr[0:qSize],ql[0:qSize]) copyin(gamma,dtdx,np,nt)
+#pragma acc loop independent private(i,j,r,u,v1,p,csq,cc,dr,du,dv1,dp,ap,am,azr,azv1,acmp)
   for(lI=0;lI<(np+2)*nt;lI++){
     i=lI%(np+2);
     j=lI/(np+2);
@@ -284,9 +292,9 @@ void riemann(double *flx, double *qxm, double *qxp, int np, int nt){
   smallpp=Ha->smallr*smallp;
   gmma6=(Hp->gamma+1.0)/(2.0*Hp->gamma);
   entho=1.0/(Hp->gamma-1.0);
-//#pragma acc kernels loop independent pcopyin(qxm[0:qSize],qxp[0:qSize]) pcopyout(flx[0:flxSize]) pcopyin(np,nt,gamma,smallr,smallc,smallp,smallpp,gmma6,entho)
 
-#pragma acc kernels loop pcopyin(qxm[0:qSize],qxp[0:qSize]) pcopyout(flx[0:flxSize]) pcopyin(np,nt,gamma,smallr,smallc,smallp,smallpp,gmma6,entho)
+#pragma acc kernels pcopyin(qxm[0:qSize],qxp[0:qSize]) pcopyout(flx[0:flxSize]) pcopyin(np,nt,gamma,smallr,smallc,smallp,smallpp,gmma6,entho)
+#pragma acc loop independent
   for(lI=0;lI<(np+1)*nt;lI++){
     i=lI%(np+1);
     j=lI/(np+1);
@@ -373,7 +381,7 @@ void riemann(double *flx, double *qxm, double *qxp, int np, int nt){
       qgdnvVX=vxx;
       qgdnvP =px;
     }
-    flx[i+(np+1)*(j+nt*VARRHO)]=qgdnvR*qgdnvVX;
+    flx[i+(np+1)*(j+nt*VARRHO)]=0.025;//qgdnvR*qgdnvVX;
     flx[i+(np+1)*(j+nt*VARVX )]=qgdnvR*qgdnvVX*qgdnvVX+qgdnvP;
     flx[i+(np+1)*(j+nt*VARVY )]=qgdnvR*qgdnvVX*qgdnvVY;
     ekin=0.5*qgdnvR*(qgdnvVX*qgdnvVX+qgdnvVY*qgdnvVY);
@@ -385,9 +393,8 @@ void riemann(double *flx, double *qxm, double *qxp, int np, int nt){
 void addFluxX(double *mesh, double *flx, double dtdx, int np, int nt){
   int lI, i, j;
 
-//#pragma acc kernels loop independent pcopy(mesh[0:meshSize]) pcopyin(flx[0:flxSize]) pcopyin(dtdx,np,nt)
-
-#pragma acc kernels loop pcopy(mesh[0:meshSize]) pcopyin(flx[0:flxSize]) pcopyin(dtdx,np,nt)
+#pragma acc kernels pcopy(mesh[0:meshSize]) pcopyin(flx[0:flxSize]) pcopyin(dtdx,np,nt)
+#pragma acc loop independent
   for(lI=0;lI<np*nt;lI++){
     i=lI%np;
     j=lI/np;
@@ -405,9 +412,8 @@ void addFluxX(double *mesh, double *flx, double dtdx, int np, int nt){
 void addFluxY(double *mesh, double *flx, double dtdx, int np, int nt){
   int lI, i, j;
 
-//#pragma acc kernels loop independent pcopy(mesh[0:meshSize]) pcopyin(flx[0:flxSize]) pcopyin(dtdx,np,nt)
-
-#pragma acc kernels loop pcopy(mesh[0:meshSize]) pcopyin(flx[0:flxSize]) pcopyin(dtdx,np,nt)
+#pragma acc kernels pcopy(mesh[0:meshSize]) pcopyin(flx[0:flxSize]) pcopyin(dtdx,np,nt)
+#pragma acc loop independent
   for(lI=0;lI<np*nt;lI++){
     i=lI%np;
     j=lI/np;
@@ -458,11 +464,9 @@ double sumArray(double *mesh, int var, int nx, int ny){
   sum=0.0;
   corr=0.0;
 
-//#pragma acc kernels loop independent\
-
-#pragma acc kernels loop\
-  reduction(+:sum,corr)\
+#pragma acc kernels \
   pcopyin(mesh[0:meshSize])
+#pragma acc loop independent reduction(+:sum,corr)
   for(i=0;i<nx*ny;i++){
     c_nxt=mesh[i+nx*ny*var];
     nsum=sum+c_nxt;
@@ -496,51 +500,51 @@ void runPass(double *mesh, double dt, int n, int dir){
     dy=Hp->dx;
     dirCh='y';
   }
-  printf("Passdir: %c\n",dirCh);
-  printArray("PRE :",mesh,4,nx,ny,0,0);
-  nanScan(nanList,mesh,4,nx,ny,0,0);
-  printf("Pre-pass mesh: %d %d %d %d\n",nanList[0],nanList[1],nanList[2],nanList[3]);
+  //printf("Passdir: %c\n",dirCh);
+  //printArray("PRE :",mesh,4,nx,ny,0,0);
+  //nanScan(nanList,mesh,4,nx,ny,0,0);
+  //printf("Pre-pass mesh: %d %d %d %d\n",nanList[0],nanList[1],nanList[2],nanList[3]);
   if(dir==0){
-    toPrimX(q,mesh);    
+    toPrimX(q,mesh);
   }else{
     toPrimY(q,mesh);
   }
-  printf("Primitives done\n");
-#pragma acc update host(q[0:primSize]) 
-  nanScan(nanList,q,4,np,nt,2,0);
-  printArray("Q   :",q,4,np,nt,2,0);
-  printf("Prim: %d %d %d %d\n",nanList[0],nanList[1],nanList[2],nanList[3]);
+  //printf("Primitives done\n");
+  //#pragma acc update host(q[0:primSize])
+  //nanScan(nanList,q,4,np,nt,2,0);
+  //printArray("Q   :",q,4,np,nt,2,0);
+  //printf("Prim: %d %d %d %d\n",nanList[0],nanList[1],nanList[2],nanList[3]);
   setBndCnd(q,bndL,bndH,np,nt);
-  printf("Bnd cnds set\n");
-#pragma acc update host(q[0:primSize]) 
-  nanScan(nanList,q,4,np+4,nt,0,0);
-  printArray("QBND:",q,4,np+4,nt,0,0);
-  printf("Prim(bnd): %d %d %d %d\n",nanList[0],nanList[1],nanList[2],nanList[3]);
+  //printf("Bnd cnds set\n");
+  //#pragma acc update host(q[0:primSize])
+  //nanScan(nanList,q,4,np+4,nt,0,0);
+  //printArray("QBND:",q,4,np+4,nt,0,0);
+  //printf("Prim(bnd): %d %d %d %d\n",nanList[0],nanList[1],nanList[2],nanList[3]);
   trace(ql,qr,q,dt/dx,np,nt);
-#pragma acc update host(qr[0:qSize],ql[0:qSize]) 
-  printf("Trace complete\n");
-  nanScan(nanList,ql,4,np+2,nt,0,0);
-  printArray("QL  :",ql,4,np+2,nt,0,0);
-  printf("QL: %d %d %d %d\n",nanList[0],nanList[1],nanList[2],nanList[3]);
-  nanScan(nanList,qr,4,np+2,nt,0,0);
-  printArray("QR  :",qr,4,np+2,nt,0,0);
-  printf("QR: %d %d %d %d\n",nanList[0],nanList[1],nanList[2],nanList[3]);
+  //#pragma acc update host(qr[0:qSize],ql[0:qSize])
+  //printf("Trace complete\n");
+  //nanScan(nanList,ql,4,np+2,nt,0,0);
+  //printArray("QL  :",ql,4,np+2,nt,0,0);
+  //printf("QL: %d %d %d %d\n",nanList[0],nanList[1],nanList[2],nanList[3]);
+  //nanScan(nanList,qr,4,np+2,nt,0,0);
+  //printArray("QR  :",qr,4,np+2,nt,0,0);
+  //printf("QR: %d %d %d %d\n",nanList[0],nanList[1],nanList[2],nanList[3]);
   riemann(flx,ql,qr,np,nt);
-  printf("Riemann and flx computation complete\n");
-#pragma acc update host(flx[0:flxSize]) 
-  nanScan(nanList,flx,4,np+1,nt,0,0);
-  printArray("FLX :",flx,4,np+1,nt,0,0);
-  printf("FLX: %d %d %d %d\n",nanList[0],nanList[1],nanList[2],nanList[3]);
+  //printf("Riemann and flx computation complete\n");
+  //#pragma acc update host(flx[0:flxSize])
+  //nanScan(nanList,flx,4,np+1,nt,0,0);
+  //printArray("FLX :",flx,4,np+1,nt,0,0);
+  //printf("FLX: %d %d %d %d\n",nanList[0],nanList[1],nanList[2],nanList[3]);
   if(dir==0){
     addFluxX(mesh,flx,dt/dx,np,nt);
   }else{
     addFluxY(mesh,flx,dt/dx,np,nt);
   }
-  printf("Flx added\n");
-#pragma acc update host(mesh[0:meshSize]) 
-  nanScan(nanList,mesh,4,nx,ny,0,0);
-  printArray("POST:",mesh,4,nx,ny,0,0);
-  printf("Post-pass mesh: %d %d %d %d\n",nanList[1],nanList[1],nanList[2],nanList[3]);
+  //printf("Flx added\n");
+  //#pragma acc update host(mesh[0:meshSize])
+  //nanScan(nanList,mesh,4,nx,ny,0,0);
+  //printArray("POST:",mesh,4,nx,ny,0,0);
+  //printf("Post-pass mesh: %d %d %d %d\n",nanList[1],nanList[1],nanList[2],nanList[3]);
 }
 
 void engine(double *mesh, hydro_prob *Hyp, hydro_args *Hya){
@@ -618,7 +622,7 @@ void engine(double *mesh, hydro_prob *Hyp, hydro_args *Hya){
   
   initT=getNow();
 
-#pragma acc data copy(mesh[0:meshSize]) create(q[0:primSize],qr[0:qSize],ql[0:qSize],flx[0:flxSize])
+//#pragma acc data copy(mesh[0:meshSize]) create(q[0:primSize],qr[0:qSize],ql[0:qSize],flx[0:flxSize])
   {
     while((n<Ha->nstepmax||Ha->nstepmax<0)&&(cTime<Ha->tend||Ha->tend<0)){
       //Calculate timestep
@@ -661,7 +665,7 @@ void engine(double *mesh, hydro_prob *Hyp, hydro_args *Hya){
 	  if(nxttout>Ha->tend&&Ha->tend>0)nxttout=Ha->tend;
 	  //printf("Next Vis Time: %f\n",nxttout);
 	}
-#pragma acc update host(mesh[0:meshSize])
+        //#pragma acc update host(mesh[0:meshSize])
 	snprintf(outfile,29,"%s%05d",Ha->outPre,n);
 	writeVis(outfile,mesh,Hp->dx,Hp->dy,Hp->nvar,Hp->nx,Hp->ny);
         printf("Vis. file \"%s\" written.\n",outfile);

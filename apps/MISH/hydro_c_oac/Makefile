@@ -1,8 +1,8 @@
-CC=pgcc
+CC=pgcc -acc
 EXEC=hydro
 HEADERS=hydro.h hydro_struct.h
 OBJS=main.o hydro.o outfile.o
-CFLAGS+= -acc -Minfo -ta=nvidia
+CFLAGS+=
 LIBS=-lm
 
 all: ${EXEC}

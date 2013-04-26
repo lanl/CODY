@@ -1,25 +1,18 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "hydro_struct.h"
 #include "hydro_defs.h"
 
 void writeVis(char* fname, double *u, double dx, double dy, int nvar, int nx, int ny){
   int i,j,nv,argInd;
   FILE *vis;
-  char outName[54], *ext;
+  char outName[53], *ext;
   char name[30];
-  
+
   strncpy(outName,fname,50);
   outName[49]='\0';
-  for(i=0;i<50;i++){
-    if(outName[i]=='.'){
-      ext=outName+i;
-    }
-    if(outName[i]=='\0'){
-      ext=outName+i;
-      break;
-    }
-  }
+  if(!(ext=strrchr(outName,'.'))) ext=strchr(outName,'\0');
   sprintf(ext,".vts");
   vis=fopen(outName,"w");
   if(vis==NULL){

@@ -41,8 +41,7 @@ int main(int argc, char* argv[]){
   switch(init){
     case 1:
       Hp.nx=4;
-      Hp.ny=10;
-//      Hp.ny=1000;
+      Hp.ny=1000;
       Hp.dx=0.25/Hp.nx;
       Hp.dy=1.0/Hp.ny;
       iDiv=4;
