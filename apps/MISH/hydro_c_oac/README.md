@@ -4,7 +4,7 @@ MISH OpenACC
 Description
 -------
 
-This is a C implementation of a 2-D Godunov hydrocode using OpenACC. It is currently nonfunctional due to an unidentified bug that only occurs when running with OpenACC.
+This is a C implementation of a 2-D Godunov hydrocode using OpenACC.
 
 Usage
 -----
