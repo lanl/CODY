@@ -240,7 +240,7 @@ __global__ void toPrimX(double *q, double *u){
     vx  =     u[i+(d_nx+4)*(j+2+(d_ny+4)*VARVX )]/r;
     vy  =     u[i+(d_nx+4)*(j+2+(d_ny+4)*VARVY )]/r;
     eint=     u[i+(d_nx+4)*(j+2+(d_ny+4)*VARPR )]-0.5*r*(vx*vx+vy*vy);
-    p   =fmax((d_gamma-1)*eint,r*d_smallp);
+    p   =fmax((d_gamma-1)*r*eint,d_smallp);
     q[i+(d_nx+4)*(j+d_ny*VARRHO)]=r;
     q[i+(d_nx+4)*(j+d_ny*VARVX )]=vx;
     q[i+(d_nx+4)*(j+d_ny*VARVY )]=vy;
@@ -259,7 +259,7 @@ __global__ void toPrimY(double *q, double *u){
     vx  =     u[i+2+(d_nx+4)*(j+(d_ny+4)*VARVX )]/r;
     vy  =     u[i+2+(d_nx+4)*(j+(d_ny+4)*VARVY )]/r;
     eint=     u[i+2+(d_nx+4)*(j+(d_ny+4)*VARPR )]-0.5*r*(vx*vx+vy*vy);
-    p   =fmax((d_gamma-1)*eint,r*d_smallp);
+    p   =fmax((d_gamma-1)*r*eint,d_smallp);
     q[j+(d_ny+4)*(i+d_nx*VARRHO)]=r;
     q[j+(d_ny+4)*(i+d_nx*VARVX )]=vy;
     q[j+(d_ny+4)*(i+d_nx*VARVY )]=vx;

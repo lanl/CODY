@@ -76,7 +76,7 @@ void toPrimX(double *q, double *mesh){
     vx  =mesh[i+Hp->nx*Hp->ny*VARVX ]/r;
     vy  =mesh[i+Hp->nx*Hp->ny*VARVY ]/r;
     eint=mesh[i+Hp->nx*Hp->ny*VARPR ]-0.5*r*(vx*vx+vy*vy);
-    p   =MAX((Hp->gamma-1)*eint,r*smallp);
+    p   =MAX((Hp->gamma-1)*r*eint,smallp);
     q[xI+2+(Hp->nx+4)*(yI+Hp->ny*VARRHO)]=r;
     q[xI+2+(Hp->nx+4)*(yI+Hp->ny*VARVX )]=vx;
     q[xI+2+(Hp->nx+4)*(yI+Hp->ny*VARVY )]=vy;
@@ -99,7 +99,7 @@ void toPrimY(double *q, double *mesh){
     vx  =mesh[i+Hp->nx*Hp->ny*VARVX ]/r;
     vy  =mesh[i+Hp->nx*Hp->ny*VARVY ]/r;
     eint=mesh[i+Hp->nx*Hp->ny*VARPR ]-0.5*r*(vx*vx+vy*vy);
-    p   =MAX((Hp->gamma-1)*eint,r*smallp);
+    p   =MAX((Hp->gamma-1)*r*eint,r*smallp);
     q[yI+2+(Hp->ny+4)*(xI+Hp->nx*VARRHO)]=r;
     q[yI+2+(Hp->ny+4)*(xI+Hp->nx*VARVX )]=vy;
     q[yI+2+(Hp->ny+4)*(xI+Hp->nx*VARVY )]=vx;

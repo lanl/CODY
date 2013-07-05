@@ -91,7 +91,7 @@ void toPrimX(double *q, double *mesh){
     vx  =mesh[i+Hp->nx*Hp->ny*VARVX ]/r;
     vy  =mesh[i+Hp->nx*Hp->ny*VARVY ]/r;
     eint=mesh[i+Hp->nx*Hp->ny*VARPR ]-0.5*r*(vx*vx+vy*vy);
-    p   =MAX((Hp->gamma-1)*eint,r*smallp);
+    p   =MAX((Hp->gamma-1)*r*eint,smallp);
     q[xI+2+(Hp->nx+4)*(yI+Hp->ny*VARRHO)]=r;
     q[xI+2+(Hp->nx+4)*(yI+Hp->ny*VARVX )]=vx;
     q[xI+2+(Hp->nx+4)*(yI+Hp->ny*VARVY )]=vy;
@@ -114,7 +114,7 @@ void toPrimY(double *q, double *mesh){
     vx  =mesh[i+Hp->nx*Hp->ny*VARVX ]/r;
     vy  =mesh[i+Hp->nx*Hp->ny*VARVY ]/r;
     eint=mesh[i+Hp->nx*Hp->ny*VARPR ]-0.5*r*(vx*vx+vy*vy);
-    p   =MAX((Hp->gamma-1)*eint,r*smallp);
+    p   =MAX((Hp->gamma-1)*r*eint,smallp);
     q[yI+2+(Hp->ny+4)*(xI+Hp->nx*VARRHO)]=r;
     q[yI+2+(Hp->ny+4)*(xI+Hp->nx*VARVX )]=vy;
     q[yI+2+(Hp->ny+4)*(xI+Hp->nx*VARVY )]=vx;
@@ -245,7 +245,7 @@ double slope(double *q,int ind){
 void riemann(double *flx, double *qxm, double *qxp, int np, int nt){
   int lI, i,j,n;
   double smallp, smallpp;
-  double gmma6, entho;
+  double gmma6, gra, entho;
   double qgdnvR,qgdnvVX,qgdnvVY,qgdnvP;
   double rl,vxl,vyl,pl,cl,wl,ql,vsl;
   double rr,vxr,vyr,pr,cr,wr,qr,vsr;
@@ -258,6 +258,7 @@ void riemann(double *flx, double *qxm, double *qxp, int np, int nt){
   smallp=Ha->smallc*Ha->smallc/Hp->gamma;
   smallpp=Ha->smallr*smallp;
   gmma6=(Hp->gamma+1.0)/(2.0*Hp->gamma);
+  gra=(Hp->gamma-1.0)/(1.0*Hp->gamma);
   entho=1.0/(Hp->gamma-1.0);
   for(lI=0;lI<(np+1)*nt;lI++){
     i=lI%(np+1);
@@ -291,15 +292,17 @@ void riemann(double *flx, double *qxm, double *qxp, int np, int nt){
       vsl=vxl-(px-pl)/wl;
       vsr=vxr+(px-pr)/wr;
       delp=qr*ql/(qr+ql)*(vsl-vsr);
-      delp=MAX(delp,-px);
+      delp=MAX(delp,-px+smallp);
       px+=delp;
       vxo=fabs(delp/(px+smallpp));
       if(vxo<1.0e-6)break;
     }
     wl=sqrt(cl*(1.0+gmma6*(px-pl)/pl));
     wr=sqrt(cr*(1.0+gmma6*(px-pr)/pr));
-    vxx=0.5*(vxl+(pl-px)/wl+
-	     vxr-(pr-px)/wr);
+    ql=2.0*wl*wl*wl/(wl*wl+cl);
+    qr=2.0*wr*wr*wr/(wr*wr+cr);
+    vxx=((vxl-(px-pl)/wl)*ql+
+         (vxr+(px-pr)/wr)*qr)/(ql+qr);
     if(vxx>=0.0){
       sgnm=1.0;
       ro = rl;
@@ -320,12 +323,12 @@ void riemann(double *flx, double *qxm, double *qxp, int np, int nt){
     rx=MAX(Ha->smallr,ro/(1.0+ro*(po-px)/(wo*wo)));
     
     cx=MAX(Ha->smallc,sqrt(fabs(Hp->gamma*px/rx)));
-      
+  
     spout=co   -sgnm*vxo;
     spin =cx   -sgnm*vxx;
     ushk =wo/ro-sgnm*vxo;
     
-    if(px>=po){
+    if(spout<spin){
       spin=ushk;
       spout=ushk;
     }

@@ -95,12 +95,12 @@ int main(int argc, char* argv[]){
       break;
     default:
       printf("INIT:DEFAULT\n");
-      Hp.nx=5;
+      Hp.nx=2;
       Hp.ny=2;
-      Hp.dx=0.1;
-      Hp.dy=0.1;
-      iDiv=0;
-      jDiv=0;
+      Hp.dx=0.5;
+      Hp.dy=0.5;
+      iDiv=2;
+      jDiv=1;
       sprintf(Ha.outPre,"outDir/out");
       Ha.tend=-1.0;
       Ha.dtoutput=-0.01;
@@ -130,7 +130,7 @@ int main(int argc, char* argv[]){
       mesh[i+Hp.nx*(j+Hp.ny*VARRHO)]=0.125;
       mesh[i+Hp.nx*(j+Hp.ny*VARVX )]=0.0;
       mesh[i+Hp.nx*(j+Hp.ny*VARVY )]=0.0;
-      mesh[i+Hp.nx*(j+Hp.ny*VARPR )]=0.25;
+      mesh[i+Hp.nx*(j+Hp.ny*VARPR )]=2.0;
     }
   }
 
