@@ -199,6 +199,7 @@ void trace(double *ql, double *qr, double *q, double dtdx, int np, int nt){
   int lI;
   int i,j;
   double  r, u, v1, p, a;
+  double dlft, drgt, dcen, dsgn, dlim;
   double dr,du,dv1,dp,da;
   double cc,csq;
   double alpham,alphap,alphazr;
@@ -221,10 +222,29 @@ void trace(double *ql, double *qr, double *q, double dtdx, int np, int nt){
     csq=gamma*p/r;
     cc=sqrt(csq);
     
-    dr =slope(q,i+1+(np+4)*(j+nt*VARRHO));
-    du =slope(q,i+1+(np+4)*(j+nt*VARVX ));
-    dv1=slope(q,i+1+(np+4)*(j+nt*VARVY ));
-    dp =slope(q,i+1+(np+4)*(j+nt*VARPR ));
+    dlft=q[i+1+(np+4)*(j+nt*VARRHO)  ]-q[i+1+(np+4)*(j+nt*VARRHO)-1];
+    drgt=q[i+1+(np+4)*(j+nt*VARRHO)+1]-q[i+1+(np+4)*(j+nt*VARRHO)  ];
+    dcen=0.5*(dlft+drgt);
+    dlim=(dlft*drgt<=0)?0.0:MIN(fabs(dlft),fabs(drgt));
+    dr= (dcen>=0?1.0:-1.0)*MIN(dlim,fabs(dcen));
+
+    dlft=q[i+1+(np+4)*(j+nt*VARVX )  ]-q[i+1+(np+4)*(j+nt*VARVX )-1];
+    drgt=q[i+1+(np+4)*(j+nt*VARVX )+1]-q[i+1+(np+4)*(j+nt*VARVX )  ];
+    dcen=0.5*(dlft+drgt);
+    dlim=(dlft*drgt<=0)?0.0:MIN(fabs(dlft),fabs(drgt));
+    du= (dcen>=0?1.0:-1.0)*MIN(dlim,fabs(dcen));
+
+    dlft=q[i+1+(np+4)*(j+nt*VARVY )  ]-q[i+1+(np+4)*(j+nt*VARVY )-1];
+    drgt=q[i+1+(np+4)*(j+nt*VARVY )+1]-q[i+1+(np+4)*(j+nt*VARVY )  ];
+    dcen=0.5*(dlft+drgt);
+    dlim=(dlft*drgt<=0)?0.0:MIN(fabs(dlft),fabs(drgt));
+    dv1= (dcen>=0?1.0:-1.0)*MIN(dlim,fabs(dcen));
+
+    dlft=q[i+1+(np+4)*(j+nt*VARPR )  ]-q[i+1+(np+4)*(j+nt*VARPR )-1];
+    drgt=q[i+1+(np+4)*(j+nt*VARPR )+1]-q[i+1+(np+4)*(j+nt*VARPR )  ];
+    dcen=0.5*(dlft+drgt);
+    dlim=(dlft*drgt<=0)?0.0:MIN(fabs(dlft),fabs(drgt));
+    dp= (dcen>=0?1.0:-1.0)*MIN(dlim,fabs(dcen));
     
     alpham = 0.5*(dp/(r*cc)-du)*r/cc;
     alphap = 0.5*(dp/(r*cc)+du)*r/cc;
@@ -622,7 +642,7 @@ void engine(double *mesh, hydro_prob *Hyp, hydro_args *Hya){
   
   initT=getNow();
 
-//#pragma acc data copy(mesh[0:meshSize]) create(q[0:primSize],qr[0:qSize],ql[0:qSize],flx[0:flxSize])
+#pragma acc data copy(mesh[0:meshSize]) create(q[0:primSize],qr[0:qSize],ql[0:qSize],flx[0:flxSize])
   {
     while((n<Ha->nstepmax||Ha->nstepmax<0)&&(cTime<Ha->tend||Ha->tend<0)){
       //Calculate timestep

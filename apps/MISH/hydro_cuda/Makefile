@@ -1,5 +1,5 @@
-CC=/usr/local/cuda/bin/nvcc
-NVCC=/usr/local/cuda/bin/nvcc
+CC=nvcc
+NVCC=nvcc
 EXEC=hydro
 HEADERS=hydro.h hydro_struct.h
 OBJS=main.o dev_funcs.o hydro.o outfile.o

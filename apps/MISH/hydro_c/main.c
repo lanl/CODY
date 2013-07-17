@@ -39,16 +39,16 @@ int main(int argc, char* argv[]){
   switch(init){
     case 1:
       printf("INIT:Sod\n");
-      Hp.nx=4;
+      Hp.nx=100;
       Hp.ny=1000;
       Hp.dx=0.25/Hp.nx;
       Hp.dy=1.0/Hp.ny;
-      iDiv=4;
+      iDiv=100;
       jDiv=500;
       sprintf(Ha.outPre,"outDir/sod");
-      Ha.tend=1.0;
-      Ha.dtoutput=0.01;
-      Ha.nstepmax=-1;
+      Ha.tend=-1.0;
+      Ha.dtoutput=-0.01;
+      Ha.nstepmax=1000;
       Ha.noutput=-1;
       break;
     case 2:
@@ -67,16 +67,16 @@ int main(int argc, char* argv[]){
       break;
     case 3:
       printf("INIT:WSC\n");
-      Hp.nx=4;
+      Hp.nx=100;
       Hp.ny=1000*pSMul;
       Hp.dx=0.25/Hp.nx;
       Hp.dy=1.0/Hp.ny;
-      iDiv=4;
+      iDiv=100;
       jDiv=0.5*Hp.ny;
       sprintf(Ha.outPre,"outDir/wsc");
-      Ha.tend=1.0;
-      Ha.dtoutput=0.01;
-      Ha.nstepmax=-1;
+      Ha.tend=-1.0;
+      Ha.dtoutput=-0.01;
+      Ha.nstepmax=1000;
       Ha.noutput=-1;
       break;
     case 4:

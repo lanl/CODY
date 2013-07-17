@@ -3,8 +3,8 @@ NVCC=nvcc
 EXEC=hydro
 HEADERS=hydro.h hydro_struct.h
 OBJS=main.o dev_funcs.o hydro.o outfile.o
-LIBS=-L/opt-/mpi/openmpi/1.5.1/pgi/11.1/lib/ -lmpi -lm
-INCS=-I"/opt-/mpi/openmpi/1.5.1/pgi/11.1/include/"
+LIBS=-L"/projects/opt/mpi/openmpi/1.6.4-xrc_centos_gcc-4.4.7/lib/" -lmpi -lm
+INCS=-I"/projects/opt/mpi/openmpi/1.6.4-xrc_centos_gcc-4.4.7/include/"
 CUFLAGS=-arch=sm_13
 
 
