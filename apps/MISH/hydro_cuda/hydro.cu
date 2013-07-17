@@ -106,7 +106,7 @@ int nansIn(double *mesh, int var, int nx, int ny, int nHx, int nHy){
 
 void runPass(double dt, int dir){
   int np,nt;
-  double dx,dy;
+  double dx;
   char dCh;
   char outLab[30];
 
@@ -115,7 +115,6 @@ void runPass(double dt, int dir){
     np=Hp->nx;
     nt=Hp->ny;
     dx=Hp->dx;
-    dy=Hp->dy;
     dCh='x';
     setHHalo(Hp->bndL,Hp->bndR);
     toPrimX<<<BL_TH((np+4)*nt,nTh)>>>(d_q,d_u);
@@ -123,7 +122,6 @@ void runPass(double dt, int dir){
     np=Hp->ny;
     nt=Hp->nx;
     dx=Hp->dy;
-    dy=Hp->dx;
     dCh='y';
     setVHalo(bndT,bndB);
     toPrimY<<<BL_TH((np+4)*nt,nTh)>>>(d_q,d_u);
