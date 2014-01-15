@@ -198,15 +198,13 @@ func (s *HeatTxSim) Run() {
             fmt.Println(". starting iteration", t, "of", tMax)
         }
         for i := 1; i < nx; i++ {
+            nci := newMesh.cells[i]
+            oci := oldMesh.cells[i]
+            ocip := oldMesh.cells[i - 1]
+            ocin := oldMesh.cells[i + 1]
             for j := 1; j < ny; j++ {
-                newMesh.cells[i][j] =
-                    oldMesh.cells[i][j] +
-                    (cdtods2 *
-                     (oldMesh.cells[i + 1][j] +
-                      oldMesh.cells[i - 1][j] -
-                      4.0 * oldMesh.cells[i][j] +
-                      oldMesh.cells[i][j + 1] +
-                      oldMesh.cells[i][j - 1]))
+                nci[j] = oci[j] + (cdtods2 * (ocin[j] + ocip[j] - 4.0 *
+                                   oci[j] + oci[j + 1] + oci[j - 1]))
             }
         }
         // swap old and new - this is just a pointer swap
