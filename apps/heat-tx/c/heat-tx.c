@@ -357,6 +357,7 @@ run_simulation(simulation_t *sim)
     uint64_t t_max = sim->params->max_t;
     mesh_t *new_mesh = sim->new_mesh;
     mesh_t *old_mesh = sim->old_mesh;
+    double *nci, *oci, *ocip, *ocin;
 
     printf("o starting simulation...\n");
     for (t = 0; t < t_max; ++t) {
@@ -364,15 +365,13 @@ run_simulation(simulation_t *sim)
             printf(". starting iteration %"PRIu64" of %"PRIu64"\n", t, t_max); 
         }
         for (i = 1; i < nx - 1; ++i) {
+            nci =  new_mesh->cells[i];
+            oci =  old_mesh->cells[i];
+            ocip = old_mesh->cells[i - 1];
+            ocin = old_mesh->cells[i + 1];
             for (j = 1; j < ny - 1; ++j) {
-                new_mesh->cells[i][j] =
-                    old_mesh->cells[i][j] +
-                    (cdtods2 *
-                     (old_mesh->cells[i + 1][j] +
-                      old_mesh->cells[i - 1][j] -
-                      4.0 * old_mesh->cells[i][j] +
-                      old_mesh->cells[i][j + 1] +
-                      old_mesh->cells[i][j - 1]));
+                nci[j] = oci[j] + (cdtods2 * (ocin[j] + ocip[j] - 4.0 *
+                                   oci[j] + oci[j + 1] + oci[j - 1]));
             }
         }
         /* swap the mesh pointers */

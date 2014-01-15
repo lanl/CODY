@@ -42,7 +42,7 @@
 
 all: heat-tx
 
-CFLAGS = -Wall -Wextra -O1
+CFLAGS = -Wall -Wextra -Ofast
 
 heat-tx: heat-tx.c
 
