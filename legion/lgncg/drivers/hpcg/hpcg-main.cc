@@ -72,7 +72,8 @@ struct DriverParams {
         nx = 16;
         ny = 16;
         nz = 16;
-        nSubrgns  = 2;
+        // FIXME - change back to 2 once MG is working...
+        nSubrgns  = 1;
         maxIters  = 128;
         nMGLevels = 4;
         tolerance = 0.001;
