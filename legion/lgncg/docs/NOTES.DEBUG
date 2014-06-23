@@ -1,0 +1,10 @@
+################################################################################
+# on how to debug your legion application
+################################################################################
+
+########################################
+# Legion Spy
+########################################
+Compile Legion app with: -DLEGION_SPY
+Run Example: ./lgncg -cat legion_spy -level 1 2> OUT.log
+Now you can use legion_spy on the OUT.log.
