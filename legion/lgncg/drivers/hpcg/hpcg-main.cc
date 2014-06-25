@@ -77,7 +77,8 @@ struct DriverParams {
         maxIters  = 128;
         nMGLevels = 4;
         tolerance = 0.001;
-        doPreconditioning = true;
+        // SKG FIXME - make doPreconditioning true by default
+        doPreconditioning = false;
     }
 };
 
