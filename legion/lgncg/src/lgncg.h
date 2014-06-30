@@ -30,8 +30,10 @@
 #ifndef LGNCG_H_INCLUDED
 #define LGNCG_H_INCLUDED
 
+#include "geometry.h"
 #include "vector.h"
 #include "sparsemat.h"
+#include "setup-halo.h"
 
 #include "legion.h"
 

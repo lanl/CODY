@@ -107,10 +107,6 @@ spmv(const SparseMatrix &A,
     );
     il.add_field(idx++, y.fid);
     // execute the thing...
-#if 0
-    FutureMap fm = lrt->execute_index_space(ctx, il);
-    fm.wait_all_results();
-#endif
     (void)lrt->execute_index_space(ctx, il);
 }
 

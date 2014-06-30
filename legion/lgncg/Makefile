@@ -26,16 +26,16 @@
 # LA-CC 10-123
 #
 
-ALL_DIR := ./drivers/hpcg
+TARGET_DIR := ./drivers/hpcg
 
 .PHONY: all
 all: 
-	make -C $(ALL_DIR) all
+	make -C $(TARGET_DIR) all
 
 .PHONY: clean
 clean:
-	make -C $(ALL_DIR) clean
+	make -C $(TARGET_DIR) clean
 
 .PHONY: vclean
 vclean:
-	make -C $(ALL_DIR) vclean
+	make -C $(TARGET_DIR) vclean

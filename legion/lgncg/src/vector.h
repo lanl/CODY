@@ -36,6 +36,7 @@
 #include <string>
 #include <stack>
 #include <iostream>
+#include <iomanip>
 #include <inttypes.h>
 
 namespace lgncg {
@@ -228,6 +229,7 @@ public:
     template<typename T>
     void
     dump(std::string prefix,
+         int64_t nle,
          LegionRuntime::HighLevel::Context &ctx,
          LegionRuntime::HighLevel::HighLevelRuntime *lrt)
     {
@@ -244,9 +246,14 @@ public:
         GTRA acc = reg.get_field_accessor(fid).typeify<T>();
         typedef GenericPointInRectIterator<1> GPRI1D;
         typedef DomainPoint DomPt;
-        for (GPRI1D pi(bounds); pi; pi++) {
+        std:: cout << "*** " << prefix << " ***" << std::endl;
+        int i = 0;
+        for (GPRI1D pi(bounds); pi; pi++, ++i) {
             T val = acc.read(DomPt::from_point<1>(pi.p));
-            std:: cout << prefix << val << std::endl;
+            if (i % nle == 0) {
+                std::cout << std::endl;
+            }
+            std::cout << std::setfill(' ') << std::setw(3) << val << " ";
         }
     }
 };

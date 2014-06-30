@@ -34,7 +34,8 @@ namespace lgncg {
 
 enum {
     // FIXME - central registration thing again...
-    LGNCG_VECCP_TID = 32,
+    LGNCG_SETUP_HALO_TID = 32,
+    LGNCG_VECCP_TID,
     LGNCG_VEC_ZERO_TID,
     LGNCG_SPMV_TID,
     LGNCG_WAXPBY_TID,

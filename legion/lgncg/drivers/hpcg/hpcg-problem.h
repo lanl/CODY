@@ -30,8 +30,6 @@
 #ifndef HPCG_PROBLEM_H_INCLUDED
 #define HPCG_PROBLEM_H_INCLUDED
 
-#include "hpcg-geometry.h"
-
 #include "lgncg.h"
 
 #include <iostream>
@@ -43,10 +41,6 @@
 // assume lgncg won't use TID 0 and 1.
 
 struct Problem {
-    // problem geometry (at finest level)
-    Geometry geom;
-    // stencil size
-    int64_t stencilSize;
     // the sparse matrix
     lgncg::SparseMatrix A;
     // vector x
@@ -67,23 +61,25 @@ struct Problem {
     /**
      * constructor
      */
-    Problem(int64_t nx,
-            int64_t ny,
-            int64_t nz,
+    Problem(const lgncg::Geometry &geom,
             int64_t stencilSize,
             int64_t numMGLevels,
+            int64_t nSubRgns,
             LegionRuntime::HighLevel::Context &ctx,
             LegionRuntime::HighLevel::HighLevelRuntime *lrt)
     {
-        this->geom = Geometry(nx, ny, nz);
-        this->stencilSize = stencilSize;
         this->nmgl = numMGLevels;
-        // now init the matrix and vectors
-        A.create(geom.nx * geom.ny * geom.nz, stencilSize, ctx, lrt);
-        // length of vectors
-        int64_t vLen = geom.nx * geom.ny * geom.nz;
-        x.create<double>(vLen, ctx, lrt);
-        b.create<double>(vLen, ctx, lrt);
+        const int64_t globalXYZ = geom.npx * geom.nx *
+                                  geom.npy * geom.ny * 
+                                  geom.npz * geom.nz;
+        // now init the fine matrix and vectors
+        A.create(geom, globalXYZ, stencilSize, ctx, lrt);
+        x.create<double>(globalXYZ, ctx, lrt);
+        b.create<double>(globalXYZ, ctx, lrt);
+        // we know how things are going to be partitioned, so do that now
+        A.partition(geom.size, ctx, lrt);
+        x.partition(geom.size, ctx, lrt);
+        b.partition(geom.size, ctx, lrt);
     }
     /**
      * "destructor"
@@ -99,8 +95,6 @@ struct Problem {
     /**
      * wrapper for the task(s) responsible for setting the problem instance's
      * initial conditions.
-     *
-     * TODO: parallelize the routines here...
      */
     void
     setInitialConds(LegionRuntime::HighLevel::Context &ctx,
@@ -111,19 +105,20 @@ struct Problem {
         // start timer
         double start = LegionRuntime::TimeStamp::get_current_time_in_micros();
         printf("setting initial conditions:\n");
-        // generate problem at the finest level
-        genProb(A, &x, &b, geom, stencilSize, ctx, lrt);
-        // now do it for the rest
+        // set initial conditions at the finest level
+        setICs(A, &x, &b, ctx, lrt);
+        setupHalo(A, ctx, lrt);
+#if 0
+        // TODO only do if MG requested
+        // geometry at finest level already setup, so just generate the rest
         lgncg::SparseMatrix *curLevMatPtr = &A;
-        Geometry curFineGeom = geom;
         for (int64_t mgi = 1; mgi < this->nmgl; ++mgi) {
-            Geometry curCoarseGeom;
-            genCoarseProb(*curLevMatPtr, curFineGeom, curCoarseGeom,
-                          stencilSize, ctx, lrt);
+            genCoarseProbGeom(*curLevMatPtr, ctx, lrt);
             // update for next round of coarse grid matrix generation
-            curFineGeom = curCoarseGeom;
             curLevMatPtr = curLevMatPtr->Ac;
+            // TODO add coarse setup stuff
         }
+#endif
         double stop = LegionRuntime::TimeStamp::get_current_time_in_micros();
         printf("  . done in: %7.3lf ms\n", (stop - start) * 1e-3);
     }
@@ -131,22 +126,16 @@ private:
     Problem(void) { ; }
 
     static void
-    genProb(lgncg::SparseMatrix &A,
-            lgncg::Vector *x,
-            lgncg::Vector *b,
-            const Geometry &geom,
-            int64_t stencilSize,
-            LegionRuntime::HighLevel::Context &ctx,
-            LegionRuntime::HighLevel::HighLevelRuntime *lrt);
+    setICs(lgncg::SparseMatrix &A,
+           lgncg::Vector *x,
+           lgncg::Vector *b,
+           LegionRuntime::HighLevel::Context &ctx,
+           LegionRuntime::HighLevel::HighLevelRuntime *lrt);
 
     static void
-    genCoarseProb(lgncg::SparseMatrix &Af,
-                  const Geometry &fineGeom,
-                  Geometry &coarseGeom,
-                  int64_t stencilSize,
-                  LegionRuntime::HighLevel::Context &ctx,
-                  LegionRuntime::HighLevel::HighLevelRuntime *lrt);
-
+    genCoarseProbGeom(lgncg::SparseMatrix &Af,
+                      LegionRuntime::HighLevel::Context &ctx,
+                      LegionRuntime::HighLevel::HighLevelRuntime *lrt);
 };
 
 #endif
