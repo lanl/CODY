@@ -11,6 +11,21 @@ import cPickle as pickle
 data={}
 nodeTime = {}
 
+
+# Reads in the data from the file into two dictionaries
+# Data keeps track of: 
+	# cores (0 for serial)
+	# time
+	# leaves
+	# traversal time
+	# nodes
+	# key is the depth
+# nodeTime keep track of:
+	# time 
+	# traversal time
+	# leaves per second (work)
+	# nodes per second (traversal)
+	# key is the number of cores (0 for serial)
 def readFile(filename,i,dNum):
 	f=open(filename,'rt')
 	reader=csv.reader(f)
@@ -46,7 +61,7 @@ def readFile(filename,i,dNum):
 			nodeTime[i][j+2].append(nodes/tTime)
 			#could add panic if leaves don't match
 	
-
+#Output figures for data mapped with cores on x-axis
 def outputFigure(dataDic,filename,xRange,yRange,title,xLabel,yLabel,loc,
 		maxCores,line):
 
@@ -69,8 +84,8 @@ def outputFigure(dataDic,filename,xRange,yRange,title,xLabel,yLabel,loc,
 	fig.savefig(filename)
 
 def main():
-	dirc = 1
-	outFiles = dirc * 5
+	dirc = 2 #number of directories 
+	outFiles = dirc * 4 #number of different dummy work times
 	parser = argparse.ArgumentParser(description="command line args")
 	parser.add_argument('-d','--directories',help='directory name',
 			nargs=dirc,required=True)
@@ -160,8 +175,7 @@ def main():
 			maxX = max(nodeTime[key][0][0])
 			maxY = max(nodeTime[key][dircNum+(2*(dircNum-1))][0])
 			plt.axis([0,maxX,0,maxY])
-			pdf_page.savefig(timeFig)
-		
+			pdf_page.savefig(timeFig)		
 		
 		for key in nodeTime.keys():
 			timeFig = plt.figure()

@@ -29,8 +29,8 @@ def outputFigure(dataDic,filename,xRange,yRange,title,xLabel,yLabel,loc,
 
 def main():
 	parser = argparse.ArgumentParser(description="command line args")
-	inputFiles = 6
-	outputFiles = 6
+	inputFiles = 4
+	outputFiles = 4
 	parser.add_argument('-i','--inputF',help='input file name',required=True)
 	parser.add_argument('-o','--output',help='output file name',required=True)
 	args = parser.parse_args()
@@ -44,7 +44,7 @@ def main():
 		data = pickle.load(open(inFile,"rb"))
 		overhead = {}
 		figureLocation = 220
-		maxCores = 64
+		maxCores = 32
 		for key in data.keys():
 			seqTime = data[key][3][0]
 			o = [x-seqTime for x in data[key][3]]
