@@ -40,20 +40,18 @@ We have a serial method to compare for speed up and overhead costs.
 		  number of dummy iterations, ability to set maximum cores
 		* Compile using: `dmd QuadTree.d`
 * Directories
-	* dTree and QuadTree.d
+	* dTree (for D) and goTree (for Go)
 		* Tree has initial minimum depth of 4, can be changed in the
 		  code
-	* goTree and QuadTree.go
-		* Tree has initial minimum depth of 4, can be changed in the
-		  code
+		* The code implements a simple version of the interface
+		  described in the QuadTree directory in the AMR directory
 * Timing
 	* For each code the first command line argument specifies which function
 	  to run: 0 runs concurrent tests, 1 runs serial tests, and 2 runs
 	  timing tests.  In order to figure out how many dummy iterations to use 
 	  for testing first use case 2 to determine the timing of the dummy work.
 	* For the command line arguments, see the comments in the go.sh and d.sh
-	  files
-	*  
+	  files  
 
 ## Go
 ---
