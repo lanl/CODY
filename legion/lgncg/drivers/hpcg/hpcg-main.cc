@@ -47,8 +47,8 @@ enum TID {
 };
 
 const char DRIVER_NAME[] = "lgn-hpcg";
-const int DRIVER_VER     = 0;
-const int DRIVER_SUBVER  = 6;
+const int DRIVER_VER     = 1;
+const int DRIVER_SUBVER  = 0;
 
 // FIXME HACK
 #ifndef PRId64
@@ -56,8 +56,11 @@ const int DRIVER_SUBVER  = 6;
 #endif
 
 struct DriverParams {
+    // number of grid points for each local subdomain
     int64_t nx, ny, nz;
-    int64_t nSubrgns;
+    // number of tasks in each respective direction
+    int64_t npx, npy, npz;
+    int64_t nSubRgns;
     int64_t maxIters;
     int64_t nMGLevels;
     double tolerance;
@@ -69,13 +72,19 @@ struct DriverParams {
      * default constructor.
      */
     DriverParams(void) {
+        // FIXME return to some other value - used to be 16
         nx = 16;
         ny = 16;
         nz = 16;
+        // FIXME - for now a 2x2x1 problem
+        npx = 1;
+        npy = 1;
+        npz = 1;
         // FIXME - change back to 2 once MG is working...
-        nSubrgns  = 1;
+        nSubRgns  = 1;
         maxIters  = 128;
-        nMGLevels = 4;
+        // FIXME - return to 4
+        nMGLevels = 1;
         tolerance = 0.001;
         // SKG FIXME - make doPreconditioning true by default
         doPreconditioning = false;
@@ -93,7 +102,7 @@ getParamsFromArgs(DriverParams &params)
     const InputArgs &cArgs = HighLevelRuntime::get_input_args();
     for (int i = 1; i < cArgs.argc; ++i) {
         if (!strcmp(cArgs.argv[i], "-s")) {
-            params.nSubrgns = (int64_t)strtol(cArgs.argv[++i], NULL, 10);
+            params.nSubRgns = (int64_t)strtol(cArgs.argv[++i], NULL, 10);
         }
         if (!strcmp(cArgs.argv[i], "-i")) {
             params.maxIters = (int64_t)strtol(cArgs.argv[++i], NULL, 10);
@@ -106,6 +115,15 @@ getParamsFromArgs(DriverParams &params)
         }
         if (!strcmp(cArgs.argv[i], "-nz")) {
             params.nz = (int64_t)strtol(cArgs.argv[++i], NULL, 10);
+        }
+        if (!strcmp(cArgs.argv[i], "-npx")) {
+            params.npx = (int64_t)strtol(cArgs.argv[++i], NULL, 10);
+        }
+        if (!strcmp(cArgs.argv[i], "-npy")) {
+            params.npy = (int64_t)strtol(cArgs.argv[++i], NULL, 10);
+        }
+        if (!strcmp(cArgs.argv[i], "-npz")) {
+            params.npz = (int64_t)strtol(cArgs.argv[++i], NULL, 10);
         }
         if (!strcmp(cArgs.argv[i], "-nmg")) {
             params.nMGLevels = (int64_t)strtol(cArgs.argv[++i], NULL, 10);
@@ -122,7 +140,9 @@ getParamsFromArgs(DriverParams &params)
         }
     }
     assert(params.nx * params.ny * params.nz > 0);
-    assert(params.nSubrgns > 0);
+    assert(params.nSubRgns > 0);
+    assert(params.npx * params.npy * params.npz == params.nSubRgns &&
+           "npx * npy * npz must equal number of sub-regions");
 }
 
 /**
@@ -134,12 +154,14 @@ echoBanner(const DriverParams &params,
 {
     printf("%s %d.%d\n", DRIVER_NAME, DRIVER_VER, DRIVER_SUBVER);
     printf("Legion Setup Summary:\n"
-           "  Number of Subregions: %"PRId64"\n", params.nSubrgns);
+           "  Number of Subregions: %"PRId64"\n", params.nSubRgns);
     printf("Global Problem Dimensions:\n"
-           "  Global nx: %"PRId64"\n"
-           "  Global ny: %"PRId64"\n"
-           "  Global nz: %"PRId64"\n",
-           params.nx, params.ny, params.nz);
+           "  npx * nx: %"PRId64"\n"
+           "  npy * ny: %"PRId64"\n"
+           "  npz * nz: %"PRId64"\n",
+           params.npx * params.nx,
+           params.npy * params.ny,
+           params.npz * params.nz);
     printf("********** Problem Summary ***********:\n");
     printf("Linear System Information:\n"
            "  Number of Equations: %"PRId64"\n"
@@ -234,13 +256,17 @@ mainTask(const lrthl::Task *task,
          lrthl::Context ctx,
          lrthl::HighLevelRuntime *lrt)
 {
+    using lgncg::Geometry;
+
     (void)rgns; (void)task;
     DriverParams params;
     getParamsFromArgs(params);
-    // now that we have our params populated, construct the problem
-    Problem problem(params.nx, params.ny,
-                    params.nz, params.stencilSize,
-                    params.nMGLevels, ctx, lrt);
+    // now that we have our params populated, construct the problem geometry
+    Geometry globalGeom(params.nSubRgns,
+                        params.npx, params.npy, params.npz,
+                        params.nx,  params.ny,  params.nz);
+    Problem problem(globalGeom, params.stencilSize,
+                    params.nMGLevels, params.nSubRgns, ctx, lrt);
     // now that we have all problem-related info, let the user know the setup
     echoBanner(params, problem);
     // sets initial conditions for all grid levels
@@ -253,14 +279,15 @@ mainTask(const lrthl::Task *task,
                   params.tolerance,
                   params.maxIters,
                   problem.x,
-                  params.nSubrgns,
+                  params.nSubRgns,
                   params.doPreconditioning,
                   ctx,
                   lrt);
     double stop = LegionRuntime::TimeStamp::get_current_time_in_micros();
     printf("  . done in: %7.3lf ms\n", (stop - start) * 1e-3);
     start = LegionRuntime::TimeStamp::get_current_time_in_micros();
-    printf("starting cg checks...\n");
+    printf("verifying answer...\n");
+    // make sure we get the answer we expect
     checkcg(problem.x, ctx, lrt);
     stop = LegionRuntime::TimeStamp::get_current_time_in_micros();
     printf("  . done in: %7.3lf ms\n", (stop - start) * 1e-3);

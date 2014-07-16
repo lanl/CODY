@@ -43,6 +43,7 @@
 #include "comp-dotprod.h"
 #include "comp-mg.h"
 #include "comp-symgs.h"
+#include "setup-halo.h"
 
 #include "legion.h"
 
@@ -69,10 +70,13 @@ preSolvPrep(lgncg::SparseMatrix &A,
 {
     assert(A.nRows == x.len && x.len == b.len);
     cgData.partition(nParts, ctx, lrt);
+    // FIXME - do we need multiple partitions anymore?
+#if 0
     // and also partition A, x, and b
     A.partition(nParts, ctx, lrt);
     x.partition(nParts, ctx, lrt);
     b.partition(nParts, ctx, lrt);
+#endif
     // and if we are going to go down the MG route, setup partitions at all
     // levels before we start the preconditioning. we are hoisting this out of
     // the performance critical path. so, for each "new" call to mg, we must do
@@ -192,6 +196,15 @@ init(void)
 {
     using namespace LegionRuntime::HighLevel;
 
+    HighLevelRuntime::register_legion_task<setupHaloTask>(
+        LGNCG_SETUP_HALO_TID /* task id */,
+        Processor::LOC_PROC /* proc kind  */,
+        false /* single */,
+        true /* index */,
+        AUTO_GENERATE_ID,
+        TaskConfigOptions(true /* leaf task */),
+        "lgncg-setup-halo-task"
+    );
     HighLevelRuntime::register_legion_task<veccpTask>(
         LGNCG_VECCP_TID /* task id */,
         Processor::LOC_PROC /* proc kind  */,

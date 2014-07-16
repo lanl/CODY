@@ -47,7 +47,9 @@ $(wildcard $(LGCG_DIR)/*.h)
 INC_FLAGS    := -I$(LGCG_DIR)
 # for gcc on OS X
 #CC_FLAGS     := -Wall -O2 -Wa,-q
-CC_FLAGS     := -Wall -O2
+# debug
+CC_FLAGS     := -Wall -O0 -g
+#CC_FLAGS     := -Wall -O2
 #CC_FLAGS     := -Wall -O2 -DLEGION_SPY
 #CC_FLAGS     := -Wall -I$(HOME)/local/openblas/include
 NVCC_FLAGS   :=

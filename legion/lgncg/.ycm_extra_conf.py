@@ -56,8 +56,8 @@ flags = [
 '-x',
 'c++',
 '-I.',
-'-I/Users/samuel/devel/legion/runtime',
-'-I/Users/samuel/devel/lgncg/src'
+'-I./src',
+'-I/Users/samuel/devel/legion/runtime'
 ]
 
 # Set this to the absolute path to the folder (NOT the file!) containing the

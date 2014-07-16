@@ -25,22 +25,44 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * LA-CC 10-123
+ *
+ * -- High Performance Conjugate Gradient Benchmark (HPCG)
+ *    HPCG - 2.1 - January 31, 2014
+ *
+ *    Michael A. Heroux
+ *    Scalable Algorithms Group, Computing Research Center
+ *    Sandia National Laboratories, Albuquerque, NM
+ *
+ *    Piotr Luszczek
+ *    Jack Dongarra
+ *    University of Tennessee, Knoxville
+ *    Innovative Computing Laboratory
+ *    (C) Copyright 2013 All Rights Reserved
+ *
  */
 
 #ifndef HPCG_PROBLEM_GENERATOR_H_INCLUDED
 #define HPCG_PROBLEM_GENERATOR_H_INCLUDED
 
+#include "lgncg.h"
+
 #include <inttypes.h>
 #include <cstdlib>
 
+////////////////////////////////////////////////////////////////////////////////
+// TODO
+// pass raw pointers to this routine to keep memory usage down
+////////////////////////////////////////////////////////////////////////////////
+
 struct ProblemGenerator {
-    // geometry
-    int64_t nx, ny, nz, stencilSize, nRows;
+    // here for destructor
+    int64_t nLocalRows;
     // sparse matrix stuff
     double **A;
     uint8_t *non0sInRow;
     int64_t **mtxInd;
     double  **matDiag;
+    int64_t *l2gTab;
     // b vector stuff
     double *b;
     // total number of non-zeros
@@ -48,44 +70,54 @@ struct ProblemGenerator {
     /**
      * akin to HPCG's GenerateProblem
      */
-    ProblemGenerator(int64_t nx,
-                     int64_t ny,
-                     int64_t nz,
-                     int64_t stencilSize)
+    ProblemGenerator(const lgncg::DSparseMatrix &sm,
+                     int taskID)
     {
-        this->nx = nx;
-        this->ny = ny;
-        this->nz = nz;
-        this->stencilSize = stencilSize;
-        //current rank's x location in the npx by npy by npz processor grid
-        int64_t ipx = 0;
-        //current rank's y location in the npx by npy by npz processor grid
-        int64_t ipy = 0;
-        //current rank's z location in the npx by npy by npz processor grid
-        int64_t ipz = 0;
-        // global geometry
-        int64_t gnx = nx;
-        int64_t gny = ny;
-        int64_t gnz = nz;
+        using lgncg::Geometry;
 
-        nRows = nx * ny * nz;
-        int64_t nNon0sPerRow = stencilSize;
-        // allocate arrays that are of length nRows
-        non0sInRow = new uint8_t[nRows];
-        mtxInd = new int64_t *[nRows];
-        A = new double *[nRows];
-        matDiag = new double *[nRows];
-        b = new double[nRows];
+        const Geometry &geom = sm.geom;
+
+        const int64_t nx  = geom.nx;
+        const int64_t ny  = geom.ny;
+        const int64_t nz  = geom.nz;
+        const int64_t npx = geom.npx;
+        const int64_t npy = geom.npy;
+        const int64_t npz = geom.npz;
+        //current task's x location in the npx by npy by npz processor grid
+        const int64_t ipx = geom.ipx;
+        //current task's y location in the npx by npy by npz processor grid
+        const int64_t ipy = geom.ipy;
+        //current task's z location in the npx by npy by npz processor grid
+        const int64_t ipz = geom.ipz;
+        // global geometry
+        const int64_t gnx = npx * nx;
+        const int64_t gny = npy * ny;
+        const int64_t gnz = npz * nz;
+        // number of local rows for this task
+        this->nLocalRows = nx * ny * nz;
+        // stencil size
+        const int64_t stencilSize = sm.nCols;
+        // max stencilSize for number of non-zeros per row
+        const int64_t nNon0sPerRow = stencilSize;
+        // allocate arrays that are of length nLocalRows
+        non0sInRow = new uint8_t[nLocalRows];
+        mtxInd = new int64_t *[nLocalRows];
+        A = new double *[nLocalRows];
+        matDiag = new double *[nLocalRows];
+        b = new double[nLocalRows];
+        l2gTab = new int64_t[nLocalRows];
         // NULLify some things
-        for (int64_t i = 0; i < nRows; ++i) {
+        for (int64_t i = 0; i < nLocalRows; ++i) {
             A[i] = NULL;
             matDiag[i] = NULL;
             mtxInd[i] = NULL;
         }
         // now allocate the arrays pointed to
-        for (int64_t i = 0; i < nRows; ++i) {
+        for (int64_t i = 0; i < nLocalRows; ++i) {
             A[i] = new double[nNon0sPerRow];
+            (void)memset(A[i], 0, nNon0sPerRow * sizeof(double));
             mtxInd[i] = new int64_t[nNon0sPerRow];
+            (void)memset(mtxInd[i], 0, nNon0sPerRow * sizeof(double));
         }
         int64_t locNNon0s = 0;
         for (int64_t iz = 0; iz < nz; iz++) {
@@ -97,6 +129,8 @@ struct ProblemGenerator {
                     // current local row
                     int64_t curLocRow = iz * nx * ny + iy * nx + ix;
                     int64_t curGlobRow = giz * gnx * gny + giy * gnx + gix;
+                    l2gTab[curLocRow] = curGlobRow;
+                    // we'll setup the g2l map later in halo setup
                     char nNon0sInRow = 0;
                     // pointer to current value in current row
                     double *curValPtr = A[curLocRow];
@@ -140,13 +174,14 @@ struct ProblemGenerator {
     ~ProblemGenerator(void) {
         delete[] non0sInRow;
         delete[] b;
-        for (int64_t i = 0; i < nRows; ++i) {
+        for (int64_t i = 0; i < nLocalRows; ++i) {
             delete[] A[i];
             delete[] mtxInd[i];
         }
         delete[] A;
         delete[] mtxInd;
         delete[] matDiag;
+        delete[] l2gTab;
     }
 private:
     ProblemGenerator(void);
