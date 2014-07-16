@@ -113,32 +113,33 @@ we believe that an improved implementation of our worker queue algorithm with a
 larger buffer channel could decrease the overhead.  
 
 
-![Alt text](goSpeedLow.png)
+
+* ![Alt text](goSpeedLow.png)
 
 _Go Speed up (64 cores) when 0.25 milliseconds of work is executed on each leaf_
 
 
-![Alt text](goSpeedHigh.png)
+* ![Alt text](goSpeedHigh.png)
 
 _Go Speed up (64 cores) when 2 milliseconds of work is executed on each leaf_
 
 
-![Alt text](goOverheadLow.png)
+* ![Alt text](goOverheadLow.png)
 
 _Go percent overhead when 0.25 milliseconds of work is executed on each leaf_
 
 
-![Alt text](goOverheadHigh.png)
+* ![Alt text](goOverheadHigh.png)
 
 _Go percent overhead when 2 milliseconds of work is executed on each leaf_
 
 
-![Alt text](dSpeedLow.png)
+* ![Alt text](dSpeedLow.png)
 
 _D Speed up (64 cores) when 0.25 milliseconds of work is executed on each leaf_
 
 
-![Alt text](dSpeedHigh.png)
+* ![Alt text](dSpeedHigh.png)
 
 _D Speed up (64 cores) when 2 milliseconds of work is executed on each leaf_
 
