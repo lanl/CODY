@@ -1,6 +1,9 @@
 # Adaptive Mesh Refinement using a Quad Tree Data Structure
 ---
 
+![Alt text](lineTree.png  "AMR with Line Intersection")
+
+
 ## Description
 ---
 
