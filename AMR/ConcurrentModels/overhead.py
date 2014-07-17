@@ -50,6 +50,7 @@ def main():
 			o = [x-seqTime for x in data[key][3]]
 			over = [(x/y)*100 for x,y in zip(o,data[key][1])]
 			overhead[key] = [data[key][0][1:],over[1:],data[key][2]]
+			m = max(over)
 		outputFigure(overhead,outFile,maxCores+1,m,"Overhead",'number of cores',
 				'percent overhead',figureLocation,maxCores,False)
 		data.clear()
