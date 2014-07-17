@@ -80,7 +80,7 @@ struct PF2CTaskArgs {
 } // end namespace
 
 /**
- * wrapper to launch genProblem. always fill from left to right. A -> x -> y.
+ * wrapper to launch setICsTask. always fill from left to right. A -> x -> y.
  */
 void
 Problem::setICs(lgncg::SparseMatrix &A,
@@ -220,8 +220,13 @@ setICsTask(
     GLRA ai = aipr.get_field_accessor(targs.sa.mIdxs.fid).typeify<int64_t>();
     GSRA az = azpr.get_field_accessor(targs.sa.nzir.fid).typeify<uint8_t>();
     GLRA al = alpr.get_field_accessor(targs.sa.l2g.fid).typeify<int64_t>();
+    ////////////////////////////////////////////////////////////////////////////
+    // all problem setup logic in the ProblemGenerator /////////////////////////
+    ////////////////////////////////////////////////////////////////////////////
     // construct new initial conditions for this sub-region
     ProblemGenerator ic(targs.sa, taskID);
+    // okay - now write out to regions. FIXME: just pass raw pointers to problem
+    // setup to avoid memory bloat during init
     // the bounds of all entries
     typedef GenericPointInRectIterator<1> GPRI1D;
     typedef DomainPoint DomPt;

@@ -133,8 +133,9 @@ getParamsFromArgs(DriverParams &params)
         }
         if (!strcmp(cArgs.argv[i], "-h") || !strcmp(cArgs.argv[i], "-help")) {
             std::cout << "usage: " << DRIVER_NAME
-                      << " [-nx X] [-ny Y] [-nz Z] [-i MAX_ITERS]"
-                         " [-s N_SUBR] [-nmg N_MGL] [-no-precond] [-h | --help]"
+                      << " [-npx X] [-npy Y] [-npz Z] [-nx X] [-ny Y] [-nz Z]"
+                         " [-i MAX_ITERS] [-s N_SUBR] [-nmg N_MGL]"
+                         " [-no-precond] [-h | --help]"
                       << std::endl;
             exit(EXIT_SUCCESS);
         }
@@ -149,24 +150,28 @@ getParamsFromArgs(DriverParams &params)
  * let's the user know the setup and other interesting things.
  */
 void
-echoBanner(const DriverParams &params,
-           const Problem &problem)
+echoBanner(const DriverParams &params)
 {
     printf("%s %d.%d\n", DRIVER_NAME, DRIVER_VER, DRIVER_SUBVER);
     printf("Legion Setup Summary:\n"
            "  Number of Subregions: %"PRId64"\n", params.nSubRgns);
     printf("Global Problem Dimensions:\n"
-           "  npx * nx: %"PRId64"\n"
-           "  npy * ny: %"PRId64"\n"
-           "  npz * nz: %"PRId64"\n",
+           "  Global nx : %"PRId64"\n"
+           "  Global ny : %"PRId64"\n"
+           "  Global nz : %"PRId64"\n",
            params.npx * params.nx,
            params.npy * params.ny,
            params.npz * params.nz);
-    printf("********** Problem Summary ***********:\n");
-    printf("Linear System Information:\n"
-           "  Number of Equations: %"PRId64"\n"
-           "  Number of Nonzero Terms: %"PRId64"\n",
-           problem.A.nRows, problem.A.tNon0);
+    printf("Processor Dimensions:\n"
+           "  npx : %"PRId64"\n"
+           "  npy : %"PRId64"\n"
+           "  npz : %"PRId64"\n",
+           params.npx, params.npy, params.npz);
+    printf("Local Domain Dimensions:\n"
+           "  nx : %"PRId64"\n"
+           "  ny : %"PRId64"\n"
+           "  nz : %"PRId64"\n",
+           params.nx, params.ny, params.nz);
 }
 
 /**
@@ -200,6 +205,7 @@ checkcg(lgncg::Vector &x,
     il.add_field(idx++, x.fid);
     // execute the thing...
     FutureMap fm = lrt->execute_index_space(ctx, il);
+    // wait for timing
     fm.wait_all_results();
 }
 
@@ -265,12 +271,14 @@ mainTask(const lrthl::Task *task,
     Geometry globalGeom(params.nSubRgns,
                         params.npx, params.npy, params.npz,
                         params.nx,  params.ny,  params.nz);
+    // now construct the problem
     Problem problem(globalGeom, params.stencilSize,
                     params.nMGLevels, params.nSubRgns, ctx, lrt);
     // now that we have all problem-related info, let the user know the setup
-    echoBanner(params, problem);
+    echoBanner(params);
     // sets initial conditions for all grid levels
     problem.setInitialConds(ctx, lrt);
+    // TODO add problem-related banner echo
     double start = LegionRuntime::TimeStamp::get_current_time_in_micros();
     printf("starting solve...\n");
     // solve the thing

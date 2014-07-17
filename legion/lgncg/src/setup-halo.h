@@ -175,7 +175,7 @@ setupHaloTask(const LegionRuntime::HighLevel::Task *task,
             int64_t *cIndxs = (mIdxs + (i * lNCols));
             const int64_t curIndex = cIndxs[j];
             const Geometry &geom = targs.sa.geom;
-            int64_t tidOfColEntry = ComputeTIDOfMatrixRow(geom, curIndex);
+            int64_t tidOfColEntry = computeTIDOfMatrixRow(geom, curIndex);
             // if column index is not a row index,
             // then it comes from another processor
             if (taskID != tidOfColEntry) {
@@ -209,7 +209,7 @@ setupHaloTask(const LegionRuntime::HighLevel::Task *task,
             const Geometry &geom = targs.sa.geom;
             int64_t *cIndxs = (mIdxs + (i * lNCols));
             const int64_t curIndex = cIndxs[j];
-            const int64_t tidOfColEntry = ComputeTIDOfMatrixRow(geom, curIndex);
+            const int64_t tidOfColEntry = computeTIDOfMatrixRow(geom, curIndex);
             // my column index, so convert to local index
             if (taskID == tidOfColEntry) {
                 // at [i][j]
