@@ -93,7 +93,7 @@ struct Geometry {
 };
 
 inline int64_t
-ComputeTIDOfMatrixRow(const Geometry &geom,
+computeTIDOfMatrixRow(const Geometry &geom,
                       int64_t index)
 {
     int64_t gnx = geom.nx * geom.npx;
