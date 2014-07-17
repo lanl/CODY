@@ -9,10 +9,9 @@ import cPickle as pickle
 
 
 data={}
-nodeTime = {}
 
 
-# Reads in the data from the file into two dictionaries
+# Reads in the data from the file into a dictionary
 # Data keeps track of: 
 	# cores (0 for serial)
 	# time
@@ -20,12 +19,6 @@ nodeTime = {}
 	# traversal time
 	# nodes
 	# key is the depth
-# nodeTime keep track of:
-	# time 
-	# traversal time
-	# leaves per second (work)
-	# nodes per second (traversal)
-	# key is the number of cores (0 for serial)
 def readFile(filename,i,dNum):
 	f=open(filename,'rt')
 	reader=csv.reader(f)
@@ -38,27 +31,10 @@ def readFile(filename,i,dNum):
 		nodes=float(row[4])
 		if(i==0):
 			data[depth]=[[i],[time],leaves,[tTime],nodes]
-			if dNum==1:
-				nodeTime[i][0][0].append(nodes)
-				nodeTime[i][0][1].append(leaves)
-			j=dNum+(2*(dNum-1))
-			nodeTime[i][j][0].append(tTime)
-			nodeTime[i][j][1].append(time)
-			nodeTime[i][j+1].append(leaves/time)
-			nodeTime[i][j+2].append(nodes/tTime)
 		else:
 			data[depth][0].append(i)
 			data[depth][1].append(time)
 			data[depth][3].append(tTime)
-			if dNum==1:
-				nodeTime[i][0][0].append(nodes)
-				nodeTime[i][0][1].append(leaves)
-			j=dNum+(2*(dNum-1))
-			
-			nodeTime[i][j][0].append(tTime)
-			nodeTime[i][j][1].append(time)
-			nodeTime[i][j+1].append(leaves/time)
-			nodeTime[i][j+2].append(nodes/tTime)
 			#could add panic if leaves don't match
 	
 #Output figures for data mapped with cores on x-axis
@@ -85,7 +61,7 @@ def outputFigure(dataDic,filename,xRange,yRange,title,xLabel,yLabel,loc,
 
 def main():
 	dirc = 2 #number of directories 
-	outFiles = dirc * 4 #number of different dummy work times
+	outFiles = dirc * 3 #number of different dummy work times
 	parser = argparse.ArgumentParser(description="command line args")
 	parser.add_argument('-d','--directories',help='directory name',
 			nargs=dirc,required=True)
@@ -101,23 +77,6 @@ def main():
 	indexOut = 0
 	figureLocation = 220
 	
-	nodeTime[0] = [[] for x in xrange(3*dirc+1)]
-	nodeTime[0][0] = [[] for x in xrange(2)]
-	d = 1
-	while d<dirc+1:
-		nodeTime[0][d+(2*(d-1))] = [[] for x in range(2)]
-		d = d+1
-	cores = 1
-	#print "started cores"
-	while cores<maxCores+1:
-		nodeTime[cores]=[[] for x in xrange(3*dirc + 1)]
-		nodeTime[cores][0] = [[] for x in xrange(2)]
-		d = 1
-		while d<dirc+1:
-			nodeTime[cores][d+(2*(d-1))] = [[] for x in range(2)]
-			d = d+1
-	
-		cores = cores*2
 
 	dircNum = 1
 	#print nodeTime
@@ -132,26 +91,16 @@ def main():
 			cores=cores*2
 	#	print nodeTime
 		speedUp = {}
-		overhead = {}
 		for key in data.keys():
 			t=[]
-			over=[]
 			seq = data[key][1][0]
-			seqTime = data[key][3][0]
 			for s in data[key][1]:
 				t.append(seq/s)
-			for o in data[key][3]:
-				over.append(o-seqTime)
 			speedUp[key]=[data[key][0][1:],t[1:],data[key][2]]
-			overhead[key]=[data[key][0][1:],over[1:],data[key][2]]
-			y = max(over)
 		outputFigure(speedUp,outputFiles[indexOut],maxCores+1,maxCores+1,
 		"Speed up",'number of cores','speed up',figureLocation,maxCores,
 		True)
 		indexOut = indexOut+1
-		outputFigure(overhead,outputFiles[indexOut],maxCores+1,y,"Overhead",
-		'number of cores', 'time',figureLocation,maxCores,False)
-		indexOut=indexOut+1
 		strongScale = {}
 		for key in data.keys():
 			t = []
@@ -163,65 +112,17 @@ def main():
 		outputFigure(strongScale,outputFiles[indexOut],maxCores+1,
 				maxCores+1,"Strong Scaling",'number of cores',
 				'speed up',figureLocation,maxCores,True)
-		indexOut=indexOut+1
-		pdf_page = PdfPages(outputFiles[indexOut])
-	
-		for key in nodeTime.keys():
-			timeFig = plt.figure()
-			timeFig.suptitle(('Cores: ' + str(key)))	
-			plt.xlabel('number of nodes')
-			plt.ylabel('traversal time')
-			plt.plot(nodeTime[key][0][0],nodeTime[key][dircNum+(2*(dircNum-1))][0],'bs')
-			maxX = max(nodeTime[key][0][0])
-			maxY = max(nodeTime[key][dircNum+(2*(dircNum-1))][0])
-			plt.axis([0,maxX,0,maxY])
-			pdf_page.savefig(timeFig)		
 		
-		for key in nodeTime.keys():
-			timeFig = plt.figure()
-			timeFig.suptitle(('Cores: ' + str(key)))
-			plt.xlabel('number of leaves')
-			plt.ylabel('work time')
-			plt.plot(nodeTime[key][0][1],nodeTime[key][dircNum+(2*(dircNum-1))][1],'bs')
-			maxX = max(nodeTime[key][0][1])
-			maxY = max(nodeTime[key][dircNum+(2*(dircNum-1))][1])
-			plt.axis([0,maxX,0,maxY])
-			pdf_page.savefig(timeFig)
-
-		for key in nodeTime.keys():
-			timeFig = plt.figure()
-			timeFig.suptitle(('Cores: ' + str(key)))
-			
-			plt.xlabel('number of leaves')
-			plt.ylabel('nodes per second')
-			plt.plot(nodeTime[key][0][1],nodeTime[key][dircNum+(2*(dircNum-1))+1],'bs')
-			maxX = max(nodeTime[key][0][1])
-			maxY = max(nodeTime[key][dircNum+(2*(dircNum-1))+1])
-			plt.axis([0,maxX,0,maxY])
-			pdf_page.savefig(timeFig)
-
-		for key in nodeTime.keys():
-			timeFig = plt.figure()
-			timeFig.suptitle(('Cores: ' + str(key)))
-			
-			plt.xlabel('number of nodes')
-			plt.ylabel('nodes per second')
-			plt.plot(nodeTime[key][0][0],nodeTime[key][dircNum+(2*(dircNum-1))+2],'bs')
-			maxX = max(nodeTime[key][0][0])
-			maxY = max(nodeTime[key][dircNum+(2*(dircNum-1))+2])
-			plt.axis([0,maxX,0,maxY])
-			pdf_page.savefig(timeFig)
-	
-		pdf_page.close()
-	
 		indexOut=indexOut+1
+		
 		pickle.dump(data,open(outputFiles[indexOut],"wb"))	
+		
 		indexOut=indexOut+1
+		
 		dircNum = dircNum+1
 		data.clear()
 		speedUp.clear()
 	
-	pickle.dump(nodeTime,open(outputFiles[indexOut],"wb"))
 			
 			
 if __name__ == '__main__':
