@@ -101,7 +101,7 @@ subclasses.
 * Each node must have either four children or no children.  
 * The constructor takes three variables 
 	1. A pointer to the root node (gives tree correct node type)
-		a. To create a root Node use the subclass constructor for the node type you desire
+		* To create a root Node use the subclass constructor for the node type you desire
 	2. The initial number of cells in the decomposition, must be a power of 4
 	3. The maximum number of levels in the tree
 
