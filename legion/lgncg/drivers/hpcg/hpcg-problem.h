@@ -77,7 +77,7 @@ struct Problem {
         x.create<double>(globalXYZ, ctx, lrt);
         b.create<double>(globalXYZ, ctx, lrt);
         // we know how things are going to be partitioned, so do that now
-        A.partition(geom.size, ctx, lrt);
+        A.partition(geom, ctx, lrt);
         x.partition(geom.size, ctx, lrt);
         b.partition(geom.size, ctx, lrt);
     }
@@ -107,6 +107,7 @@ struct Problem {
         printf("setting initial conditions:\n");
         // set initial conditions at the finest level
         setICs(A, &x, &b, ctx, lrt);
+        // now setup the halo
         setupHalo(A, ctx, lrt);
 #if 0
         // TODO only do if MG requested

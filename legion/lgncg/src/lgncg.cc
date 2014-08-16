@@ -63,4 +63,10 @@ cgSolv(SparseMatrix &A,
                     nParts, doPreconditioning, ctx, lrt);
 }
 
+// FIXME - move
+std::ostream &operator<<(std::ostream &os, const I64Tuple &tup) {
+    os << '(' << tup.a << ", " << tup.b << ')';
+    return os;
+}
+
 } // end lgncg namespace

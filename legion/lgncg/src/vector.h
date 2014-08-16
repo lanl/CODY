@@ -34,7 +34,6 @@
 
 #include <vector>
 #include <string>
-#include <stack>
 #include <iostream>
 #include <iomanip>
 #include <inttypes.h>
@@ -42,9 +41,9 @@
 namespace lgncg {
 
 /**
- * partition stack item
+ * partition vector item
  */
-struct PStackItem {
+struct PVecItem {
     // a list of sub-grid bounds. provides a task ID to sub-grid bounds mapping
     std::vector< Rect<1> > subgridBnds;
     // launch domain
@@ -54,12 +53,12 @@ struct PStackItem {
     /**
      * constructor
      */
-    PStackItem(const std::vector< Rect<1> > &sgb,
-               const LegionRuntime::HighLevel::Domain &lDom,
-               const LegionRuntime::HighLevel::LogicalPartition &lp)
+    PVecItem(const std::vector< Rect<1> > &sgb,
+             const LegionRuntime::HighLevel::Domain &lDom,
+             const LegionRuntime::HighLevel::LogicalPartition &lp)
         : subgridBnds(sgb), lDom(lDom), lPart(lp) { ; }
 private:
-    PStackItem(void);
+    PVecItem(void);
 };
 
 struct Vector {
@@ -76,8 +75,8 @@ private:
     LegionRuntime::HighLevel::IndexSpace is;
     // vec field space
     LegionRuntime::HighLevel::FieldSpace fs;
-    // stack of partition items
-    std::stack<PStackItem> pstk;
+    // vector of partition items
+    std::vector<PVecItem> pvec;
 
 public:
     template <typename T>
@@ -118,10 +117,11 @@ public:
     free(LegionRuntime::HighLevel::Context &ctx,
          LegionRuntime::HighLevel::HighLevelRuntime *lrt)
     {
-        while (!pstk.empty()) {
-            lrt->destroy_logical_partition(ctx, pstk.top().lPart);
-            pstk.pop();
+        typedef std::vector<PVecItem>::iterator VecIter;
+        for (VecIter i = pvec.begin(); i != pvec.end(); i++) {
+            lrt->destroy_logical_partition(ctx, i->lPart);
         }
+        pvec.clear();
         lrt->destroy_logical_region(ctx, lr);
         lrt->destroy_field_space(ctx, fs);
         lrt->destroy_index_space(ctx, is);
@@ -131,9 +131,9 @@ public:
      * returns current launch domain.
      */
     LegionRuntime::HighLevel::Domain
-    lDom(void) const
+    lDom(size_t index = 0) const
     {
-        const PStackItem &psi = pstk.top();
+        const PVecItem &psi = pvec[index];
         return psi.lDom;
     }
 
@@ -141,9 +141,9 @@ public:
      * returns current logical partition.
      */
     LegionRuntime::HighLevel::LogicalPartition
-    lp(void) const
+    lp(size_t index = 0) const
     {
-        const PStackItem &psi = pstk.top();
+        const PVecItem &psi = pvec[index];
         return psi.lPart;
     }
 
@@ -151,9 +151,9 @@ public:
      * returns current sub-grid bounds.
      */
     std::vector< LegionRuntime::Arrays::Rect<1> >
-    sgb(void) const
+    sgb(size_t index = 0) const
     {
-        const PStackItem &psi = pstk.top();
+        const PVecItem &psi = pvec[index];
         return psi.subgridBnds;
     }
 
@@ -207,20 +207,8 @@ public:
         // launch domain -- one task per color
         // launch domain
         LegionRuntime::HighLevel::Domain lDom = colorDomain;
-        // add to the stack of partitions
-        this->pstk.push(PStackItem(subgridBnds, lDom, lp));
-    }
-
-    /**
-     * pops a partition scheme.
-     */
-    void
-    unpartition(LegionRuntime::HighLevel::Context &ctx,
-                LegionRuntime::HighLevel::HighLevelRuntime *lrt)
-    {
-        assert(!pstk.empty());
-        lrt->destroy_logical_partition(ctx, this->pstk.top().lPart);
-        pstk.pop();
+        // add to the vector of partitions
+        this->pvec.push_back(PVecItem(subgridBnds, lDom, lp));
     }
 
     /**
@@ -255,6 +243,34 @@ public:
             }
             std::cout << std::setfill(' ') << std::setw(3) << val << " ";
         }
+    }
+    /**
+     * FIXME i don't like this. make more scalable and more general.
+     * FIXME make a reduction task
+     */
+    template<typename T>
+    T
+    sum(LegionRuntime::HighLevel::Context &ctx,
+        LegionRuntime::HighLevel::HighLevelRuntime *lrt)
+    {
+        using namespace LegionRuntime::HighLevel;
+        using namespace LegionRuntime::Accessor;
+        using LegionRuntime::Arrays::Rect;
+
+        RegionRequirement req(lr, READ_ONLY, EXCLUSIVE, lr);
+        req.add_field(fid);
+        InlineLauncher suml(req);
+        PhysicalRegion reg = lrt->map_region(ctx, suml);
+        reg.wait_until_valid();
+        typedef RegionAccessor<AccessorType::Generic, T> GTRA;
+        GTRA acc = reg.get_field_accessor(fid).typeify<T>();
+        typedef GenericPointInRectIterator<1> GPRI1D;
+        typedef DomainPoint DomPt;
+        T total = static_cast<T>(0);
+        for (GPRI1D pi(bounds); pi; pi++) {
+            total += acc.read(DomPt::from_point<1>(pi.p));
+        }
+        return total;
     }
 };
 

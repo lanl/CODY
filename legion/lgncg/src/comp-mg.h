@@ -54,7 +54,7 @@ mgPrep(SparseMatrix &A,
         A.mgData->Axf.partition(A.nParts, ctx, lrt);
         r.partition(A.nParts, ctx, lrt);
         x.partition(A.nParts, ctx, lrt);
-        A.Ac->partition(A.nParts, ctx, lrt);
+        A.Ac->partition(A.geom, ctx, lrt);
         A.mgData->rc.partition(A.nParts, ctx, lrt);
         A.mgData->xc.partition(A.nParts, ctx, lrt);
         // now do the same for the next coarsest level

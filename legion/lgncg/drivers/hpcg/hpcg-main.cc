@@ -73,12 +73,12 @@ struct DriverParams {
      */
     DriverParams(void) {
         // FIXME return to some other value - used to be 16
-        nx = 16;
-        ny = 16;
-        nz = 16;
-        // FIXME - for now a 2x2x1 problem
-        npx = 1;
-        npy = 1;
+        nx = 2;
+        ny = 2;
+        nz = 2;
+        // FIXME - for now a 2x2x2 problem
+        npx = 2;
+        npy = 2;
         npz = 1;
         // FIXME - change back to 2 once MG is working...
         nSubRgns  = 1;

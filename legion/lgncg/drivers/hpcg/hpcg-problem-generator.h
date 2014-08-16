@@ -48,6 +48,7 @@
 
 #include <inttypes.h>
 #include <cstdlib>
+#include <set>
 
 ////////////////////////////////////////////////////////////////////////////////
 // TODO
@@ -63,6 +64,10 @@ struct ProblemGenerator {
     int64_t **mtxInd;
     double  **matDiag;
     int64_t *l2gTab;
+    // the total number of cells that i'll need in order to carry out the
+    // computations that will follow. this number corresponds to the size of the
+    // set that is the union of the blockification points and the ghost cells.
+    size_t nVecCells;
     // b vector stuff
     double *b;
     // total number of non-zeros
@@ -167,6 +172,23 @@ struct ProblemGenerator {
                 } // end ix loop
             } // end iy loop
         } // end iz loop
+        // Now figure out what cell IDs i need (local and global). Note that we
+        // are caching the "nicely ordered" indices here. For example, row 7 is
+        // global row 7 in a world where the indices are NOT reordered due to
+        // the way the domain is decomposed. Unfortunately, we don't live in
+        // that world.
+        std::set<int64_t> cellIDsINeed;
+        for (int64_t r = 0; r < nLocalRows; ++r) {
+            for (int64_t c = 0; c < non0sInRow[r]; ++c) {
+                cellIDsINeed.insert(mtxInd[r][c]);
+            }
+        }
+        // Stash the number of cells i need so that a global tally can be
+        // calculated, a logical partition created, and then populated. At the
+        // end of all these steps, then we'll be able to partition the cg-data
+        // vectors such that all required cells are included for each respective
+        // task.
+        nVecCells = cellIDsINeed.size();
     }
     /**
      * destructor

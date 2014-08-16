@@ -78,6 +78,8 @@ setupHalo(SparseMatrix &A,
         targs.sa.nzir.sgb  = A.nzir.sgb()[i];
         targs.sa.mIdxs.sgb = A.mIdxs.sgb()[i];
         targs.sa.l2g.sgb = A.l2g.sgb()[i];
+        // notice the entire bounds
+        targs.sa.g2g.sgb = A.g2g.bounds;
         argMap.set_point(DomainPoint::from_point<1>(Point<1>(i)),
                          TaskArgument(&targs, sizeof(targs)));
     }
@@ -100,6 +102,11 @@ setupHalo(SparseMatrix &A,
         RegionRequirement(A.l2g.lp(), 0, READ_ONLY, EXCLUSIVE, A.l2g.lr)
     );
     il.add_field(idx++, A.l2g.fid);
+    // global to global row lookup table (all of it)
+    il.add_region_requirement(
+        RegionRequirement(A.g2g.lr, 0, READ_ONLY, EXCLUSIVE, A.g2g.lr)
+    );
+    il.add_field(idx++, A.g2g.fid);
     // execute the thing...
     (void)lrt->execute_index_space(ctx, il);
 }
@@ -120,20 +127,23 @@ setupHaloTask(const LegionRuntime::HighLevel::Task *task,
     // stash my task ID
     const int taskID = task->index_point.point_data[0];
     // A (x3)
-    assert(3 == rgns.size());
+    assert(4 == rgns.size());
     size_t rid = 0;
     CGTaskArgs targs = *(CGTaskArgs *)task->local_args;
     // name the regions
     const PhysicalRegion &azpr = rgns[rid++];
     const PhysicalRegion &aipr = rgns[rid++];
     const PhysicalRegion &alpr = rgns[rid++];
+    const PhysicalRegion &ggpr = rgns[rid++];
     // convenience typedefs
     typedef RegionAccessor<AccessorType::Generic, uint8_t>  GSRA;
     typedef RegionAccessor<AccessorType::Generic, int64_t>  GLRA;
+    typedef RegionAccessor<AccessorType::Generic, I64Tuple> GTRA;
     // sparse matrix
     GSRA az = azpr.get_field_accessor(targs.sa.nzir.fid).typeify<uint8_t>();
     GLRA ai = aipr.get_field_accessor(targs.sa.mIdxs.fid).typeify<int64_t>();
     GLRA al = alpr.get_field_accessor(targs.sa.l2g.fid).typeify<int64_t>();
+    GTRA gg = ggpr.get_field_accessor(targs.sa.g2g.fid).typeify<I64Tuple>();
     // primarily used for offset density tests
     Rect<1> sr; ByteOffset bOff[1];
     // nzir and l2gMap have the same bounds, so pick one. NOTE: mIdxs is larger
@@ -151,6 +161,10 @@ setupHaloTask(const LegionRuntime::HighLevel::Task *task,
     const int64_t *const l2gMap = al.raw_rect_ptr<1>(mgb, sr, bOff);
     offd = offsetsAreDense<1, int64_t>(mgb, bOff);
     assert(offd);
+    //
+    const I64Tuple *const g2gMap = gg.raw_rect_ptr<1>(targs.sa.g2g.sgb, sr, bOff);
+    offd = offsetsAreDense<1, I64Tuple>(mgb, bOff);
+    assert(offd);
     ////////////////////////////////////////////////////////////////////////////
     // let the games begin...
     // stash local number of rows and columns
@@ -158,67 +172,18 @@ setupHaloTask(const LegionRuntime::HighLevel::Task *task,
     const int64_t lNCols = targs.sa.nCols;
     // now create a global to local map from the local to global map. we do this
     // primarily for fast lookups of local IDs given a global ID.
+    // FIXME rename
     std::map<int64_t, int64_t> g2lMap;
-    for (int64_t i = 0; i < lNRows; ++i) {
-        g2lMap[l2gMap[i]] = i;
+    for (int64_t i = 0; i < targs.sa.g2g.sgb.volume(); ++i) {
+        g2lMap[g2gMap[i].b] = g2gMap[i].a;
     }
-    //
-    std::map< int64_t, std::set<int64_t> > sendList, receiveList;
-    typedef std::map<int64_t, std::set<int64_t> >::iterator mapIter;
-    typedef std::set<int64_t>::iterator setIter;
-    std::map<int64_t, int64_t> externalToLocalMap;
-    //
     for (int64_t i = 0; i < lNRows; ++i) {
-        const int64_t currentGlobalRow = l2gMap[i];
         const int64_t cNon0sInRow = non0sInRow[i];
         for (int64_t j = 0; j < cNon0sInRow; ++j) {
             int64_t *cIndxs = (mIdxs + (i * lNCols));
             const int64_t curIndex = cIndxs[j];
-            const Geometry &geom = targs.sa.geom;
-            int64_t tidOfColEntry = computeTIDOfMatrixRow(geom, curIndex);
-            // if column index is not a row index,
-            // then it comes from another processor
-            if (taskID != tidOfColEntry) {
-                receiveList[tidOfColEntry].insert(curIndex);
-                // matrix symmetry means we know
-                // the neighbor process wants my value
-                sendList[tidOfColEntry].insert(currentGlobalRow);
-            }
-        }
-    }
-    //
-    // count number of matrix entries to send and receive
-    int64_t totalToBeSent = 0;
-    for (mapIter curNeighbor = sendList.begin();
-         curNeighbor != sendList.end(); ++curNeighbor) {
-        totalToBeSent += (curNeighbor->second).size();
-    }
-    int64_t totalToBeReceived = 0;
-    for (mapIter curNeighbor = receiveList.begin();
-         curNeighbor != receiveList.end(); ++curNeighbor) {
-        totalToBeReceived += (curNeighbor->second).size();
-    }
-#if 0
-    sleep(2 * taskID);
-    std::cout << taskID << ": totTx: " << totalToBeSent
-              << " totRx: " << totalToBeReceived << std::endl;
-#endif
-    for (int64_t i = 0; i < lNRows; ++i) {
-        const int64_t cNon0sInRow = non0sInRow[i];
-        for (int64_t j = 0; j < cNon0sInRow; ++j) {
-            const Geometry &geom = targs.sa.geom;
-            int64_t *cIndxs = (mIdxs + (i * lNCols));
-            const int64_t curIndex = cIndxs[j];
-            const int64_t tidOfColEntry = computeTIDOfMatrixRow(geom, curIndex);
-            // my column index, so convert to local index
-            if (taskID == tidOfColEntry) {
-                // at [i][j]
-                cIndxs[j] = g2lMap[curIndex];
-            }
-            // if column index is not a row index,
-            // then it comes from another processor
-            else {
-            }
+            // at [i][j]
+            cIndxs[j] = g2lMap[curIndex];
         }
     }
 }

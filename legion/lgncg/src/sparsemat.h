@@ -36,7 +36,19 @@
 
 #include "legion.h"
 
+#include <iostream>
+
 namespace lgncg {
+
+struct I64Tuple {
+    int64_t a;
+    int64_t b;
+
+    I64Tuple(void) : a(0), b(0) { ; }
+    I64Tuple(int64_t a, int64_t b) : a(a), b(b) { ; }
+
+    friend std::ostream& operator<<(std::ostream &os, const I64Tuple &tup);
+};
 
 struct SparseMatrix {
     // geometry associated with this matrix
@@ -53,9 +65,13 @@ struct SparseMatrix {
     Vector mIdxs;
     // # non-0s in row
     Vector nzir;
+    ////////////////////////////////////////////////////////////////////////////
+    // metadata vectors
+    ////////////////////////////////////////////////////////////////////////////
     // local to global lookup table. O(1) lookup when given a local ID
-    // high 32 bits: global ID -- low 32 bits: local ID
     Vector l2g;
+    // Vector of tuples that contain (Global ID, Real Global ID) pairs.
+    Vector g2g;
     // coarse grid matrix. NULL indicates no next level.
     SparseMatrix *Ac;
     // multi-grid data. NULL indicates no MG data.
@@ -92,12 +108,14 @@ struct SparseMatrix {
         this->nRows = nRows;
         this->nCols = nCols;
 
-        this->vals.create<double>  (nRows * nCols, ctx, lrt);
+        this->vals.create<double>(nRows * nCols, ctx, lrt);
         this->mIdxs.create<int64_t>(nRows * nCols, ctx, lrt);
 
-        this->diag.create<double> (nRows, ctx, lrt);
+        this->diag.create<double>(nRows, ctx, lrt);
         this->nzir.create<uint8_t>(nRows, ctx, lrt);
+        // meta
         this->l2g.create<int64_t>(nRows, ctx, lrt);
+        this->g2g.create<I64Tuple>(nRows, ctx, lrt);
     }
     /**
      *
@@ -111,6 +129,7 @@ struct SparseMatrix {
         mIdxs.free(ctx, lrt);
         nzir.free(ctx, lrt);
         l2g.free(ctx, lrt);
+        g2g.free(ctx, lrt);
         if (Ac) {
             Ac->free(ctx, lrt);
             delete Ac;
@@ -122,16 +141,17 @@ struct SparseMatrix {
     }
 
     void
-    partition(int64_t nParts,
+    partition(const Geometry &geom,
               LegionRuntime::HighLevel::Context &ctx,
               LegionRuntime::HighLevel::HighLevelRuntime *lrt)
     {
-        this->nParts = nParts;
+        this->nParts = geom.size;
         vals.partition(nParts, ctx, lrt);
         diag.partition(nParts, ctx, lrt);
         mIdxs.partition(nParts, ctx, lrt);
         nzir.partition(nParts, ctx, lrt);
         l2g.partition(nParts, ctx, lrt);
+        g2g.partition(nParts, ctx, lrt);
     }
     // TODO add unpartition
 };
@@ -153,9 +173,10 @@ struct DSparseMatrix {
     DVector mIdxs;
     // # non-0s in row
     DVector nzir;
-    // local to global lookup table. O(1) lookup when given a local ID
-    // high 32 bits: global ID -- low 32 bits: local ID
+    //
     DVector l2g;
+    //
+    DVector g2g;
 
     void
     operator=(const SparseMatrix &rhs)
@@ -170,6 +191,7 @@ struct DSparseMatrix {
         mIdxs = rhs.mIdxs;
         nzir = rhs.nzir;
         l2g = rhs.l2g;
+        g2g = rhs.g2g;
     }
 };
 
