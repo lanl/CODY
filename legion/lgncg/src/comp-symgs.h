@@ -41,22 +41,7 @@
 /**
  * implements one step of SYMmetric Gauss-Seidel.
  */
-
-namespace {
-
-static inline void
-applyRBPatitioning(SparseMatrix &A,
-                   LegionRuntime::HighLevel::Context &ctx,
-                   LegionRuntime::HighLevel::HighLevelRuntime *lrt)
-{
-}
-
-} // end namespace
-
 namespace lgncg {
-
-// steps
-// color A and push partition based on coloring
 
 /**
  * responsible for setting up the task launch of the symmetric gauss-seidel
@@ -64,13 +49,12 @@ namespace lgncg {
  */
 static inline void
 symgs(const SparseMatrix &A,
-     Vector &x,
-     const Vector &r,
-     LegionRuntime::HighLevel::Context &ctx,
-     LegionRuntime::HighLevel::HighLevelRuntime *lrt)
+      Vector &x,
+      const Vector &r,
+      LegionRuntime::HighLevel::Context &ctx,
+      LegionRuntime::HighLevel::HighLevelRuntime *lrt)
 {
     using namespace LegionRuntime::HighLevel;
-
     // sanity - make sure that all launch domains are the same size
     assert(A.vals.lDom().get_volume() == x.lDom().get_volume() &&
            x.lDom().get_volume() == r.lDom().get_volume());
@@ -85,16 +69,15 @@ symgs(const SparseMatrix &A,
         targs.sa.diag.sgb = A.diag.sgb()[i];
         targs.sa.mIdxs.sgb = A.mIdxs.sgb()[i];
         targs.sa.nzir.sgb = A.nzir.sgb()[i];
-        // every task gets all of x
-        //targs.va.sgb = x.sgb()[i];
+        // every task gets all of x AND its sub-grid.
+        targs.va.sgb = x.sgb()[i];
         targs.vb.sgb = r.sgb()[i];
         argMap.set_point(DomainPoint::from_point<1>(Point<1>(i)),
                          TaskArgument(&targs, sizeof(targs)));
     }
-    for (int sweepi = 0; sweepi < 2; ++sweepi) {
     int idx = 0;
     IndexLauncher il(LGNCG_SYMGS_TID, A.vals.lDom(),
-                     TaskArgument(&sweepi, sizeof(sweepi)), argMap);
+                     TaskArgument(NULL, 0), argMap);
     // A's regions /////////////////////////////////////////////////////////////
     // vals
     il.add_region_requirement(
@@ -117,10 +100,15 @@ symgs(const SparseMatrix &A,
     );
     il.add_field(idx++, A.nzir.fid);
     // x's regions /////////////////////////////////////////////////////////////
+    // read/write view of x
+    il.add_region_requirement(
+        RegionRequirement(x.lp(), 0, READ_WRITE, EXCLUSIVE, x.lr)
+    );
+    il.add_field(idx++, x.fid);
+    // read only view of all of x. FIXME only use required cells
     il.add_region_requirement(
         /* notice we are using the entire region here */
-        // FIXME coherence ???
-        RegionRequirement(x.lr, 0, READ_WRITE, ATOMIC, x.lr)
+        RegionRequirement(x.lr, 0, READ_ONLY, EXCLUSIVE, x.lr)
     );
     il.add_field(idx++, x.fid);
     // r's regions /////////////////////////////////////////////////////////////
@@ -130,7 +118,8 @@ symgs(const SparseMatrix &A,
     il.add_field(idx++, r.fid);
     // execute the thing...
     (void)lrt->execute_index_space(ctx, il);
-    } // end for
+    // XXX- why different number of iterations when we wait v no explicit wait?
+    //lrt->execute_index_space(ctx, il).wait_all_results();
 }
 
 /**
@@ -146,11 +135,10 @@ symgsTask(const LegionRuntime::HighLevel::Task *task,
     using namespace LegionRuntime::Accessor;
     using LegionRuntime::Arrays::Rect;
 
-    // A (x4), x, b
-    assert(6 == rgns.size());
+    // A (x4), x (x2), b
+    assert(7 == rgns.size());
     size_t rid = 0;
     CGTaskArgs targs = *(CGTaskArgs *)task->local_args;
-    int sweep = *(int *)task->args;
 #if 0 // nice debug
     printf("%d: sub-grid bounds: (%d) to (%d)\n",
             getTaskID(task), rect.lo.x[0], rect.hi.x[0]);
@@ -162,8 +150,9 @@ symgsTask(const LegionRuntime::HighLevel::Task *task,
     const PhysicalRegion &aipr = rgns[rid++];
     const PhysicalRegion &azpr = rgns[rid++];
     // vector regions
-    const PhysicalRegion &xpr  = rgns[rid++];
-    const PhysicalRegion &rpr  = rgns[rid++];
+    const PhysicalRegion &xrwpr  = rgns[rid++]; // read/write sub-region
+    const PhysicalRegion &xpr    = rgns[rid++]; // read only region (entire)
+    const PhysicalRegion &rpr    = rgns[rid++];
     // convenience typedefs
     typedef RegionAccessor<AccessorType::Generic, double>  GDRA;
     typedef RegionAccessor<AccessorType::Generic, int64_t> GLRA;
@@ -174,8 +163,9 @@ symgsTask(const LegionRuntime::HighLevel::Task *task,
     GLRA ai = aipr.get_field_accessor(targs.sa.mIdxs.fid).typeify<int64_t>();
     GSRA az = azpr.get_field_accessor(targs.sa.nzir.fid).typeify<uint8_t>();
     // vectors
-    GDRA x = xpr.get_field_accessor(targs.va.fid).typeify<double>();
-    GDRA r = rpr.get_field_accessor(targs.vb.fid).typeify<double>();
+    GDRA xrw = xrwpr.get_field_accessor(targs.va.fid).typeify<double>();
+    GDRA x   = xpr.get_field_accessor(targs.va.fid).typeify<double>();
+    GDRA r   = rpr.get_field_accessor(targs.vb.fid).typeify<double>();
 
     Rect<1> avsr; ByteOffset avOff[1];
     Rect<1> myGridBounds = targs.sa.vals.sgb;
@@ -202,11 +192,16 @@ symgsTask(const LegionRuntime::HighLevel::Task *task,
     uint8_t *azp = az.raw_rect_ptr<1>(myGridBounds, adsr, adOff);
     offd = offsetsAreDense<1, uint8_t>(myGridBounds, adOff);
     assert(offd);
+    // x - read/write
+    Rect<1> xrwsr; ByteOffset xrwOff[1];
+    double *xrwp = xrw.raw_rect_ptr<1>(targs.va.sgb, xrwsr, xrwOff);
+    offd = offsetsAreDense<1, double>(targs.va.sgb, xrwOff);
+    assert(offd);
     // x
     Rect<1> xsr; ByteOffset xOff[1];
     // notice that we aren't using the subgridBounds here -- need all of x
     myGridBounds = targs.va.bounds;
-    double *xp = x.raw_rect_ptr<1>(myGridBounds, xsr, xOff);
+    const double *const xp = x.raw_rect_ptr<1>(myGridBounds, xsr, xOff);
     offd = offsetsAreDense<1, double>(myGridBounds, xOff);
     assert(offd);
     // r
@@ -217,46 +212,42 @@ symgsTask(const LegionRuntime::HighLevel::Task *task,
     assert(offd);
     // now, actually perform the computation
     // forward sweep
-    if (1 == sweep) {
-        for (int64_t i = 0; i < lNRows; ++i) {
-            // get to base of next row of values
-            const double *const cVals = (avp + (i * lNCols));
-            // get to base of next row of "real" indices of values
-            const int64_t *const cIndx = (aip + (i * lNCols));
-            // capture how many non-zero values are in this particular row
-            const int64_t cnnz = azp[i];
-            // current diagonal value
-            const double curDiag = adp[i];
-            // RHS value
-            double sum = rp[i];
-            for (int64_t j = 0; j < cnnz; ++j) {
-                int64_t curCol = cIndx[j];
-                sum -= cVals[j] * xp[curCol];
-            }
-            sum += xp[i] * curDiag; // remove diagonal contribution from previous loop
-            xp[i] = sum / curDiag;
+    for (int64_t i = 0; i < lNRows; ++i) {
+        // get to base of next row of values
+        const double *const cVals = (avp + (i * lNCols));
+        // get to base of next row of "real" indices of values
+        const int64_t *const cIndx = (aip + (i * lNCols));
+        // capture how many non-zero values are in this particular row
+        const int64_t cnnz = azp[i];
+        // current diagonal value
+        const double curDiag = adp[i];
+        // RHS value
+        double sum = rp[i];
+        for (int64_t j = 0; j < cnnz; ++j) {
+            int64_t curCol = cIndx[j];
+            sum -= cVals[j] * xp[curCol];
         }
+        sum += xrwp[i] * curDiag; // remove diagonal contribution from previous loop
+        xrwp[i] = sum / curDiag;
     }
-    else {
-        // back sweep
-        for (int64_t i = lNRows - 1; i >= 0; --i) {
-            // get to base of next row of values
-            const double *const cVals = (avp + (i * lNCols));
-            // get to base of next row of "real" indices of values
-            const int64_t *const cIndx = (aip + (i * lNCols));
-            // capture how many non-zero values are in this particular row
-            const int64_t cnnz = azp[i];
-            // current diagonal value
-            const double curDiag = adp[i];
-            // RHS value
-            double sum = rp[i]; // RHS value
-            for (int64_t j = 0; j < cnnz; ++j) {
-                int64_t curCol = cIndx[j];
-                sum -= cVals[j] * xp[curCol];
-            }
-            sum += xp[i] * curDiag; // remove diagonal contribution from previous loop
-            xp[i] = sum / curDiag;
+    // back sweep
+    for (int64_t i = lNRows - 1; i >= 0; --i) {
+        // get to base of next row of values
+        const double *const cVals = (avp + (i * lNCols));
+        // get to base of next row of "real" indices of values
+        const int64_t *const cIndx = (aip + (i * lNCols));
+        // capture how many non-zero values are in this particular row
+        const int64_t cnnz = azp[i];
+        // current diagonal value
+        const double curDiag = adp[i];
+        // RHS value
+        double sum = rp[i]; // RHS value
+        for (int64_t j = 0; j < cnnz; ++j) {
+            int64_t curCol = cIndx[j];
+            sum -= cVals[j] * xp[curCol];
         }
+        sum += xrwp[i] * curDiag; // remove diagonal contribution from previous loop
+        xrwp[i] = sum / curDiag;
     }
 }
 

@@ -55,7 +55,8 @@
 #include <map>
 
 /**
- * implements the halo setup
+ * Implements the halo setup. Well... Not really. Just updates indices for now.
+ * This will implement halo setup at some point.
  */
 
 namespace lgncg {
@@ -77,7 +78,6 @@ setupHalo(SparseMatrix &A,
     for (int i = 0; i < A.vals.lDom().get_volume(); ++i) {
         targs.sa.nzir.sgb  = A.nzir.sgb()[i];
         targs.sa.mIdxs.sgb = A.mIdxs.sgb()[i];
-        targs.sa.l2g.sgb = A.l2g.sgb()[i];
         // notice the entire bounds
         targs.sa.g2g.sgb = A.g2g.bounds;
         argMap.set_point(DomainPoint::from_point<1>(Point<1>(i)),
@@ -85,7 +85,6 @@ setupHalo(SparseMatrix &A,
     }
     IndexLauncher il(LGNCG_SETUP_HALO_TID, A.nzir.lDom(),
                      TaskArgument(NULL, 0), argMap);
-    // TODO make sure there are correct
     // A's regions /////////////////////////////////////////////////////////////
     // # non 0s in row
     il.add_region_requirement(
@@ -97,11 +96,6 @@ setupHalo(SparseMatrix &A,
         RegionRequirement(A.mIdxs.lp(), 0, READ_WRITE, EXCLUSIVE, A.mIdxs.lr)
     );
     il.add_field(idx++, A.mIdxs.fid);
-    // local to global row lookup table
-    il.add_region_requirement(
-        RegionRequirement(A.l2g.lp(), 0, READ_ONLY, EXCLUSIVE, A.l2g.lr)
-    );
-    il.add_field(idx++, A.l2g.fid);
     // global to global row lookup table (all of it)
     il.add_region_requirement(
         RegionRequirement(A.g2g.lr, 0, READ_ONLY, EXCLUSIVE, A.g2g.lr)
@@ -127,13 +121,12 @@ setupHaloTask(const LegionRuntime::HighLevel::Task *task,
     // stash my task ID
     const int taskID = task->index_point.point_data[0];
     // A (x3)
-    assert(4 == rgns.size());
+    assert(3 == rgns.size());
     size_t rid = 0;
     CGTaskArgs targs = *(CGTaskArgs *)task->local_args;
     // name the regions
     const PhysicalRegion &azpr = rgns[rid++];
     const PhysicalRegion &aipr = rgns[rid++];
-    const PhysicalRegion &alpr = rgns[rid++];
     const PhysicalRegion &ggpr = rgns[rid++];
     // convenience typedefs
     typedef RegionAccessor<AccessorType::Generic, uint8_t>  GSRA;
@@ -142,12 +135,9 @@ setupHaloTask(const LegionRuntime::HighLevel::Task *task,
     // sparse matrix
     GSRA az = azpr.get_field_accessor(targs.sa.nzir.fid).typeify<uint8_t>();
     GLRA ai = aipr.get_field_accessor(targs.sa.mIdxs.fid).typeify<int64_t>();
-    GLRA al = alpr.get_field_accessor(targs.sa.l2g.fid).typeify<int64_t>();
     GTRA gg = ggpr.get_field_accessor(targs.sa.g2g.fid).typeify<I64Tuple>();
     // primarily used for offset density tests
     Rect<1> sr; ByteOffset bOff[1];
-    // nzir and l2gMap have the same bounds, so pick one. NOTE: mIdxs is larger
-    // by a stencil size factor. mgb = myGridBounds
     const Rect<1> mgb = targs.sa.nzir.sgb;
     // now start getting pointers to the data we are going to work with
     const uint8_t *const non0sInRow = az.raw_rect_ptr<1>(mgb, sr, bOff);
@@ -155,10 +145,6 @@ setupHaloTask(const LegionRuntime::HighLevel::Task *task,
     assert(offd);
     //
     int64_t *mIdxs = ai.raw_rect_ptr<1>(targs.sa.mIdxs.sgb, sr, bOff);
-    offd = offsetsAreDense<1, int64_t>(mgb, bOff);
-    assert(offd);
-    //
-    const int64_t *const l2gMap = al.raw_rect_ptr<1>(mgb, sr, bOff);
     offd = offsetsAreDense<1, int64_t>(mgb, bOff);
     assert(offd);
     //

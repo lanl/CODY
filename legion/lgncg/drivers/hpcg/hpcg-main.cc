@@ -73,9 +73,9 @@ struct DriverParams {
      */
     DriverParams(void) {
         // FIXME return to some other value - used to be 16
-        nx = 2;
-        ny = 2;
-        nz = 2;
+        nx = 16;
+        ny = 16;
+        nz = 16;
         // FIXME - for now a 2x2x2 problem
         npx = 2;
         npy = 2;
@@ -87,7 +87,7 @@ struct DriverParams {
         nMGLevels = 1;
         tolerance = 0.001;
         // SKG FIXME - make doPreconditioning true by default
-        doPreconditioning = false;
+        doPreconditioning = true;
     }
 };
 

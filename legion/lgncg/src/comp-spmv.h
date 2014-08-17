@@ -96,9 +96,7 @@ spmv(const SparseMatrix &A,
     // x's regions /////////////////////////////////////////////////////////////
     il.add_region_requirement(
         /* notice we are using the entire region here */
-        //RegionRequirement(x.lr, 0, READ_ONLY, EXCLUSIVE, x.lr)
-        // XXX what's the diff?
-        RegionRequirement(x.lr, READ_ONLY, EXCLUSIVE, x.lr)
+        RegionRequirement(x.lr, 0, READ_ONLY, EXCLUSIVE, x.lr)
     );
     il.add_field(idx++, x.fid);
     // y's regions /////////////////////////////////////////////////////////////
