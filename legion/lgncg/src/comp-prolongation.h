@@ -45,7 +45,7 @@
 namespace lgncg {
 
 /**
- * responsible for setting up the task launch of the compute restriction
+ * responsible for setting up the task launch of the compute prolongation
  * operation.
  */
 static inline void
@@ -54,7 +54,6 @@ prolongation(SparseMatrix &Af,
              LegionRuntime::HighLevel::Context &ctx,
              LegionRuntime::HighLevel::HighLevelRuntime *lrt)
 {
-#if 0
     using namespace LegionRuntime::HighLevel;
     int idx = 0;
     // no per-task arguments. CGTaskArgs has task-specific info.
@@ -64,34 +63,34 @@ prolongation(SparseMatrix &Af,
     targs.va = xf;
     targs.vb = Af.mgData->xc;
     targs.vc = Af.mgData->f2cOp;
-
-    IndexLauncher il(LGNCG_PROLONGATION_TID, targs.va.lDom(),
-                     TaskArgument(&targs, sizeof(targs)), argMap);
+    for (int i = 0; i < Af.vals.lDom().get_volume(); ++i) {
+        targs.va.sgb = xf.sgb()[i];
+        targs.vb.sgb = Af.mgData->xc.sgb()[i];
+        targs.vc.sgb = Af.mgData->f2cOp.sgb()[i];
+        argMap.set_point(DomainPoint::from_point<1>(Point<1>(i)),
+                         TaskArgument(&targs, sizeof(targs)));
+    }
+    IndexLauncher il(LGNCG_PROLONGATION_TID, xf.lDom(),
+                     TaskArgument(NULL, 0), argMap);
     // xf
     il.add_region_requirement(
-        RegionRequirement(targs.va.lp(), 0, READ_WRITE,
-                          EXCLUSIVE, targs.va.lr)
+        RegionRequirement(xf.lp(), 0, READ_WRITE, EXCLUSIVE, xf.lr)
     );
     il.add_field(idx++, targs.va.fid);
     // Af.mgData->xc
     il.add_region_requirement(
-        RegionRequirement(targs.vb.lp(), 0, READ_ONLY, EXCLUSIVE, targs.vb.lr)
+        RegionRequirement(Af.mgData->xc.lp(), 0, READ_ONLY,
+                          EXCLUSIVE, Af.mgData->xc.lr)
     );
     il.add_field(idx++, targs.vb.fid);
     // Af.mgData->f2cOp
-    // partition f2cOp
-    targs.vc.partition(xf.sgb().size(), ctx, lrt);
     il.add_region_requirement(
-        RegionRequirement(targs.vc.lp(), 0, READ_ONLY,
-                          EXCLUSIVE, targs.vc.lr)
+        RegionRequirement(Af.mgData->f2cOp.lp(), 0, READ_ONLY,
+                          EXCLUSIVE, Af.mgData->f2cOp.lr)
     );
     il.add_field(idx++, targs.vc.fid);
     // execute the thing...
-    FutureMap fm = lrt->execute_index_space(ctx, il);
-    fm.wait_all_results();
-    // done with f2cOp partition
-    targs.vc.unpartition(ctx, lrt);
-#endif
+    (void)lrt->execute_index_space(ctx, il);
 }
 
 /**
@@ -105,13 +104,12 @@ prolongationTask(
     LegionRuntime::HighLevel::HighLevelRuntime *lrt
 )
 {
-#if 0
     using namespace LegionRuntime::HighLevel;
     using namespace LegionRuntime::Accessor;
     using LegionRuntime::Arrays::Rect;
     assert(3 == rgns.size());
     size_t rid = 0;
-    CGTaskArgs targs = *(CGTaskArgs *)task->args;
+    CGTaskArgs targs = *(CGTaskArgs *)task->local_args;
     // name the regions
     const PhysicalRegion &xfpr  = rgns[rid++];
     const PhysicalRegion &xcpr  = rgns[rid++];
@@ -126,42 +124,26 @@ prolongationTask(
 
     Rect<1> rec; ByteOffset boff[1];
     // xf
-    Rect<1> myGridBounds = targs.va.sgb()[getTaskID(task)];
+    Rect<1> myGridBounds = targs.va.sgb;
     double *xfp = xf.raw_rect_ptr<1>(myGridBounds, rec, boff);
     bool offd = offsetsAreDense<1, double>(myGridBounds, boff);
     assert(offd);
     // xc
-    myGridBounds = targs.vb.sgb()[getTaskID(task)];
+    myGridBounds = targs.vb.sgb;
     double *xcp = xc.raw_rect_ptr<1>(myGridBounds, rec, boff);
     offd = offsetsAreDense<1, double>(myGridBounds, boff);
     assert(offd);
     // f2c
-    myGridBounds = targs.vc.sgb()[getTaskID(task)];
+    myGridBounds = targs.vc.sgb;
     int64_t *f2cp = f2c.raw_rect_ptr<1>(myGridBounds, rec, boff);
     offd = offsetsAreDense<1, int64_t>(myGridBounds, boff);
     assert(offd);
     // now, actually perform the computation
-    int64_t nc = targs.vb.sgb()[getTaskID(task)].volume(); // length of xc
-    // FIXME (hack) - this isn't ideal, but this should work okay for now. some
-    // concerns include: how to deal with uneven partitioning? is there a
-    // cleaner way of dealing with this?
-    assert(0 == targs.vc.len % targs.vc.sgb().size());
-    int64_t f2cIndxFixup = getTaskID(task) *
-                           (targs.vc.len / targs.vc.sgb().size());
-#if 0
-    std::cout << "LEN: " << targs.vb.len << std::endl;
-#endif
+    const int64_t nc = targs.vb.sgb.volume(); // length of xc
+
     for (int64_t i = 0; i < nc; ++i) {
         xfp[f2cp[i]] += xcp[i];
-#if 0
-        printf("%d: xfp[%d](%lf) += xcp[%d](%lf)\n",
-                getTaskID(task), f2cp[i], xfp[f2cp[i]], i, xcp[i]);
-#endif
     }
-#if 0
-    printf("\n");
-#endif
-#endif
 }
 
 }
