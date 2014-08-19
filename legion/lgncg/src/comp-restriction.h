@@ -54,7 +54,6 @@ restriction(SparseMatrix &A,
             LegionRuntime::HighLevel::Context &ctx,
             LegionRuntime::HighLevel::HighLevelRuntime *lrt)
 {
-#if 0
     using namespace LegionRuntime::HighLevel;
     int idx = 0;
     // no per-task arguments. CGTaskArgs has task-specific info.
@@ -65,13 +64,21 @@ restriction(SparseMatrix &A,
     targs.vb = rf;
     targs.vc = A.mgData->rc;
     targs.vd = A.mgData->f2cOp;
+    for (int i = 0; i < A.vals.lDom().get_volume(); ++i) {
+        targs.va.sgb = A.mgData->Axf.sgb()[i];
+        targs.vb.sgb = rf.sgb()[i];
+        targs.vc.sgb = A.mgData->rc.sgb()[i];
+        targs.vd.sgb = A.mgData->f2cOp.sgb()[i];
+        argMap.set_point(DomainPoint::from_point<1>(Point<1>(i)),
+                         TaskArgument(&targs, sizeof(targs)));
+    }
 
     IndexLauncher il(LGNCG_RESTRICTION_TID, A.mgData->Axf.lDom(),
-                     TaskArgument(&targs, sizeof(targs)), argMap);
+                     TaskArgument(NULL, 0), argMap);
     // A.mgData->Axf
     il.add_region_requirement(
         RegionRequirement(A.mgData->Axf.lp(), 0, READ_ONLY,
-                          EXCLUSIVE, A.mgData->Axf.fid)
+                          EXCLUSIVE, A.mgData->Axf.lr)
     );
     il.add_field(idx++, A.mgData->Axf.fid);
     // rf
@@ -86,8 +93,6 @@ restriction(SparseMatrix &A,
     );
     il.add_field(idx++, A.mgData->rc.fid);
     // A.mgData->f2cOp
-    // first push a partitioning scheme for the fine to coarse operator vector
-    A.mgData->f2cOp.partition(rf.sgb().size(), ctx, lrt);
     il.add_region_requirement(
         RegionRequirement(A.mgData->f2cOp.lp(), 0, READ_ONLY,
                           EXCLUSIVE, A.mgData->f2cOp.lr)
@@ -95,9 +100,6 @@ restriction(SparseMatrix &A,
     il.add_field(idx++, A.mgData->f2cOp.fid);
     // execute the thing...
     (void)lrt->execute_index_space(ctx, il);
-    // done with the f2c partition
-    A.mgData->f2cOp.unpartition(ctx, lrt);
-#endif
 }
 
 /**
@@ -111,14 +113,13 @@ restrictionTask(
     LegionRuntime::HighLevel::HighLevelRuntime *lrt
 )
 {
-#if 0
     using namespace LegionRuntime::HighLevel;
     using namespace LegionRuntime::Accessor;
     using LegionRuntime::Arrays::Rect;
     // A.mgData->Axf, rf, A.mgData->rc, A.mgData->f2cOp
     assert(4 == rgns.size());
     size_t rid = 0;
-    CGTaskArgs targs = *(CGTaskArgs *)task->args;
+    CGTaskArgs targs = *(CGTaskArgs *)task->local_args;
     // name the regions
     const PhysicalRegion &Axfpr = rgns[rid++];
     const PhysicalRegion &rfpr  = rgns[rid++];
@@ -135,31 +136,30 @@ restrictionTask(
 
     Rect<1> rec; ByteOffset boff[1];
     // Axf
-    Rect<1> myGridBounds = targs.va.sgb()[getTaskID(task)];
+    Rect<1> myGridBounds = targs.va.sgb;
     double *Axfp = Axf.raw_rect_ptr<1>(myGridBounds, rec, boff);
     bool offd = offsetsAreDense<1, double>(myGridBounds, boff);
     assert(offd);
     // rf
-    myGridBounds = targs.vb.sgb()[getTaskID(task)];
+    myGridBounds = targs.vb.sgb;
     double *rfp = rf.raw_rect_ptr<1>(myGridBounds, rec, boff);
     offd = offsetsAreDense<1, double>(myGridBounds, boff);
     assert(offd);
     // rc
-    myGridBounds = targs.vc.sgb()[getTaskID(task)];
+    myGridBounds = targs.vc.sgb;
     double *rcp = rc.raw_rect_ptr<1>(myGridBounds, rec, boff);
     offd = offsetsAreDense<1, double>(myGridBounds, boff);
     assert(offd);
     // f2c
-    myGridBounds = targs.vd.sgb()[getTaskID(task)];
+    myGridBounds = targs.vd.sgb;
     int64_t *f2cp = f2c.raw_rect_ptr<1>(myGridBounds, rec, boff);
     offd = offsetsAreDense<1, int64_t>(myGridBounds, boff);
     assert(offd);
     // now, actually perform the computation
-    int64_t nc = targs.vc.sgb()[getTaskID(task)].volume(); // length of rc
+    int64_t nc = targs.vc.sgb.volume(); // length of rc
     for (int64_t i = 0; i < nc; ++i) {
         rcp[i] = rfp[f2cp[i]] - Axfp[f2cp[i]];
     }
-#endif
 }
 
 }
