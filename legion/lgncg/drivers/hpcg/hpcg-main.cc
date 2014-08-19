@@ -83,7 +83,6 @@ struct DriverParams {
         // set default number of sub-regions to size of problem
         nSubRgns  = npx * npy * npz;
         maxIters  = 128;
-        // FIXME return to 4
         nMGLevels = 4;
         tolerance = 0.001;
         doPreconditioning = true;

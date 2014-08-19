@@ -63,7 +63,6 @@ symgs(const SparseMatrix &A,
     Vector tmpX;
     tmpX.create<double>(x.len, ctx, lrt);
     tmpX.partition(A.nParts, ctx, lrt);
-    veccp(x, tmpX, ctx, lrt);
     // setup per-task args
     ArgumentMap argMap;
     CGTaskArgs targs;
@@ -81,51 +80,56 @@ symgs(const SparseMatrix &A,
         argMap.set_point(DomainPoint::from_point<1>(Point<1>(i)),
                          TaskArgument(&targs, sizeof(targs)));
     }
-    int idx = 0;
-    IndexLauncher il(LGNCG_SYMGS_TID, A.vals.lDom(),
-                     TaskArgument(NULL, 0), argMap);
-    // A's regions /////////////////////////////////////////////////////////////
-    // vals
-    il.add_region_requirement(
-        RegionRequirement(A.vals.lp(), 0, READ_ONLY, EXCLUSIVE, A.vals.lr)
-    );
-    il.add_field(idx++, A.vals.fid);
-    // diag
-    il.add_region_requirement(
-        RegionRequirement(A.diag.lp(), 0, READ_ONLY, EXCLUSIVE, A.diag.lr)
-    );
-    il.add_field(idx++, A.diag.fid);
-    // mIdxs
-    il.add_region_requirement(
-        RegionRequirement(A.mIdxs.lp(), 0, READ_ONLY, EXCLUSIVE, A.mIdxs.lr)
-    );
-    il.add_field(idx++, A.mIdxs.fid);
-    // nzir
-    il.add_region_requirement(
-        RegionRequirement(A.nzir.lp(), 0, READ_ONLY, EXCLUSIVE, A.nzir.lr)
-    );
-    il.add_field(idx++, A.nzir.fid);
-    // x's regions /////////////////////////////////////////////////////////////
-    // read/write view of x
-    il.add_region_requirement(
-        RegionRequirement(tmpX.lp(), 0, READ_WRITE, EXCLUSIVE, tmpX.lr)
-    );
-    il.add_field(idx++, tmpX.fid);
-    // read only view of all of x. FIXME only use required cells
-    il.add_region_requirement(
-        /* notice we are using the entire region here */
-        RegionRequirement(x.lr, 0, READ_ONLY, EXCLUSIVE, x.lr)
-    );
-    il.add_field(idx++, x.fid);
-    // r's regions /////////////////////////////////////////////////////////////
-    il.add_region_requirement(
-        RegionRequirement(r.lp(), 0, READ_ONLY, EXCLUSIVE, r.lr)
-    );
-    il.add_field(idx++, r.fid);
-    // execute the thing...
-    (void)lrt->execute_index_space(ctx, il);
-    // copy back
-    veccp(tmpX, x, ctx, lrt);
+    // FIXME - i don't like this. Performance and memory usage shortcomings.
+    static const int N_SWEEPS = 2;
+    for (int sweepi = 0; sweepi < N_SWEEPS; ++sweepi) {
+        veccp(x, tmpX, ctx, lrt);
+        int idx = 0;
+        IndexLauncher il(LGNCG_SYMGS_TID, A.vals.lDom(),
+                         TaskArgument(&sweepi, sizeof(sweepi)), argMap);
+        // A's regions /////////////////////////////////////////////////////////
+        // vals
+        il.add_region_requirement(
+            RegionRequirement(A.vals.lp(), 0, READ_ONLY, EXCLUSIVE, A.vals.lr)
+        );
+        il.add_field(idx++, A.vals.fid);
+        // diag
+        il.add_region_requirement(
+            RegionRequirement(A.diag.lp(), 0, READ_ONLY, EXCLUSIVE, A.diag.lr)
+        );
+        il.add_field(idx++, A.diag.fid);
+        // mIdxs
+        il.add_region_requirement(
+            RegionRequirement(A.mIdxs.lp(), 0, READ_ONLY, EXCLUSIVE, A.mIdxs.lr)
+        );
+        il.add_field(idx++, A.mIdxs.fid);
+        // nzir
+        il.add_region_requirement(
+            RegionRequirement(A.nzir.lp(), 0, READ_ONLY, EXCLUSIVE, A.nzir.lr)
+        );
+        il.add_field(idx++, A.nzir.fid);
+        // x's regions /////////////////////////////////////////////////////////
+        // read/write view of x
+        il.add_region_requirement(
+            RegionRequirement(tmpX.lp(), 0, READ_WRITE, EXCLUSIVE, tmpX.lr)
+        );
+        il.add_field(idx++, tmpX.fid);
+        // read only view of all of x. FIXME only use required cells
+        il.add_region_requirement(
+            /* notice we are using the entire region here */
+            RegionRequirement(x.lr, 0, READ_ONLY, EXCLUSIVE, x.lr)
+        );
+        il.add_field(idx++, x.fid);
+        // r's regions /////////////////////////////////////////////////////////
+        il.add_region_requirement(
+            RegionRequirement(r.lp(), 0, READ_ONLY, EXCLUSIVE, r.lr)
+        );
+        il.add_field(idx++, r.fid);
+        // execute the thing...
+        (void)lrt->execute_index_space(ctx, il);
+        // copy back
+        veccp(tmpX, x, ctx, lrt);
+    }
     tmpX.free(ctx, lrt);
 }
 
@@ -145,6 +149,7 @@ symgsTask(const LegionRuntime::HighLevel::Task *task,
     assert(7 == rgns.size());
     size_t rid = 0;
     CGTaskArgs targs = *(CGTaskArgs *)task->local_args;
+    int sweepi = *(int *)task->args;
 #if 0 // nice debug
     printf("%d: sub-grid bounds: (%d) to (%d)\n",
             getTaskID(task), rect.lo.x[0], rect.hi.x[0]);
@@ -218,45 +223,49 @@ symgsTask(const LegionRuntime::HighLevel::Task *task,
     assert(offd);
     // now, actually perform the computation
     // forward sweep
-    for (int64_t i = 0; i < lNRows; ++i) {
-        // get to base of next row of values
-        const double *const cVals = (avp + (i * lNCols));
-        // get to base of next row of "real" indices of values
-        const int64_t *const cIndx = (aip + (i * lNCols));
-        // capture how many non-zero values are in this particular row
-        const int64_t cnnz = azp[i];
-        // current diagonal value
-        const double curDiag = adp[i];
-        // RHS value
-        double sum = rp[i];
-        for (int64_t j = 0; j < cnnz; ++j) {
-            int64_t curCol = cIndx[j];
-            sum -= cVals[j] * xp[curCol];
+    if (0 == sweepi) {
+        for (int64_t i = 0; i < lNRows; ++i) {
+            // get to base of next row of values
+            const double *const cVals = (avp + (i * lNCols));
+            // get to base of next row of "real" indices of values
+            const int64_t *const cIndx = (aip + (i * lNCols));
+            // capture how many non-zero values are in this particular row
+            const int64_t cnnz = azp[i];
+            // current diagonal value
+            const double curDiag = adp[i];
+            // RHS value
+            double sum = rp[i];
+            for (int64_t j = 0; j < cnnz; ++j) {
+                int64_t curCol = cIndx[j];
+                sum -= cVals[j] * xp[curCol];
+            }
+            // remove diagonal contribution from previous loop
+            sum += xrwp[i] * curDiag;
+            xrwp[i] = sum / curDiag;
         }
-        sum += xrwp[i] * curDiag; // remove diagonal contribution from previous loop
-        xrwp[i] = sum / curDiag;
     }
-#if 0 // FIXME!
-    // back sweep
-    for (int64_t i = lNRows - 1; i >= 0; --i) {
-        // get to base of next row of values
-        const double *const cVals = (avp + (i * lNCols));
-        // get to base of next row of "real" indices of values
-        const int64_t *const cIndx = (aip + (i * lNCols));
-        // capture how many non-zero values are in this particular row
-        const int64_t cnnz = azp[i];
-        // current diagonal value
-        const double curDiag = adp[i];
-        // RHS value
-        double sum = rp[i]; // RHS value
-        for (int64_t j = 0; j < cnnz; ++j) {
-            int64_t curCol = cIndx[j];
-            sum -= cVals[j] * xp[curCol];
+    else {
+        // back sweep
+        for (int64_t i = lNRows - 1; i >= 0; --i) {
+            // get to base of next row of values
+            const double *const cVals = (avp + (i * lNCols));
+            // get to base of next row of "real" indices of values
+            const int64_t *const cIndx = (aip + (i * lNCols));
+            // capture how many non-zero values are in this particular row
+            const int64_t cnnz = azp[i];
+            // current diagonal value
+            const double curDiag = adp[i];
+            // RHS value
+            double sum = rp[i]; // RHS value
+            for (int64_t j = 0; j < cnnz; ++j) {
+                int64_t curCol = cIndx[j];
+                sum -= cVals[j] * xp[curCol];
+            }
+            // remove diagonal contribution from previous loop
+            sum += xrwp[i] * curDiag;
+            xrwp[i] = sum / curDiag;
         }
-        sum += xrwp[i] * curDiag; // remove diagonal contribution from previous loop
-        xrwp[i] = sum / curDiag;
     }
-#endif
 }
 
 }
