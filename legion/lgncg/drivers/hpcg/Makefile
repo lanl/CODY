@@ -26,8 +26,10 @@ endif
 LGCG_DIR := ../../src
 
 #Flags for directing the runtime makefile what to include
-DEBUG=1                   # Include debugging symbols
-OUTPUT_LEVEL=LEVEL_DEBUG  # Compile time print level
+#DEBUG=0                   # Include debugging symbols
+DEBUG=0                   # Include debugging symbols
+#OUTPUT_LEVEL=LEVEL_DEBUG  # Compile time print level
+OUTPUT_LEVEL=LEVEL_NONE # Compile time print level
 SHARED_LOWLEVEL=1	  # Use the shared low level
 #ALT_MAPPERS=1		  # Compile the alternative mappers
 
@@ -47,8 +49,10 @@ $(wildcard $(LGCG_DIR)/*.h)
 INC_FLAGS    := -I$(LGCG_DIR)
 # for gcc on OS X
 #CC_FLAGS     := -Wall -O2 -Wa,-q
+# optimized
+CC_FLAGS     := -Wall -Ofast
 # debug
-CC_FLAGS     := -Wall -O0 -g
+#CC_FLAGS     := -Wall -O0 -g
 #CC_FLAGS     := -Wall -O2
 #CC_FLAGS     := -Wall -O2 -DLEGION_SPY
 #CC_FLAGS     := -Wall -I$(HOME)/local/openblas/include
