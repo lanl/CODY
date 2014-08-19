@@ -145,6 +145,12 @@ private:
     genCoarseProbGeom(lgncg::SparseMatrix &Af,
                       LegionRuntime::HighLevel::Context &ctx,
                       LegionRuntime::HighLevel::HighLevelRuntime *lrt);
+    static void
+    populatef2c(lgncg::SparseMatrix &Af,
+                const lgncg::Geometry &fineGeom,
+                lgncg::Geometry &coarseGeom,
+                LegionRuntime::HighLevel::Context &ctx,
+                LegionRuntime::HighLevel::HighLevelRuntime *lrt);
 };
 
 #endif

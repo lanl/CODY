@@ -65,7 +65,7 @@ struct HPCGTaskArgs {
  */
 struct PF2CTaskArgs {
     // fine to coarse operator vector
-    lgncg::Vector f2c;
+    lgncg::DVector f2c;
     // fine geometry
     lgncg::Geometry fGeom;
     // coarse geometry
@@ -74,7 +74,7 @@ struct PF2CTaskArgs {
     PF2CTaskArgs(const lgncg::Vector &f2c,
                  const lgncg::Geometry &fGeom,
                  const lgncg::Geometry cGeom)
-        : f2c(f2c), fGeom(fGeom), cGeom(cGeom) { ; }
+        : fGeom(fGeom), cGeom(cGeom) { this->f2c = f2c; }
 };
 
 } // end namespace
@@ -317,32 +317,17 @@ Problem::genCoarseProbGeom(lgncg::SparseMatrix &Af,
     Af.mgData = new lgncg::MGData(globalXYZ, cGlobalXYZ, ctx, lrt);
     assert(Af.mgData);
     Af.mgData->partition(Af.nParts, ctx, lrt);
-#if 0
-    // start task launch prep
-    int idx = 0;
-    // setup task launcher to populate f2cOp
-    PF2CTaskArgs targs(Af.mgData->f2cOp, fineGeom, coarseGeom);
-    TaskLauncher tl(Problem::populatef2cTID,
-                    TaskArgument(&(targs), sizeof(targs)));
-    lgncg::MGData *mgd = Af.mgData;
-    // f2cOp
-    tl.add_region_requirement(
-        RegionRequirement(mgd->f2cOp.lr, WRITE_DISCARD, EXCLUSIVE, mgd->f2cOp.lr)
-    );
-    tl.add_field(idx++, mgd->f2cOp.fid);
-    // populate the fine to coarse operator vector
-    lrt->execute_task(ctx, tl);
-#endif
+    populatef2c(Af, Af.geom, Af.Ac->geom, ctx, lrt);
 }
 
-#if 0
 /**
  * wrapper to launch populatef2cTasks
+ * TODO parallelize
  */
 void
 Problem::populatef2c(lgncg::SparseMatrix &Af,
-                     const Geometry &fineGeom,
-                     Geometry &coarseGeom,
+                     const lgncg::Geometry &fineGeom,
+                     lgncg::Geometry &coarseGeom,
                      LegionRuntime::HighLevel::Context &ctx,
                      LegionRuntime::HighLevel::HighLevelRuntime *lrt)
 {
@@ -362,12 +347,7 @@ Problem::populatef2c(lgncg::SparseMatrix &Af,
     tl.add_field(idx++, mgd->f2cOp.fid);
     // populate the fine to coarse operator vector
     (void)lrt->execute_task(ctx, tl);
-#if 0
-    // now generate problem at this level
-    genProb(*Af.Ac, NULL, NULL, coarseGeom, stencilSize, ctx, lrt);
-#endif
 }
-#endif
 
 /**
  * this task is responsible for populating the fine to coarse operator
@@ -387,7 +367,7 @@ populatef2cTask(
     assert(1 == rgns.size());
     size_t rid = 0;
     PF2CTaskArgs args = *(PF2CTaskArgs *)task->args;
-    const lgncg::Vector &f2cv = args.f2c;
+    const lgncg::DVector &f2cv = args.f2c;
     const Geometry &fGeom = args.fGeom;
     const Geometry &cGeom = args.cGeom;
     // name the regions
