@@ -304,15 +304,19 @@ Problem::genCoarseProbGeom(lgncg::SparseMatrix &Af,
     // sanity
     assert(0 == (nx % 2) && 0 == (ny % 2) && 0 == (nz % 2));
     assert(Af.nRows == globalXYZ); 
-    // set the coarse geometry
-    Geometry coarseGeom = Geometry(Af.geom.size, npx, npy, npz, cnx, cny, cnz);
     // now construct the required data structures for the coarse grid
     Af.Ac = new lgncg::SparseMatrix();
     assert(Af.Ac);
+    // set the coarse geometry
+    const Geometry coarseGeom = Geometry(Af.geom.size,
+                                         npx, npy, npz,
+                                         cnx, cny, cnz);
     // now create the coarse grid matrix
     Af.Ac->create(coarseGeom, cGlobalXYZ, Af.nCols, ctx, lrt);
+    Af.Ac->partition(Af.geom, ctx, lrt);
     Af.mgData = new lgncg::MGData(globalXYZ, cGlobalXYZ, ctx, lrt);
     assert(Af.mgData);
+    Af.mgData->partition(Af.nParts, ctx, lrt);
 #if 0
     // start task launch prep
     int idx = 0;
@@ -327,9 +331,7 @@ Problem::genCoarseProbGeom(lgncg::SparseMatrix &Af,
     );
     tl.add_field(idx++, mgd->f2cOp.fid);
     // populate the fine to coarse operator vector
-    lrt->execute_task(ctx, tl).get_void_result();
-    // now generate problem at this level
-    genProb(*Af.Ac, NULL, NULL, coarseGeom, stencilSize, ctx, lrt);
+    lrt->execute_task(ctx, tl);
 #endif
 }
 
