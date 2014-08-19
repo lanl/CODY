@@ -322,7 +322,6 @@ Problem::genCoarseProbGeom(lgncg::SparseMatrix &Af,
 
 /**
  * wrapper to launch populatef2cTasks
- * TODO parallelize
  */
 void
 Problem::populatef2c(lgncg::SparseMatrix &Af,
@@ -336,17 +335,24 @@ Problem::populatef2c(lgncg::SparseMatrix &Af,
     // start task launch prep
     int idx = 0;
     // setup task launcher to populate f2cOp
+    ArgumentMap argMap;
     PF2CTaskArgs targs(Af.mgData->f2cOp, fineGeom, coarseGeom);
-    TaskLauncher tl(Problem::populatef2cTID,
-                    TaskArgument(&(targs), sizeof(targs)));
+    for (int i = 0; i < Af.vals.lDom().get_volume(); ++i) {
+        targs.f2c.sgb = Af.mgData->f2cOp.sgb()[i];
+        argMap.set_point(DomainPoint::from_point<1>(Point<1>(i)),
+                         TaskArgument(&targs, sizeof(targs)));
+    }
     lgncg::MGData *mgd = Af.mgData;
+    IndexLauncher il(Problem::populatef2cTID, mgd->f2cOp.lDom(),
+                     TaskArgument(NULL, 0), argMap);
     // f2cOp
-    tl.add_region_requirement(
-        RegionRequirement(mgd->f2cOp.lr, WRITE_DISCARD, EXCLUSIVE, mgd->f2cOp.lr)
+    il.add_region_requirement(
+        RegionRequirement(mgd->f2cOp.lp(), 0, READ_WRITE,
+                          EXCLUSIVE, mgd->f2cOp.lr)
     );
-    tl.add_field(idx++, mgd->f2cOp.fid);
+    il.add_field(idx++, mgd->f2cOp.fid);
     // populate the fine to coarse operator vector
-    (void)lrt->execute_task(ctx, tl);
+    (void)lrt->execute_index_space(ctx, il);
 }
 
 /**
@@ -363,10 +369,12 @@ populatef2cTask(
     using namespace LegionRuntime::HighLevel;
     using namespace LegionRuntime::Accessor;
     using namespace lgncg;
+    (void)ctx;
+    (void)lrt;
     // f2cOp
     assert(1 == rgns.size());
     size_t rid = 0;
-    PF2CTaskArgs args = *(PF2CTaskArgs *)task->args;
+    PF2CTaskArgs args = *(PF2CTaskArgs *)task->local_args;
     const lgncg::DVector &f2cv = args.f2c;
     const Geometry &fGeom = args.fGeom;
     const Geometry &cGeom = args.cGeom;
@@ -377,31 +385,27 @@ populatef2cTask(
     // get handles to all the matrix accessors that we need
     // fine length (both are the same)
     GIRA f2c = f2cpr.get_field_accessor(f2cv.fid).typeify<int64_t>();
-    // setup the index spaces that we need.
-    IndexSpace findxspc = f2cpr.get_logical_region().get_index_space();
-    // similarly, do the same for the bounds
-    Rect<1> fbnds = lrt->get_index_space_domain(ctx, findxspc).get_rect<1>();
-
-    // TODO - add offset density checks -- maybe?
     Rect<1> f2csr; ByteOffset f2cOff[1];
-    int64_t *f2cp = f2c.raw_rect_ptr<1>(f2cv.bounds, f2csr, f2cOff);
+    int64_t *f2cp = f2c.raw_rect_ptr<1>(f2cv.sgb, f2csr, f2cOff);
+    bool offd = offsetsAreDense<1, int64_t>(f2cv.sgb, f2cOff);
+    assert(offd);
 
-    for (int64_t i = 0; i < fbnds.volume(); ++i) {
+    for (int64_t i = 0; i < args.f2c.sgb.volume(); ++i) {
         f2cp[i] = 0;
     }
-    const int64_t nxf = fGeom.npx * fGeom.nx;
-    const int64_t nyf = fGeom.npy * fGeom.ny;
-    const int64_t nxc = cGeom.npx * cGeom.nx;
-    const int64_t nyc = cGeom.npy * cGeom.ny;
-    const int64_t nzc = cGeom.npz * cGeom.nz;
+    const int64_t nxf = fGeom.nx;
+    const int64_t nyf = fGeom.ny;
+    const int64_t nxc = cGeom.nx;
+    const int64_t nyc = cGeom.ny;
+    const int64_t nzc = cGeom.nz;
     for (int64_t izc = 0; izc < nzc; ++izc) {
         int64_t izf = 2 * izc;
         for (int64_t iyc = 0; iyc < nyc; ++iyc) {
             int64_t iyf = 2 * iyc;
             for (int64_t ixc = 0; ixc < nxc; ++ixc) {
                 int64_t ixf = 2 * ixc;
-                int64_t currentCoarseRow = izc * nxc * nyc + iyc * nxc + ixc;
-                int64_t currentFineRow = izf * nxf * nyf + iyf * nxf + ixf;
+                const int64_t currentCoarseRow = izc * nxc * nyc + iyc * nxc + ixc;
+                const int64_t currentFineRow   = izf * nxf * nyf + iyf * nxf + ixf;
                 f2cp[currentCoarseRow] = currentFineRow;
             } // end iy loop
         } // end even iz if statement
@@ -434,10 +438,10 @@ Problem::init(void)
         HighLevelRuntime::register_legion_task<populatef2cTask>(
             Problem::populatef2cTID /* task id */,
             Processor::LOC_PROC /* proc kind  */,
-            true /* single */,
-            false /* index */,
+            false /* single */,
+            true /* index */,
             AUTO_GENERATE_ID,
-            TaskConfigOptions(false /* leaf task */),
+            TaskConfigOptions(true /* leaf task */),
             "populate-f2c-task"
         );
         registeredTasks = true;

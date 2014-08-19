@@ -243,12 +243,11 @@ init(void)
         TaskConfigOptions(true /* leaf task */),
         "lgncg-dotprod-task"
     );
-    // FIXME - make index and not single
     HighLevelRuntime::register_legion_task<symgsTask>(
         LGNCG_SYMGS_TID /* task id */,
         Processor::LOC_PROC /* proc kind  */,
-        true /* single */,
-        false /* index */,
+        false /* single */,
+        true /* index */,
         AUTO_GENERATE_ID,
         TaskConfigOptions(true /* leaf task */),
         "lgncg-symgs-task"
