@@ -73,18 +73,18 @@ struct DriverParams {
      */
     DriverParams(void) {
         // set local domain sizes
-        nx = 4;
-        ny = 4;
-        nz = 4;
+        nx = 8;
+        ny = 8;
+        nz = 16;
         // for now a 2x2x1 problem
         npx = 2;
         npy = 2;
-        npz = 2;
+        npz = 1;
         // set default number of sub-regions to size of problem
         nSubRgns  = npx * npy * npz;
         maxIters  = 128;
         // FIXME return to 4
-        nMGLevels = 2;
+        nMGLevels = 4;
         tolerance = 0.001;
         doPreconditioning = true;
     }

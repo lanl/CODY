@@ -317,6 +317,7 @@ Problem::genCoarseProbGeom(lgncg::SparseMatrix &Af,
     Af.mgData = new lgncg::MGData(globalXYZ, cGlobalXYZ, ctx, lrt);
     assert(Af.mgData);
     Af.mgData->partition(Af.nParts, ctx, lrt);
+    // populate the fine to coarse operator
     populatef2c(Af, Af.geom, Af.Ac->geom, ctx, lrt);
     // set initial conditions at this level
     setICs(*Af.Ac, NULL, NULL, ctx, lrt);

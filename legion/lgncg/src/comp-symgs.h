@@ -110,7 +110,7 @@ symgs(const SparseMatrix &A,
     il.add_region_requirement(
         RegionRequirement(tmpX.lp(), 0, READ_WRITE, EXCLUSIVE, tmpX.lr)
     );
-    il.add_field(idx++, x.fid);
+    il.add_field(idx++, tmpX.fid);
     // read only view of all of x. FIXME only use required cells
     il.add_region_requirement(
         /* notice we are using the entire region here */
@@ -141,7 +141,6 @@ symgsTask(const LegionRuntime::HighLevel::Task *task,
     using namespace LegionRuntime::HighLevel;
     using namespace LegionRuntime::Accessor;
     using LegionRuntime::Arrays::Rect;
-
     // A (x4), x (x2), b
     assert(7 == rgns.size());
     size_t rid = 0;
@@ -157,9 +156,9 @@ symgsTask(const LegionRuntime::HighLevel::Task *task,
     const PhysicalRegion &aipr = rgns[rid++];
     const PhysicalRegion &azpr = rgns[rid++];
     // vector regions
-    const PhysicalRegion &xrwpr  = rgns[rid++]; // read/write sub-region
-    const PhysicalRegion &xpr    = rgns[rid++]; // read only region (entire)
-    const PhysicalRegion &rpr    = rgns[rid++];
+    const PhysicalRegion &xrwpr = rgns[rid++]; // read/write sub-region
+    const PhysicalRegion &xpr   = rgns[rid++]; // read only region (entire)
+    const PhysicalRegion &rpr   = rgns[rid++];
     // convenience typedefs
     typedef RegionAccessor<AccessorType::Generic, double>  GDRA;
     typedef RegionAccessor<AccessorType::Generic, int64_t> GLRA;
@@ -237,6 +236,7 @@ symgsTask(const LegionRuntime::HighLevel::Task *task,
         sum += xrwp[i] * curDiag; // remove diagonal contribution from previous loop
         xrwp[i] = sum / curDiag;
     }
+#if 0 // FIXME!
     // back sweep
     for (int64_t i = lNRows - 1; i >= 0; --i) {
         // get to base of next row of values
@@ -256,6 +256,7 @@ symgsTask(const LegionRuntime::HighLevel::Task *task,
         sum += xrwp[i] * curDiag; // remove diagonal contribution from previous loop
         xrwp[i] = sum / curDiag;
     }
+#endif
 }
 
 }
