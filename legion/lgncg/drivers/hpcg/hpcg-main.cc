@@ -77,9 +77,9 @@ struct DriverParams {
         ny = 4;
         nz = 4;
         // for now a 2x2x1 problem
-        npx = 1;
-        npy = 1;
-        npz = 1;
+        npx = 2;
+        npy = 2;
+        npz = 2;
         // set default number of sub-regions to size of problem
         nSubRgns  = npx * npy * npz;
         maxIters  = 128;

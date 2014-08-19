@@ -121,9 +121,9 @@ struct Problem {
             for (int64_t mgi = 1; mgi < this->nmgl; ++mgi) {
                 genCoarseProbGeom(*curLevMatPtr, ctx, lrt);
                 // set initial conditions at this level
-                setICs(*curLevMatPtr, NULL, NULL, ctx, lrt);
+                setICs(*curLevMatPtr->Ac, NULL, NULL, ctx, lrt);
                 // now setup the halo the current level
-                setupHalo(*curLevMatPtr, ctx, lrt);
+                setupHalo(*curLevMatPtr->Ac, ctx, lrt);
                 // update for next round of coarse grid matrix generation
                 curLevMatPtr = curLevMatPtr->Ac;
             }

@@ -219,7 +219,7 @@ public:
     dump(std::string prefix,
          int64_t nle,
          LegionRuntime::HighLevel::Context &ctx,
-         LegionRuntime::HighLevel::HighLevelRuntime *lrt)
+         LegionRuntime::HighLevel::HighLevelRuntime *lrt) const
     {
         using namespace LegionRuntime::HighLevel;
         using namespace LegionRuntime::Accessor;

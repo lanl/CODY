@@ -318,6 +318,10 @@ Problem::genCoarseProbGeom(lgncg::SparseMatrix &Af,
     assert(Af.mgData);
     Af.mgData->partition(Af.nParts, ctx, lrt);
     populatef2c(Af, Af.geom, Af.Ac->geom, ctx, lrt);
+    // set initial conditions at this level
+    setICs(*Af.Ac, NULL, NULL, ctx, lrt);
+    // now setup the halo the current level
+    setupHalo(*Af.Ac, ctx, lrt);
 }
 
 /**
