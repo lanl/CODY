@@ -68,8 +68,6 @@ struct SparseMatrix {
     ////////////////////////////////////////////////////////////////////////////
     // metadata vectors
     ////////////////////////////////////////////////////////////////////////////
-    // local to global lookup table. O(1) lookup when given a local ID
-    Vector l2g;
     // Vector of tuples that contain (Global ID, Real Global ID) pairs.
     Vector g2g;
     // coarse grid matrix. NULL indicates no next level.
@@ -114,7 +112,6 @@ struct SparseMatrix {
         this->diag.create<double>(nRows, ctx, lrt);
         this->nzir.create<uint8_t>(nRows, ctx, lrt);
         // meta
-        this->l2g.create<int64_t>(nRows, ctx, lrt);
         this->g2g.create<I64Tuple>(nRows, ctx, lrt);
     }
     /**
@@ -128,7 +125,6 @@ struct SparseMatrix {
         diag.free(ctx, lrt);
         mIdxs.free(ctx, lrt);
         nzir.free(ctx, lrt);
-        l2g.free(ctx, lrt);
         g2g.free(ctx, lrt);
         if (Ac) {
             Ac->free(ctx, lrt);
@@ -150,7 +146,6 @@ struct SparseMatrix {
         diag.partition(nParts, ctx, lrt);
         mIdxs.partition(nParts, ctx, lrt);
         nzir.partition(nParts, ctx, lrt);
-        l2g.partition(nParts, ctx, lrt);
         g2g.partition(nParts, ctx, lrt);
     }
     // TODO add unpartition
@@ -174,8 +169,6 @@ struct DSparseMatrix {
     // # non-0s in row
     DVector nzir;
     //
-    DVector l2g;
-    //
     DVector g2g;
 
     void
@@ -190,7 +183,6 @@ struct DSparseMatrix {
         diag = rhs.diag;
         mIdxs = rhs.mIdxs;
         nzir = rhs.nzir;
-        l2g = rhs.l2g;
         g2g = rhs.g2g;
     }
 };

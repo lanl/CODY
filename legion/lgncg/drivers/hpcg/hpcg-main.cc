@@ -72,21 +72,19 @@ struct DriverParams {
      * default constructor.
      */
     DriverParams(void) {
-        // FIXME return to some other value - used to be 16
+        // set local domain sizes
         nx = 16;
         ny = 16;
         nz = 16;
-        // FIXME - for now a 2x2x2 problem
+        // for now a 2x2x1 problem
         npx = 2;
         npy = 2;
         npz = 1;
-        // FIXME - change back to 2 once MG is working...
-        nSubRgns  = 1;
+        // set default number of sub-regions to size of problem
+        nSubRgns  = npx * npy * npz;
         maxIters  = 128;
-        // FIXME - return to 4
         nMGLevels = 1;
         tolerance = 0.001;
-        // SKG FIXME - make doPreconditioning true by default
         doPreconditioning = true;
     }
 };
@@ -272,7 +270,7 @@ mainTask(const lrthl::Task *task,
                         params.npx, params.npy, params.npz,
                         params.nx,  params.ny,  params.nz);
     // now construct the problem
-    Problem problem(globalGeom, params.stencilSize,
+    Problem problem(globalGeom, params.stencilSize, params.doPreconditioning,
                     params.nMGLevels, params.nSubRgns, ctx, lrt);
     // now that we have all problem-related info, let the user know the setup
     echoBanner(params);

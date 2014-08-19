@@ -103,7 +103,6 @@ Problem::setICs(lgncg::SparseMatrix &A,
         targs.sa.diag.sgb  = A.diag.sgb()[i];
         targs.sa.mIdxs.sgb = A.mIdxs.sgb()[i];
         targs.sa.nzir.sgb  = A.nzir.sgb()[i];
-        targs.sa.l2g.sgb   = A.l2g.sgb()[i];
         targs.sa.g2g.sgb   = A.g2g.sgb()[i];
         // setup task to global geometry
         targs.sa.geom.ipz = i / (npx * npy);
@@ -151,11 +150,6 @@ Problem::setICs(lgncg::SparseMatrix &A,
         RegionRequirement(A.nzir.lp(), 0, WRITE_DISCARD, EXCLUSIVE, A.nzir.lr)
     );
     il.add_field(idx++, A.nzir.fid);
-    // A's local to global table
-    il.add_region_requirement(
-        RegionRequirement(A.l2g.lp(), 0, WRITE_DISCARD, EXCLUSIVE, A.l2g.lr)
-    );
-    il.add_field(idx++, A.l2g.fid);
     // A's global to global table 
     il.add_region_requirement(
         RegionRequirement(A.g2g.lp(), 0, WRITE_DISCARD, EXCLUSIVE, A.g2g.lr)
@@ -202,9 +196,9 @@ setICsTask(
     // regions we will be working on. region order here matters.
     const size_t nRgns = rgns.size();
     // we always have 5 regions for the sparse matrix for this task
-    assert(nRgns >= 6 && nRgns <= 8);
-    const bool haveX = nRgns > 6;
-    const bool haveB = nRgns > 7;
+    assert(nRgns >= 5 && nRgns <= 7);
+    const bool haveX = nRgns > 5;
+    const bool haveB = nRgns > 6;
     size_t rid = 0;
     // get our task arguments
     const HPCGTaskArgs targs = *(HPCGTaskArgs *)task->local_args;
@@ -215,7 +209,6 @@ setICsTask(
     const PhysicalRegion &adpr = rgns[rid++];
     const PhysicalRegion &aipr = rgns[rid++];
     const PhysicalRegion &azpr = rgns[rid++];
-    const PhysicalRegion &alpr = rgns[rid++];
     const PhysicalRegion &g2gpr = rgns[rid++];
     // convenience typedefs
     typedef RegionAccessor<AccessorType::Generic, double>   GDRA;
@@ -227,8 +220,7 @@ setICsTask(
     GDRA ad = adpr.get_field_accessor(targs.sa.diag.fid).typeify<double>();
     GLRA ai = aipr.get_field_accessor(targs.sa.mIdxs.fid).typeify<int64_t>();
     GSRA az = azpr.get_field_accessor(targs.sa.nzir.fid).typeify<uint8_t>();
-    GLRA al = alpr.get_field_accessor(targs.sa.l2g.fid).typeify<int64_t>();
-    GTRA at = g2gpr.get_field_accessor(targs.sa.l2g.fid).typeify<I64Tuple>();
+    GTRA at = g2gpr.get_field_accessor(targs.sa.g2g.fid).typeify<I64Tuple>();
     ////////////////////////////////////////////////////////////////////////////
     // all problem setup logic in the ProblemGenerator /////////////////////////
     ////////////////////////////////////////////////////////////////////////////
@@ -251,7 +243,6 @@ setICsTask(
             }
             // SKG - i'm a little confused by why matDiag is not just an array
             ad.write(DomPt::from_point<1>(q.p), ic.matDiag[i][0]);
-            al.write(DomPt::from_point<1>(q.p), ic.l2gTab[i]);
             az.write(DomPt::from_point<1>(q.p), ic.non0sInRow[i]);
         }
     } while(0);

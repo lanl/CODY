@@ -51,6 +51,8 @@ struct Problem {
     static int genProbTID;
     // populate fine to coarse operator task ID
     static int populatef2cTID;
+    // boolean indicating whether or not we are doing MG
+    bool doMG;
     // number of mg levels
     int64_t nmgl;
     /**
@@ -63,12 +65,14 @@ struct Problem {
      */
     Problem(const lgncg::Geometry &geom,
             int64_t stencilSize,
+            bool doMG,
             int64_t numMGLevels,
             int64_t nSubRgns,
             LegionRuntime::HighLevel::Context &ctx,
             LegionRuntime::HighLevel::HighLevelRuntime *lrt)
     {
         this->nmgl = numMGLevels;
+        this->doMG = doMG;
         const int64_t globalXYZ = geom.npx * geom.nx *
                                   geom.npy * geom.ny * 
                                   geom.npz * geom.nz;

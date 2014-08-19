@@ -70,13 +70,6 @@ preSolvPrep(lgncg::SparseMatrix &A,
 {
     assert(A.nRows == x.len && x.len == b.len);
     cgData.partition(nParts, ctx, lrt);
-    // FIXME - do we need multiple partitions anymore?
-#if 0
-    // and also partition A, x, and b
-    A.partition(nParts, ctx, lrt);
-    x.partition(nParts, ctx, lrt);
-    b.partition(nParts, ctx, lrt);
-#endif
     // and if we are going to go down the MG route, setup partitions at all
     // levels before we start the preconditioning. we are hoisting this out of
     // the performance critical path. so, for each "new" call to mg, we must do

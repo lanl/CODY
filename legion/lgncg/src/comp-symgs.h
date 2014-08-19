@@ -58,6 +58,12 @@ symgs(const SparseMatrix &A,
     // sanity - make sure that all launch domains are the same size
     assert(A.vals.lDom().get_volume() == x.lDom().get_volume() &&
            x.lDom().get_volume() == r.lDom().get_volume());
+    // create tmp array - not ideal, but seems to work. if you have time, find a
+    // place to stash this thing so it only has to be initialized once.
+    Vector tmpX;
+    tmpX.create<double>(x.len, ctx, lrt);
+    tmpX.partition(A.nParts, ctx, lrt);
+    veccp(x, tmpX, ctx, lrt);
     // setup per-task args
     ArgumentMap argMap;
     CGTaskArgs targs;
@@ -70,7 +76,7 @@ symgs(const SparseMatrix &A,
         targs.sa.mIdxs.sgb = A.mIdxs.sgb()[i];
         targs.sa.nzir.sgb = A.nzir.sgb()[i];
         // every task gets all of x AND its sub-grid.
-        targs.va.sgb = x.sgb()[i];
+        targs.va.sgb = tmpX.sgb()[i];
         targs.vb.sgb = r.sgb()[i];
         argMap.set_point(DomainPoint::from_point<1>(Point<1>(i)),
                          TaskArgument(&targs, sizeof(targs)));
@@ -102,7 +108,7 @@ symgs(const SparseMatrix &A,
     // x's regions /////////////////////////////////////////////////////////////
     // read/write view of x
     il.add_region_requirement(
-        RegionRequirement(x.lp(), 0, READ_WRITE, EXCLUSIVE, x.lr)
+        RegionRequirement(tmpX.lp(), 0, READ_WRITE, EXCLUSIVE, tmpX.lr)
     );
     il.add_field(idx++, x.fid);
     // read only view of all of x. FIXME only use required cells
@@ -118,8 +124,9 @@ symgs(const SparseMatrix &A,
     il.add_field(idx++, r.fid);
     // execute the thing...
     (void)lrt->execute_index_space(ctx, il);
-    // XXX- why different number of iterations when we wait v no explicit wait?
-    //lrt->execute_index_space(ctx, il).wait_all_results();
+    // copy back
+    veccp(tmpX, x, ctx, lrt);
+    tmpX.free(ctx, lrt);
 }
 
 /**
