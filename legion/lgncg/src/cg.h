@@ -243,6 +243,9 @@ init(void)
         TaskConfigOptions(true /* leaf task */),
         "lgncg-dotprod-task"
     );
+    HighLevelRuntime::register_reduction_op<DotProdAccumulate>(
+        LGNCG_DOTPROD_RED_ID
+    );
     HighLevelRuntime::register_legion_task<symgsTask>(
         LGNCG_SYMGS_TID /* task id */,
         Processor::LOC_PROC /* proc kind  */,

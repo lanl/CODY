@@ -34,6 +34,7 @@
 #include "vector.h"
 #include "utils.h"
 #include "cg-task-args.h"
+#include "dotprod-accumulate.h"
 
 #include "legion.h"
 

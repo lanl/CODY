@@ -156,8 +156,8 @@ setupHaloTask(const LegionRuntime::HighLevel::Task *task,
     const int64_t lNCols = targs.sa.nCols;
     // Create a mapping between the real cell indicies in where they are
     // actually located in the global logical region. For example, a task may
-    // need cell index 5, but 5 may actually be at cell 27. So, given an index I
-    // need, I'll give you where it actually lives.
+    // need cell index 5, but 5 may actually be at cell 27. So, given an index
+    // you need, I'll give you where it actually lives.
     std::map<int64_t, int64_t> cellIDMap;
     for (int64_t i = 0; i < targs.sa.g2g.sgb.volume(); ++i) {
         cellIDMap[g2gMap[i].b] = g2gMap[i].a;

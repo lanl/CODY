@@ -27,28 +27,56 @@
  * LA-CC 10-123
  */
 
-#ifndef LGNCG_TIDS_H_INCLUDED
-#define LGNCG_TIDS_H_INCLUDED
+#ifndef LGNCG_DOTPROD_ACCUMULATE_H_INCLUDED
+#define LGNCG_DOTPROD_ACCUMULATE_H_INCLUDED
+
+#include "legion.h"
 
 namespace lgncg {
+/**
+ *
+ */
+class DotProdAccumulate {
+public:
+    typedef double LHS;
+    typedef double RHS;
+    static const double identity;
 
-enum {
-    // FIXME - central registration thing again...
-    LGNCG_SETUP_HALO_TID = 32,
-    LGNCG_VECCP_TID,
-    LGNCG_VEC_ZERO_TID,
-    LGNCG_SPMV_TID,
-    LGNCG_WAXPBY_TID,
-    LGNCG_DOTPROD_TID,
-    LGNCG_SYMGS_TID,
-    LGNCG_RESTRICTION_TID,
-    LGNCG_PROLONGATION_TID
+    template <bool EXCLUSIVE>
+    static void apply(LHS &lhs, RHS rhs);
+
+    template <bool EXCLUSIVE>
+    static void fold(RHS &rhs1, RHS rhs2);
+
 };
 
-enum {
-    LGNCG_DOTPROD_RED_ID = 1
-};
+const double DotProdAccumulate::identity = 0.0;
 
-} // end lgncg namespace
+template<>
+void
+DotProdAccumulate::apply<true>(LHS &lhs, RHS rhs) {
+    lhs += rhs;
+}
+
+template<>
+void
+DotProdAccumulate::apply<false>(LHS &lhs, RHS rhs) {
+    // not supported at this time
+    assert(false);
+}
+
+template<>
+void
+DotProdAccumulate::fold<true>(RHS &rhs1, RHS rhs2) {
+    rhs1 += rhs2;
+}
+
+template<>
+void
+DotProdAccumulate::fold<false>(RHS &rhs1, RHS rhs2) {
+    assert(false);
+}
+
+}
 
 #endif
