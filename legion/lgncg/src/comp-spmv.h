@@ -151,27 +151,27 @@ spmvTask(const LegionRuntime::HighLevel::Task *task,
     Rect<1> myGridBounds = targs.sa.vals.sgb;
     // calculate nRows and nCols for the local subgrid
     assert(0 == myGridBounds.volume() % targs.sa.nCols);
-    int64_t lNRows = myGridBounds.volume() / targs.sa.nCols;
-    int64_t lNCols = targs.sa.nCols;
-    double *avp = av.raw_rect_ptr<1>(myGridBounds, avsr, avOff);
+    const int64_t lNRows = myGridBounds.volume() / targs.sa.nCols;
+    const int64_t lNCols = targs.sa.nCols;
+    const double *const avp = av.raw_rect_ptr<1>(myGridBounds, avsr, avOff);
     bool offd = offsetsAreDense<1, double>(myGridBounds, avOff);
     assert(offd);
     // remember that vals and mIdxs should be the same size
     Rect<1> aisr; ByteOffset aiOff[1];
-    int64_t *aip = ai.raw_rect_ptr<1>(myGridBounds, aisr, aiOff);
+    const int64_t *const aip = ai.raw_rect_ptr<1>(myGridBounds, aisr, aiOff);
     offd = offsetsAreDense<1, int64_t>(myGridBounds, aiOff);
     assert(offd);
     // nzir is smaller (by a stencil size factor).
     Rect<1> azsr; ByteOffset azOff[1];
     myGridBounds = targs.sa.nzir.sgb;
-    uint8_t *azp = az.raw_rect_ptr<1>(myGridBounds, azsr, azOff);
+    const uint8_t *const azp = az.raw_rect_ptr<1>(myGridBounds, azsr, azOff);
     offd = offsetsAreDense<1, uint8_t>(myGridBounds, azOff);
     assert(offd);
     // x
     Rect<1> xsr; ByteOffset xOff[1];
     // notice that we aren't using the subgridBounds here -- need all of x
     myGridBounds = targs.va.bounds;
-    double *xp = x.raw_rect_ptr<1>(myGridBounds, xsr, xOff);
+    const double *const xp = x.raw_rect_ptr<1>(myGridBounds, xsr, xOff);
     offd = offsetsAreDense<1, double>(myGridBounds, xOff);
     assert(offd);
     // y
@@ -188,7 +188,7 @@ spmvTask(const LegionRuntime::HighLevel::Task *task,
         // get to base of next row of "real" indices of values
         const int64_t *const cIndx = (aip + (i * lNCols));
         // capture how many non-zero values are in this particular row
-        int64_t cnnz = azp[i];
+        const int64_t cnnz = azp[i];
         for (int64_t j = 0; j < cnnz; ++j) {
             sum += cVals[j] * xp[cIndx[j]];
         }

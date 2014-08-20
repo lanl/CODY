@@ -117,13 +117,10 @@ setupHaloTask(const LegionRuntime::HighLevel::Task *task,
     using namespace LegionRuntime::HighLevel;
     using namespace LegionRuntime::Accessor;
     using LegionRuntime::Arrays::Rect;
-
-    // stash my task ID
-    const int taskID = task->index_point.point_data[0];
     // A (x3)
     assert(3 == rgns.size());
     size_t rid = 0;
-    CGTaskArgs targs = *(CGTaskArgs *)task->local_args;
+    const CGTaskArgs targs = *(CGTaskArgs *)task->local_args;
     // name the regions
     const PhysicalRegion &azpr = rgns[rid++];
     const PhysicalRegion &aipr = rgns[rid++];
@@ -144,7 +141,7 @@ setupHaloTask(const LegionRuntime::HighLevel::Task *task,
     bool offd = offsetsAreDense<1, uint8_t>(mgb, bOff);
     assert(offd);
     //
-    int64_t *mIdxs = ai.raw_rect_ptr<1>(targs.sa.mIdxs.sgb, sr, bOff);
+    int64_t *const mIdxs = ai.raw_rect_ptr<1>(targs.sa.mIdxs.sgb, sr, bOff);
     offd = offsetsAreDense<1, int64_t>(mgb, bOff);
     assert(offd);
     //

@@ -105,7 +105,7 @@ dotProdTask(const LegionRuntime::HighLevel::Task *task,
     // x, y
     assert(2 == rgns.size());
     size_t rid = 0;
-    CGTaskArgs targs = *(CGTaskArgs *)task->local_args;
+    const CGTaskArgs targs = *(CGTaskArgs *)task->local_args;
 #if 0 // nice debug
     printf("%d: sub-grid bounds: (%d) to (%d)\n",
             getTaskID(task), rect.lo.x[0], rect.hi.x[0]);
@@ -133,6 +133,7 @@ dotProdTask(const LegionRuntime::HighLevel::Task *task,
     // now, actually perform the computation
     const int64_t lLen = myGridBounds.volume();
     double localRes = 0.0;
+    // TODO make reduction task
     for (int64_t i = 0; i < lLen; ++i) {
         localRes += xp[i] * yp[i];
     }
