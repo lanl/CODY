@@ -120,7 +120,7 @@ spmvTask(const LegionRuntime::HighLevel::Task *task,
     using namespace LegionRuntime::HighLevel;
     using namespace LegionRuntime::Accessor;
     using LegionRuntime::Arrays::Rect;
-
+    (void)ctx; (void)lrt;
     // A (x3), x, b
     assert(5 == rgns.size());
     size_t rid = 0;

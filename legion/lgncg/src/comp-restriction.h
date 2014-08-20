@@ -116,6 +116,7 @@ restrictionTask(
     using namespace LegionRuntime::HighLevel;
     using namespace LegionRuntime::Accessor;
     using LegionRuntime::Arrays::Rect;
+    (void)ctx; (void)lrt;
     // A.mgData->Axf, rf, A.mgData->rc, A.mgData->f2cOp
     assert(4 == rgns.size());
     size_t rid = 0;

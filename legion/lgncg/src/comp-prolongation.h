@@ -107,6 +107,7 @@ prolongationTask(
     using namespace LegionRuntime::HighLevel;
     using namespace LegionRuntime::Accessor;
     using LegionRuntime::Arrays::Rect;
+    (void)ctx; (void)lrt;
     assert(3 == rgns.size());
     size_t rid = 0;
     CGTaskArgs targs = *(CGTaskArgs *)task->local_args;

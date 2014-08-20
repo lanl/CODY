@@ -60,7 +60,7 @@ CC_FLAGS := $(LGNCG_CC_FLAGS)
 # for gcc on OS X
 #CC_FLAGS     := -Wall -O2 -Wa,-q
 # optimized
-CC_FLAGS     += -Wall -Ofast -ffast-math
+CC_FLAGS     += -Wall -Wextra -Ofast -ffast-math
 #CC_FLAGS     += -Wall -Ofast -ffast-math -ftree-vectorize -ftree-vectorizer-verbose=0 -Wa,-q
 # debug
 #CC_FLAGS     += -Wall -O0 -g

@@ -60,9 +60,7 @@ dotprod(Vector &x,
     targs.va = x;
     targs.vb = y;
     for (int i = 0; i < x.lDom().get_volume(); ++i) {
-        // FIXME optimization: don't really need to set sgb for all -- just for 1
         targs.va.sgb = x.sgb()[i];
-        targs.vb.sgb = y.sgb()[i];
         argMap.set_point(DomainPoint::from_point<1>(Point<1>(i)),
                          TaskArgument(&targs, sizeof(targs)));
     }
@@ -102,6 +100,7 @@ dotProdTask(const LegionRuntime::HighLevel::Task *task,
     using namespace LegionRuntime::HighLevel;
     using namespace LegionRuntime::Accessor;
     using LegionRuntime::Arrays::Rect;
+    (void)ctx; (void)lrt;
     // x, y
     assert(2 == rgns.size());
     size_t rid = 0;

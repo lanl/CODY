@@ -145,6 +145,7 @@ symgsTask(const LegionRuntime::HighLevel::Task *task,
     using namespace LegionRuntime::HighLevel;
     using namespace LegionRuntime::Accessor;
     using LegionRuntime::Arrays::Rect;
+    (void)ctx; (void)lrt;
     // A (x4), x (x2), b
     assert(7 == rgns.size());
     size_t rid = 0;

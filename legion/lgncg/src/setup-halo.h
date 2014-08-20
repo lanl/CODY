@@ -117,6 +117,7 @@ setupHaloTask(const LegionRuntime::HighLevel::Task *task,
     using namespace LegionRuntime::HighLevel;
     using namespace LegionRuntime::Accessor;
     using LegionRuntime::Arrays::Rect;
+    (void)ctx; (void)lrt;
     // A (x3)
     assert(3 == rgns.size());
     size_t rid = 0;

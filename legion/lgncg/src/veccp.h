@@ -88,7 +88,7 @@ veccpTask(const LegionRuntime::HighLevel::Task *task,
     using namespace LegionRuntime::HighLevel;
     using namespace LegionRuntime::Accessor;
     using LegionRuntime::Arrays::Rect;
-
+    (void)ctx; (void)lrt;
     size_t rid = 0;
     CGTaskArgs targs = *(CGTaskArgs *)task->local_args;
 #if 0 // nice debug

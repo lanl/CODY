@@ -59,7 +59,7 @@ veczero(Vector &v,
     );
     il.add_field(idx++, v.fid);
     // execute the thing...
-    lrt->execute_index_space(ctx, il).wait_all_results();
+    (void)lrt->execute_index_space(ctx, il);
 }
 
 /**
@@ -74,7 +74,7 @@ veczeroTask(const LegionRuntime::HighLevel::Task *task,
     using namespace LegionRuntime::HighLevel;
     using namespace LegionRuntime::Accessor;
     using LegionRuntime::Arrays::Rect;
-
+    (void)ctx; (void)lrt;
     size_t rid = 0;
     // cache the arguments
     const Vector vec = *(Vector *)task->args;

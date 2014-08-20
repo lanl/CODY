@@ -65,6 +65,8 @@ offsetsAreDense(const Rect<DIM> &bounds,
     }
     return true;
 #else
+    (void)bounds;
+    (void)offset;
     return true;
 #endif
 }
