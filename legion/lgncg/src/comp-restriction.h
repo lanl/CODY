@@ -119,7 +119,7 @@ restrictionTask(
     // A.mgData->Axf, rf, A.mgData->rc, A.mgData->f2cOp
     assert(4 == rgns.size());
     size_t rid = 0;
-    CGTaskArgs targs = *(CGTaskArgs *)task->local_args;
+    const CGTaskArgs targs = *(CGTaskArgs *)task->local_args;
     // name the regions
     const PhysicalRegion &Axfpr = rgns[rid++];
     const PhysicalRegion &rfpr  = rgns[rid++];
@@ -137,12 +137,12 @@ restrictionTask(
     Rect<1> rec; ByteOffset boff[1];
     // Axf
     Rect<1> myGridBounds = targs.va.sgb;
-    double *Axfp = Axf.raw_rect_ptr<1>(myGridBounds, rec, boff);
+    const double *const Axfp = Axf.raw_rect_ptr<1>(myGridBounds, rec, boff);
     bool offd = offsetsAreDense<1, double>(myGridBounds, boff);
     assert(offd);
     // rf
     myGridBounds = targs.vb.sgb;
-    double *rfp = rf.raw_rect_ptr<1>(myGridBounds, rec, boff);
+    const double *const rfp = rf.raw_rect_ptr<1>(myGridBounds, rec, boff);
     offd = offsetsAreDense<1, double>(myGridBounds, boff);
     assert(offd);
     // rc
@@ -152,11 +152,11 @@ restrictionTask(
     assert(offd);
     // f2c
     myGridBounds = targs.vd.sgb;
-    int64_t *f2cp = f2c.raw_rect_ptr<1>(myGridBounds, rec, boff);
+    const int64_t *const f2cp = f2c.raw_rect_ptr<1>(myGridBounds, rec, boff);
     offd = offsetsAreDense<1, int64_t>(myGridBounds, boff);
     assert(offd);
     // now, actually perform the computation
-    int64_t nc = targs.vc.sgb.volume(); // length of rc
+    const int64_t nc = targs.vc.sgb.volume(); // length of rc
     for (int64_t i = 0; i < nc; ++i) {
         rcp[i] = rfp[f2cp[i]] - Axfp[f2cp[i]];
     }

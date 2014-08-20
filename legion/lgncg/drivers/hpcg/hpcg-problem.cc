@@ -205,10 +205,10 @@ setICsTask(
     ////////////////////////////////////////////////////////////////////////////
     // Sparse Matrix A
     ////////////////////////////////////////////////////////////////////////////
-    const PhysicalRegion &avpr = rgns[rid++];
-    const PhysicalRegion &adpr = rgns[rid++];
-    const PhysicalRegion &aipr = rgns[rid++];
-    const PhysicalRegion &azpr = rgns[rid++];
+    const PhysicalRegion &avpr  = rgns[rid++];
+    const PhysicalRegion &adpr  = rgns[rid++];
+    const PhysicalRegion &aipr  = rgns[rid++];
+    const PhysicalRegion &azpr  = rgns[rid++];
     const PhysicalRegion &g2gpr = rgns[rid++];
     // convenience typedefs
     typedef RegionAccessor<AccessorType::Generic, double>   GDRA;
@@ -379,7 +379,7 @@ populatef2cTask(
     // f2cOp
     assert(1 == rgns.size());
     size_t rid = 0;
-    PF2CTaskArgs args = *(PF2CTaskArgs *)task->local_args;
+    const PF2CTaskArgs args = *(PF2CTaskArgs *)task->local_args;
     const lgncg::DVector &f2cv = args.f2c;
     const Geometry &fGeom = args.fGeom;
     const Geometry &cGeom = args.cGeom;
@@ -395,20 +395,19 @@ populatef2cTask(
     bool offd = offsetsAreDense<1, int64_t>(f2cv.sgb, f2cOff);
     assert(offd);
 
-    for (int64_t i = 0; i < args.f2c.sgb.volume(); ++i) {
-        f2cp[i] = 0;
-    }
+    const size_t f2cLen = args.f2c.sgb.volume();
+    (void)memset(f2cp, 0, f2cLen * sizeof(*f2cp));
     const int64_t nxf = fGeom.nx;
     const int64_t nyf = fGeom.ny;
     const int64_t nxc = cGeom.nx;
     const int64_t nyc = cGeom.ny;
     const int64_t nzc = cGeom.nz;
     for (int64_t izc = 0; izc < nzc; ++izc) {
-        int64_t izf = 2 * izc;
+        const int64_t izf = 2 * izc;
         for (int64_t iyc = 0; iyc < nyc; ++iyc) {
-            int64_t iyf = 2 * iyc;
+            const int64_t iyf = 2 * iyc;
             for (int64_t ixc = 0; ixc < nxc; ++ixc) {
-                int64_t ixf = 2 * ixc;
+                const int64_t ixf = 2 * ixc;
                 const int64_t currentCoarseRow = izc * nxc * nyc + iyc * nxc + ixc;
                 const int64_t currentFineRow   = izf * nxf * nyf + iyf * nxf + ixf;
                 f2cp[currentCoarseRow] = currentFineRow;

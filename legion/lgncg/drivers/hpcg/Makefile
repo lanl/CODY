@@ -50,7 +50,7 @@ INC_FLAGS    := -I$(LGCG_DIR)
 # for gcc on OS X
 #CC_FLAGS     := -Wall -O2 -Wa,-q
 # optimized
-CC_FLAGS     := -Ofast -ffast-math -ftree-vectorize -ftree-vectorizer-verbose=0
+CC_FLAGS     := -Ofast -ffast-math -ftree-vectorize -ftree-vectorizer-verbose=0 -Wa,-q
 # debug
 #CC_FLAGS     := -Wall -O0 -g
 #CC_FLAGS     := -Wall -O2
@@ -88,7 +88,7 @@ MAKE	:= make
 ifndef GCC
 GCC	:= g++
 # for gcc on OS X
-#GCC	:= g++-4.8 -mavx
+GCC	:= g++-4.8 -mavx
 endif
 ifndef NVCC
 NVCC	:= $(CUDA)/bin/nvcc

@@ -70,8 +70,8 @@ struct MGData {
            LegionRuntime::HighLevel::Context &ctx,
            LegionRuntime::HighLevel::HighLevelRuntime *lrt)
     {
-        nPresmootherSteps = 1;
-        nPostsmootherSteps = 1;
+        // must be the same
+        nPresmootherSteps = nPostsmootherSteps = 1;
         f2cOp.create<int64_t>(nFineRows, ctx, lrt);
         // about the size here: read comment above.
         Axf.create<double>(nFineRows, ctx, lrt);

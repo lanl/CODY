@@ -148,8 +148,8 @@ symgsTask(const LegionRuntime::HighLevel::Task *task,
     // A (x4), x (x2), b
     assert(7 == rgns.size());
     size_t rid = 0;
-    CGTaskArgs targs = *(CGTaskArgs *)task->local_args;
-    int sweepi = *(int *)task->args;
+    const CGTaskArgs targs = *(CGTaskArgs *)task->local_args;
+    const int sweepi = *(int *)task->args;
 #if 0 // nice debug
     printf("%d: sub-grid bounds: (%d) to (%d)\n",
             getTaskID(task), rect.lo.x[0], rect.hi.x[0]);
@@ -182,25 +182,25 @@ symgsTask(const LegionRuntime::HighLevel::Task *task,
     Rect<1> myGridBounds = targs.sa.vals.sgb;
     // calculate nRows and nCols for the local subgrid
     assert(0 == myGridBounds.volume() % targs.sa.nCols);
-    int64_t lNRows = myGridBounds.volume() / targs.sa.nCols;
-    int64_t lNCols = targs.sa.nCols;
-    double *avp = av.raw_rect_ptr<1>(myGridBounds, avsr, avOff);
+    const int64_t lNRows = myGridBounds.volume() / targs.sa.nCols;
+    const int64_t lNCols = targs.sa.nCols;
+    const double *const avp = av.raw_rect_ptr<1>(myGridBounds, avsr, avOff);
     bool offd = offsetsAreDense<1, double>(myGridBounds, avOff);
     assert(offd);
     // remember that vals and mIdxs should be the same size
     Rect<1> aisr; ByteOffset aiOff[1];
-    int64_t *aip = ai.raw_rect_ptr<1>(myGridBounds, aisr, aiOff);
+    const int64_t *const aip = ai.raw_rect_ptr<1>(myGridBounds, aisr, aiOff);
     offd = offsetsAreDense<1, int64_t>(myGridBounds, aiOff);
     assert(offd);
     // diag and nzir are smaller (by a stencil size factor).
     Rect<1> adsr; ByteOffset adOff[1];
     myGridBounds = targs.sa.diag.sgb;
-    double *adp = ad.raw_rect_ptr<1>(myGridBounds, adsr, adOff);
+    const double *const adp = ad.raw_rect_ptr<1>(myGridBounds, adsr, adOff);
     offd = offsetsAreDense<1, double>(myGridBounds, adOff);
     assert(offd);
     // remember nzir and diag are the same length
     myGridBounds = targs.sa.nzir.sgb;
-    uint8_t *azp = az.raw_rect_ptr<1>(myGridBounds, adsr, adOff);
+    const uint8_t *const azp = az.raw_rect_ptr<1>(myGridBounds, adsr, adOff);
     offd = offsetsAreDense<1, uint8_t>(myGridBounds, adOff);
     assert(offd);
     // x - read/write
@@ -236,7 +236,7 @@ symgsTask(const LegionRuntime::HighLevel::Task *task,
             // RHS value
             double sum = rp[i];
             for (int64_t j = 0; j < cnnz; ++j) {
-                int64_t curCol = cIndx[j];
+                const int64_t curCol = cIndx[j];
                 sum -= cVals[j] * xp[curCol];
             }
             // remove diagonal contribution from previous loop
@@ -258,7 +258,7 @@ symgsTask(const LegionRuntime::HighLevel::Task *task,
             // RHS value
             double sum = rp[i]; // RHS value
             for (int64_t j = 0; j < cnnz; ++j) {
-                int64_t curCol = cIndx[j];
+                const int64_t curCol = cIndx[j];
                 sum -= cVals[j] * xp[curCol];
             }
             // remove diagonal contribution from previous loop
