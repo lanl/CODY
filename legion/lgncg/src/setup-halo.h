@@ -153,12 +153,13 @@ setupHaloTask(const LegionRuntime::HighLevel::Task *task,
     // stash local number of rows and columns
     const int64_t lNRows = mgb.volume();
     const int64_t lNCols = targs.sa.nCols;
-    // now create a global to local map from the local to global map. we do this
-    // primarily for fast lookups of local IDs given a global ID.
-    // FIXME rename
-    std::map<int64_t, int64_t> g2lMap;
+    // Create a mapping between the real cell indicies in where they are
+    // actually located in the global logical region. For example, a task may
+    // need cell index 5, but 5 may actually be at cell 27. So, given an index I
+    // need, I'll give you where it actually lives.
+    std::map<int64_t, int64_t> cellIDMap;
     for (int64_t i = 0; i < targs.sa.g2g.sgb.volume(); ++i) {
-        g2lMap[g2gMap[i].b] = g2gMap[i].a;
+        cellIDMap[g2gMap[i].b] = g2gMap[i].a;
     }
     for (int64_t i = 0; i < lNRows; ++i) {
         const int64_t cNon0sInRow = non0sInRow[i];
@@ -166,7 +167,7 @@ setupHaloTask(const LegionRuntime::HighLevel::Task *task,
             int64_t *cIndxs = (mIdxs + (i * lNCols));
             const int64_t curIndex = cIndxs[j];
             // at [i][j]
-            cIndxs[j] = g2lMap[curIndex];
+            cIndxs[j] = cellIDMap[curIndex];
         }
     }
 }
