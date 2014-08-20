@@ -130,17 +130,17 @@ prolongationTask(
     assert(offd);
     // xc
     myGridBounds = targs.vb.sgb;
-    double *xcp = xc.raw_rect_ptr<1>(myGridBounds, rec, boff);
+    const double *const xcp = xc.raw_rect_ptr<1>(myGridBounds, rec, boff);
     offd = offsetsAreDense<1, double>(myGridBounds, boff);
     assert(offd);
     // f2c
     myGridBounds = targs.vc.sgb;
-    int64_t *f2cp = f2c.raw_rect_ptr<1>(myGridBounds, rec, boff);
+    const int64_t *const f2cp = f2c.raw_rect_ptr<1>(myGridBounds, rec, boff);
     offd = offsetsAreDense<1, int64_t>(myGridBounds, boff);
     assert(offd);
     // now, actually perform the computation
     const int64_t nc = targs.vb.sgb.volume(); // length of xc
-
+    //
     for (int64_t i = 0; i < nc; ++i) {
         xfp[f2cp[i]] += xcp[i];
     }

@@ -102,7 +102,6 @@ veccpTask(const LegionRuntime::HighLevel::Task *task,
     typedef RegionAccessor<AccessorType::Generic, double> GDRA;
     GDRA fm = vf.get_field_accessor(targs.va.fid).typeify<double>();
     GDRA to = vt.get_field_accessor(targs.vb.fid).typeify<double>();
-#if 1
     Rect<1> fSubRect, tSubRect;
     ByteOffset fOff[1], tOff[1];
     const double *const fp = fm.raw_rect_ptr<1>(targs.va.sgb, fSubRect, fOff);
@@ -113,19 +112,7 @@ veccpTask(const LegionRuntime::HighLevel::Task *task,
     bool offd = offsetsAreDense<1, double>(fSubRect, fOff);
     assert(offd);
     const int64_t lLen = fSubRect.volume();
-    // FIXME - use memmove
-    for (int64_t i = 0; i < lLen; ++i) {
-        tp[i] = fp[i];
-    }
-#else // slow reference implementation
-    typedef GenericPointInRectIterator<1> GPRI1D;
-    typedef DomainPoint DomPt;
-    // start the real work
-    for (GPRI1D pi(rect); pi; pi++) {
-        to.write(DomPt::from_point<1>(pi.p),
-                 fm.read(DomPt::from_point<1>(pi.p)));
-    }
-#endif
+    (void)memmove(tp, fp, lLen * sizeof(*tp));
 }
 
 } // end lgncg namespace

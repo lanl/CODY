@@ -80,7 +80,6 @@ dotprod(Vector &x,
     il.add_field(idx++, y.fid);
     // execute the thing...
     FutureMap fm = lrt->execute_index_space(ctx, il);
-    fm.wait_all_results();
     // now sum up all the answers
     result = 0.0;
     typedef GenericPointInRectIterator<1> GPRI1D;
@@ -112,8 +111,8 @@ dotProdTask(const LegionRuntime::HighLevel::Task *task,
             getTaskID(task), rect.lo.x[0], rect.hi.x[0]);
 #endif
     // name the regions
-    const PhysicalRegion xpr  = rgns[rid++];
-    const PhysicalRegion ypr  = rgns[rid++];
+    const PhysicalRegion &xpr = rgns[rid++];
+    const PhysicalRegion &ypr = rgns[rid++];
     // convenience typedefs
     typedef RegionAccessor<AccessorType::Generic, double>  GDRA;
     // vectors
@@ -123,16 +122,16 @@ dotProdTask(const LegionRuntime::HighLevel::Task *task,
     // this is the same for all vectors
     Rect<1> myGridBounds = targs.va.sgb;
     Rect<1> xsr; ByteOffset xOff[1];
-    double *xp = x.raw_rect_ptr<1>(myGridBounds, xsr, xOff);
+    const double *const xp = x.raw_rect_ptr<1>(myGridBounds, xsr, xOff);
     bool offd = offsetsAreDense<1, double>(myGridBounds, xOff);
     assert(offd);
     // y
     Rect<1> ysr; ByteOffset yOff[1];
-    double *yp = y.raw_rect_ptr<1>(myGridBounds, ysr, yOff);
+    const double *const yp = y.raw_rect_ptr<1>(myGridBounds, ysr, yOff);
     offd = offsetsAreDense<1, double>(myGridBounds, yOff);
     assert(offd);
     // now, actually perform the computation
-    int64_t lLen = myGridBounds.volume();
+    const int64_t lLen = myGridBounds.volume();
     double localRes = 0.0;
     for (int64_t i = 0; i < lLen; ++i) {
         localRes += xp[i] * yp[i];

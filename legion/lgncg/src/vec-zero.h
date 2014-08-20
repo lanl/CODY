@@ -77,8 +77,8 @@ veczeroTask(const LegionRuntime::HighLevel::Task *task,
 
     size_t rid = 0;
     // cache the arguments
-    Vector vec = *(Vector *)task->args;
-    Rect<1> rect = *(Rect<1> *)task->local_args;
+    const Vector vec = *(Vector *)task->args;
+    const Rect<1> rect = *(Rect<1> *)task->local_args;
     // name the region
     const PhysicalRegion &vpr = rgns[rid++];
     // convenience typedef
@@ -89,10 +89,8 @@ veczeroTask(const LegionRuntime::HighLevel::Task *task,
     double *vp = v.raw_rect_ptr<1>(rect, vSubRect, vOff);
     bool offd = offsetsAreDense<1, double>(vSubRect, vOff);
     assert(offd);
-    int64_t lLen = vSubRect.volume();
-    for (int64_t i = 0; i < lLen; ++i) {
-        vp[i] = 0.0;
-    }
+    const int64_t lLen = vSubRect.volume();
+    memset(vp, 0, lLen * sizeof(*vp));
 }
 
 } // end lgncg namespace

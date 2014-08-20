@@ -129,12 +129,12 @@ waxpbyTask(const LegionRuntime::HighLevel::Task *task,
     // this is the same for all vectors -- only do this once for x, y, and w
     Rect<1> myGridBounds = targs.va.sgb;
     Rect<1> xsr; ByteOffset xOff[1];
-    double *xp = x.raw_rect_ptr<1>(myGridBounds, xsr, xOff);
+    const double *const xp = x.raw_rect_ptr<1>(myGridBounds, xsr, xOff);
     bool offd = offsetsAreDense<1, double>(myGridBounds, xOff);
     assert(offd);
     // y
     Rect<1> ysr; ByteOffset yOff[1];
-    double *yp = y.raw_rect_ptr<1>(myGridBounds, ysr, yOff);
+    const double *const yp = y.raw_rect_ptr<1>(myGridBounds, ysr, yOff);
     offd = offsetsAreDense<1, double>(myGridBounds, yOff);
     assert(offd);
     // w
@@ -143,9 +143,9 @@ waxpbyTask(const LegionRuntime::HighLevel::Task *task,
     offd = offsetsAreDense<1, double>(myGridBounds, wOff);
     assert(offd);
     // now, actually perform the computation
-    double alpha = targs.alpha;
-    double beta  = targs.beta;
-    int64_t lLen = myGridBounds.volume();
+    const double alpha = targs.alpha;
+    const double beta  = targs.beta;
+    const int64_t lLen = myGridBounds.volume();
     for (int64_t i = 0; i < lLen; ++i) {
         wp[i] = (alpha * xp[i]) + (beta * yp[i]);
     }

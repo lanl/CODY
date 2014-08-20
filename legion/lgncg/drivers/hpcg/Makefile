@@ -50,7 +50,7 @@ INC_FLAGS    := -I$(LGCG_DIR)
 # for gcc on OS X
 #CC_FLAGS     := -Wall -O2 -Wa,-q
 # optimized
-CC_FLAGS     := -Wall -Ofast
+CC_FLAGS     := -Ofast -ffast-math -ftree-vectorize -ftree-vectorizer-verbose=0
 # debug
 #CC_FLAGS     := -Wall -O0 -g
 #CC_FLAGS     := -Wall -O2
