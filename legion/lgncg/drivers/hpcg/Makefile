@@ -22,6 +22,15 @@ ifndef LG_RT_DIR
 $(error LG_RT_DIR variable is not defined, aborting build)
 endif
 
+# Flag indicating whether or not run-time offset density checks will be
+# performed. See: offsetsAreDense in src/utils.h. Calls to offsetsAreDense are
+# not free, but are useful when writing code and moving to new architectures.
+LGNCG_DO_DENSITY_CHECKS = 0
+
+ifeq ($(LGNCG_DO_DENSITY_CHECKS), 1)
+LGNCG_CC_FLAGS = -DLGNCG_CHECK_OFF_R_DENSE
+endif
+
 # for now just point to top-level src dir of lgncg
 LGCG_DIR := ../../src
 
@@ -47,16 +56,14 @@ $(wildcard $(LGCG_DIR)/*.h)
 
 # You can modify these variables, some will be appended to by the runtime makefile
 INC_FLAGS    := -I$(LGCG_DIR)
+CC_FLAGS := $(LGNCG_CC_FLAGS)
 # for gcc on OS X
 #CC_FLAGS     := -Wall -O2 -Wa,-q
 # optimized
-CC_FLAGS     := -Wall -Ofast -ffast-math
-#CC_FLAGS     := -Wall -Ofast -ffast-math -ftree-vectorize -ftree-vectorizer-verbose=0 -Wa,-q
+CC_FLAGS     += -Wall -Ofast -ffast-math
+#CC_FLAGS     += -Wall -Ofast -ffast-math -ftree-vectorize -ftree-vectorizer-verbose=0 -Wa,-q
 # debug
-#CC_FLAGS     := -Wall -O0 -g
-#CC_FLAGS     := -Wall -O2
-#CC_FLAGS     := -Wall -O2 -DLEGION_SPY
-#CC_FLAGS     := -Wall -I$(HOME)/local/openblas/include
+#CC_FLAGS     += -Wall -O0 -g
 NVCC_FLAGS   :=
 GASNET_FLAGS :=
 

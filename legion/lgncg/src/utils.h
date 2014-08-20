@@ -51,6 +51,7 @@ static inline bool
 offsetsAreDense(const Rect<DIM> &bounds,
                 const LegionRuntime::Accessor::ByteOffset *offset)
 {
+#ifdef LGNCG_CHECK_OFF_R_DENSE
     off_t exp_offset = sizeof(T);
     for (unsigned i = 0; i < DIM; i++) {
         bool found = false;
@@ -63,6 +64,9 @@ offsetsAreDense(const Rect<DIM> &bounds,
         if (!found) return false;
     }
     return true;
+#else
+    return true;
+#endif
 }
 
 } // end lgncg namespace
