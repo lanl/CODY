@@ -52,8 +52,10 @@ veczero(Vector &v,
         argMap.set_point(DomainPoint::from_point<1>(Point<1>(i)),
                          TaskArgument(&sgb, sizeof(Rect<1>)));
     }
+    DVector dv;
+    dv = v;
     IndexLauncher il(LGNCG_VEC_ZERO_TID, v.lDom(),
-                     TaskArgument(&v, sizeof(Vector)), argMap);
+                     TaskArgument(&dv, sizeof(DVector)), argMap);
     il.add_region_requirement(
         RegionRequirement(v.lp(), 0, WRITE_DISCARD, EXCLUSIVE, v.lr)
     );
@@ -77,7 +79,7 @@ veczeroTask(const LegionRuntime::HighLevel::Task *task,
     (void)ctx; (void)lrt;
     size_t rid = 0;
     // cache the arguments
-    const Vector vec = *(Vector *)task->args;
+    const DVector vec = *(DVector *)task->args;
     const Rect<1> rect = *(Rect<1> *)task->local_args;
     // name the region
     const PhysicalRegion &vpr = rgns[rid++];
