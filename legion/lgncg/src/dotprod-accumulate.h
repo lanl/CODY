@@ -61,8 +61,12 @@ DotProdAccumulate::apply<true>(LHS &lhs, RHS rhs) {
 template<>
 void
 DotProdAccumulate::apply<false>(LHS &lhs, RHS rhs) {
-    // not supported at this time
-    assert(false);
+    int64_t *target = (int64_t *)&lhs;
+    union { int64_t as_int; double as_T; } oldval, newval;
+    do {
+        oldval.as_int = *target;
+        newval.as_T = oldval.as_T + rhs;
+    } while (!__sync_bool_compare_and_swap(target, oldval.as_int, newval.as_int));
 }
 
 template<>
@@ -74,7 +78,12 @@ DotProdAccumulate::fold<true>(RHS &rhs1, RHS rhs2) {
 template<>
 void
 DotProdAccumulate::fold<false>(RHS &rhs1, RHS rhs2) {
-    assert(false);
+    int64_t *target = (int64_t *)&rhs1;
+    union { int64_t as_int; double as_T; } oldval, newval;
+    do {
+        oldval.as_int = *target;
+        newval.as_T = oldval.as_T + rhs2;
+    } while (!__sync_bool_compare_and_swap(target, oldval.as_int, newval.as_int));
 }
 
 }

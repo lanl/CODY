@@ -202,9 +202,7 @@ checkcg(lgncg::Vector &x,
     );
     il.add_field(idx++, x.fid);
     // execute the thing...
-    FutureMap fm = lrt->execute_index_space(ctx, il);
-    // wait for timing
-    fm.wait_all_results();
+    (void)lrt->execute_index_space(ctx, il);
 }
 
 /**

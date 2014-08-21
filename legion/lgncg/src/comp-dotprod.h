@@ -77,15 +77,20 @@ dotprod(Vector &x,
         RegionRequirement(y.lp(), 0, READ_ONLY, EXCLUSIVE, y.lr)
     );
     il.add_field(idx++, y.fid);
+#if 1 // Better reduction way
     // execute the thing...
-    FutureMap fm = lrt->execute_index_space(ctx, il);
+    Future fResult = lrt->execute_index_space(ctx, il, LGNCG_DOTPROD_RED_ID);
     // now sum up all the answers
-    result = 0.0;
+    result = fResult.get_result<double>();
+#else // Explicit wait on Futures
+    FutureMap fm = lrt->execute_index_space(ctx, il);
     typedef GenericPointInRectIterator<1> GPRI1D;
+    result = 0.0;
     for (GPRI1D pi(x.lDom().get_rect<1>()); pi; pi++) {
         Future f = fm.get_future(DomainPoint::from_point<1>(pi.p));
         result += f.get_result<double>();
     }
+#endif
 }
 
 /**
@@ -133,7 +138,6 @@ dotProdTask(const LegionRuntime::HighLevel::Task *task,
     // now, actually perform the computation
     const int64_t lLen = myGridBounds.volume();
     double localRes = 0.0;
-    // TODO make reduction task
     for (int64_t i = 0; i < lLen; ++i) {
         localRes += xp[i] * yp[i];
     }

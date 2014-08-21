@@ -41,10 +41,10 @@ endif
 LGCG_DIR := ../../src
 
 #Flags for directing the runtime makefile what to include
-#DEBUG=0                   # Include debugging symbols
-DEBUG=0                   # Include debugging symbols
-#OUTPUT_LEVEL=LEVEL_DEBUG  # Compile time print level
-OUTPUT_LEVEL=LEVEL_NONE # Compile time print level
+DEBUG=0                   # Do NOT Include debugging symbols
+#DEBUG=1                   # Include debugging symbols
+OUTPUT_LEVEL=LEVEL_DEBUG  # Compile time print level
+#OUTPUT_LEVEL=LEVEL_NONE # Compile time print level
 SHARED_LOWLEVEL=1	  # Use the shared low level
 #ALT_MAPPERS=1		  # Compile the alternative mappers
 
@@ -66,7 +66,9 @@ CC_FLAGS := $(LGNCG_CC_FLAGS)
 # for gcc on OS X
 #CC_FLAGS     := -Wall -O2 -Wa,-q
 # optimized
-CC_FLAGS     += -Wall -Wextra -Ofast -ffast-math
+#CC_FLAGS     += -Wall -Wextra -Ofast -ffast-math
+# optimized/w profiling make sure OUTPUT_LEVEL=LEVEL_DEBUG
+CC_FLAGS     += -Wall -Wextra -Ofast -ffast-math -DLEGION_PROF
 #CC_FLAGS     += -Wall -Ofast -ffast-math -ftree-vectorize -ftree-vectorizer-verbose=0 -Wa,-q
 # debug
 #CC_FLAGS     += -Wall -O0 -g
