@@ -31,14 +31,20 @@ ifeq ($(LGNCG_DO_DENSITY_CHECKS), 1)
 LGNCG_CC_FLAGS = -DLGNCG_CHECK_OFF_R_DENSE
 endif
 
+# Flag indicating whether or not to enable Legion tracing within CG.
+LGNCG_DO_CG_TRACE = 0
+ifeq ($(LGNCG_DO_CG_TRACE), 1)
+LGNCG_CC_FLAGS = -DLGNCG_DO_CG_TRACE
+endif
+
 # for now just point to top-level src dir of lgncg
 LGCG_DIR := ../../src
 
 #Flags for directing the runtime makefile what to include
 #DEBUG=0                   # Include debugging symbols
 DEBUG=0                   # Include debugging symbols
-OUTPUT_LEVEL=LEVEL_DEBUG  # Compile time print level
-#OUTPUT_LEVEL=LEVEL_NONE # Compile time print level
+#OUTPUT_LEVEL=LEVEL_DEBUG  # Compile time print level
+OUTPUT_LEVEL=LEVEL_NONE # Compile time print level
 SHARED_LOWLEVEL=1	  # Use the shared low level
 #ALT_MAPPERS=1		  # Compile the alternative mappers
 

@@ -73,7 +73,7 @@ mg(SparseMatrix &A,
     veczero(x, ctx, lrt);
     // go to the next coarsest level if available
     if (A.mgData) {
-        int64_t nPresmootherSteps = A.mgData->nPresmootherSteps;
+        const int64_t nPresmootherSteps = A.mgData->nPresmootherSteps;
         for (int64_t i = 0; i < nPresmootherSteps; ++i) {
             symgs(A, x, r, ctx, lrt);
         }
@@ -82,7 +82,7 @@ mg(SparseMatrix &A,
         restriction(A, r, ctx, lrt);
         mg(*A.Ac, A.mgData->rc, A.mgData->xc, ctx, lrt);
         prolongation(A, x, ctx, lrt);
-        int64_t nPostsmootherSteps = A.mgData->nPostsmootherSteps;
+        const int64_t nPostsmootherSteps = A.mgData->nPostsmootherSteps;
         for (int64_t i = 0; i < nPostsmootherSteps; ++i) {
             symgs(A, x, r, ctx, lrt);
         }
