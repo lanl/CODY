@@ -38,6 +38,17 @@
 
 #include "legion.h"
 
+namespace {
+
+struct symgsTaskArgs {
+    uint8_t sweepi;
+    uint64_t nMatCols;
+
+    symgsTaskArgs(uint8_t s, uint64_t n) : sweepi(s), nMatCols(n) { ; }
+};
+
+}
+
 /**
  * implements one step of SYMmetric Gauss-Seidel.
  */
@@ -58,35 +69,19 @@ symgs(const SparseMatrix &A,
     // sanity - make sure that all launch domains are the same size
     assert(A.vals.lDom().get_volume() == x.lDom().get_volume() &&
            x.lDom().get_volume() == r.lDom().get_volume());
-    // create tmp array - not ideal, but seems to work. if you have time, find a
-    // place to stash this thing so it only has to be initialized once.
+    // create tmp array - not ideal, but seems to work.
     Vector tmpX;
     tmpX.create<double>(x.len, ctx, lrt);
     tmpX.partition(A.nParts, ctx, lrt);
-    // setup per-task args
     ArgumentMap argMap;
-    CGTaskArgs targs;
-    targs.sa = A;
-    targs.va = x;
-    targs.vb = r;
-    for (int i = 0; i < A.vals.lDom().get_volume(); ++i) {
-        targs.sa.vals.sgb = A.vals.sgb()[i];
-        targs.sa.diag.sgb = A.diag.sgb()[i];
-        targs.sa.mIdxs.sgb = A.mIdxs.sgb()[i];
-        targs.sa.nzir.sgb = A.nzir.sgb()[i];
-        // every task gets all of x AND its sub-grid.
-        targs.va.sgb = tmpX.sgb()[i];
-        targs.vb.sgb = r.sgb()[i];
-        argMap.set_point(DomainPoint::from_point<1>(Point<1>(i)),
-                         TaskArgument(&targs, sizeof(targs)));
-    }
     // FIXME - i don't like this. Performance and memory usage shortcomings.
-    static const int N_SWEEPS = 2;
-    for (int sweepi = 0; sweepi < N_SWEEPS; ++sweepi) {
+    static const uint8_t N_SWEEPS = 2;
+    for (uint8_t sweepi = 0; sweepi < N_SWEEPS; ++sweepi) {
         veccp(x, tmpX, ctx, lrt);
+        symgsTaskArgs taskArgs(sweepi, A.nCols);
         int idx = 0;
         IndexLauncher il(LGNCG_SYMGS_TID, A.vals.lDom(),
-                         TaskArgument(&sweepi, sizeof(sweepi)), argMap);
+                         TaskArgument(&taskArgs, sizeof(taskArgs)), argMap);
         // A's regions /////////////////////////////////////////////////////////
         // vals
         il.add_region_requirement(
@@ -146,45 +141,66 @@ symgsTask(const LegionRuntime::HighLevel::Task *task,
     using namespace LegionRuntime::Accessor;
     using LegionRuntime::Arrays::Rect;
     (void)ctx; (void)lrt;
+    static const uint8_t aValsRID  = 0;
+    static const uint8_t aDiagRID  = 1;
+    static const uint8_t aMIdxsRID = 2;
+    static const uint8_t aNZiRRID  = 3;
+    static const uint8_t xRWRID    = 4;
+    static const uint8_t xRID      = 5;
+    static const uint8_t rRID      = 6;
     // A (x4), x (x2), b
     assert(7 == rgns.size());
-    size_t rid = 0;
-    const CGTaskArgs targs = *(CGTaskArgs *)task->local_args;
-    const int sweepi = *(int *)task->args;
-#if 0 // nice debug
-    printf("%d: sub-grid bounds: (%d) to (%d)\n",
-            getTaskID(task), rect.lo.x[0], rect.hi.x[0]);
-#endif
+    const symgsTaskArgs args = *(symgsTaskArgs *)task->args;
+    const int64_t nMatCols = args.nMatCols;
     // name the regions
     // spare matrix regions
-    const PhysicalRegion &avpr = rgns[rid++];
-    const PhysicalRegion &adpr = rgns[rid++];
-    const PhysicalRegion &aipr = rgns[rid++];
-    const PhysicalRegion &azpr = rgns[rid++];
+    const PhysicalRegion &avpr = rgns[aValsRID];
+    const PhysicalRegion &adpr = rgns[aDiagRID];
+    const PhysicalRegion &aipr = rgns[aMIdxsRID];
+    const PhysicalRegion &azpr = rgns[aNZiRRID];
     // vector regions
-    const PhysicalRegion &xrwpr = rgns[rid++]; // read/write sub-region
-    const PhysicalRegion &xpr   = rgns[rid++]; // read only region (entire)
-    const PhysicalRegion &rpr   = rgns[rid++];
+    const PhysicalRegion &xrwpr = rgns[xRWRID]; // read/write sub-region
+    const PhysicalRegion &xpr   = rgns[xRID]; // read only region (entire)
+    const PhysicalRegion &rpr   = rgns[rRID];
     // convenience typedefs
     typedef RegionAccessor<AccessorType::Generic, double>  GDRA;
     typedef RegionAccessor<AccessorType::Generic, int64_t> GLRA;
     typedef RegionAccessor<AccessorType::Generic, uint8_t> GSRA;
     // sparse matrix
-    GDRA av = avpr.get_field_accessor(targs.sa.vals.fid).typeify<double>();
-    GDRA ad = adpr.get_field_accessor(targs.sa.diag.fid).typeify<double>();
-    GLRA ai = aipr.get_field_accessor(targs.sa.mIdxs.fid).typeify<int64_t>();
-    GSRA az = azpr.get_field_accessor(targs.sa.nzir.fid).typeify<uint8_t>();
+    GDRA av = avpr.get_field_accessor(0).typeify<double>();
+    const Domain aValsDom = lrt->get_index_space_domain(
+        ctx, task->regions[aValsRID].region.get_index_space()
+    );
+    GDRA ad = adpr.get_field_accessor(0).typeify<double>();
+    const Domain aDiagDom = lrt->get_index_space_domain(
+        ctx, task->regions[aDiagRID].region.get_index_space()
+    );
+    GLRA ai = aipr.get_field_accessor(0).typeify<int64_t>();
+    GSRA az = azpr.get_field_accessor(0).typeify<uint8_t>();
+    const Domain nZiRDom = lrt->get_index_space_domain(
+        ctx, task->regions[aNZiRRID].region.get_index_space()
+    );
     // vectors
-    GDRA xrw = xrwpr.get_field_accessor(targs.va.fid).typeify<double>();
-    GDRA x   = xpr.get_field_accessor(targs.va.fid).typeify<double>();
-    GDRA r   = rpr.get_field_accessor(targs.vb.fid).typeify<double>();
+    GDRA xrw = xrwpr.get_field_accessor(0).typeify<double>();
+    const Domain xRWDom = lrt->get_index_space_domain(
+        ctx, task->regions[xRWRID].region.get_index_space()
+    );
+    GDRA x = xpr.get_field_accessor(0).typeify<double>();
+    const Domain xDom = lrt->get_index_space_domain(
+        ctx, task->regions[xRID].region.get_index_space()
+    );
+    GDRA r = rpr.get_field_accessor(0).typeify<double>();
+    const Domain rDom = lrt->get_index_space_domain(
+        ctx, task->regions[rRID].region.get_index_space()
+    );
 
-    Rect<1> avsr; ByteOffset avOff[1];
-    Rect<1> myGridBounds = targs.sa.vals.sgb;
     // calculate nRows and nCols for the local subgrid
-    assert(0 == myGridBounds.volume() % targs.sa.nCols);
-    const int64_t lNRows = myGridBounds.volume() / targs.sa.nCols;
-    const int64_t lNCols = targs.sa.nCols;
+    Rect<1> myGridBounds = aValsDom.get_rect<1>();
+    assert(0 == myGridBounds.volume() % nMatCols);
+    const int64_t lNRows = myGridBounds.volume() / nMatCols;
+    const int64_t lNCols = nMatCols;
+    //
+    Rect<1> avsr; ByteOffset avOff[1];
     const double *const avp = av.raw_rect_ptr<1>(myGridBounds, avsr, avOff);
     bool offd = offsetsAreDense<1, double>(myGridBounds, avOff);
     assert(offd);
@@ -195,36 +211,36 @@ symgsTask(const LegionRuntime::HighLevel::Task *task,
     assert(offd);
     // diag and nzir are smaller (by a stencil size factor).
     Rect<1> adsr; ByteOffset adOff[1];
-    myGridBounds = targs.sa.diag.sgb;
+    myGridBounds = aDiagDom.get_rect<1>();
     const double *const adp = ad.raw_rect_ptr<1>(myGridBounds, adsr, adOff);
     offd = offsetsAreDense<1, double>(myGridBounds, adOff);
     assert(offd);
     // remember nzir and diag are the same length
-    myGridBounds = targs.sa.nzir.sgb;
-    const uint8_t *const azp = az.raw_rect_ptr<1>(myGridBounds, adsr, adOff);
+    Rect<1> azsr; ByteOffset azOff[1];
+    const uint8_t *const azp = az.raw_rect_ptr<1>(myGridBounds, azsr, azOff);
     offd = offsetsAreDense<1, uint8_t>(myGridBounds, adOff);
     assert(offd);
     // x - read/write
+    myGridBounds = xRWDom.get_rect<1>();
     Rect<1> xrwsr; ByteOffset xrwOff[1];
-    double *xrwp = xrw.raw_rect_ptr<1>(targs.va.sgb, xrwsr, xrwOff);
-    offd = offsetsAreDense<1, double>(targs.va.sgb, xrwOff);
+    double *xrwp = xrw.raw_rect_ptr<1>(myGridBounds, xrwsr, xrwOff);
+    offd = offsetsAreDense<1, double>(myGridBounds, xrwOff);
     assert(offd);
-    // x
+    // x (all of X)
     Rect<1> xsr; ByteOffset xOff[1];
-    // notice that we aren't using the subgridBounds here -- need all of x
-    myGridBounds = targs.va.bounds;
+    myGridBounds = xDom.get_rect<1>();
     const double *const xp = x.raw_rect_ptr<1>(myGridBounds, xsr, xOff);
     offd = offsetsAreDense<1, double>(myGridBounds, xOff);
     assert(offd);
     // r
     Rect<1> rsr; ByteOffset rOff[1];
-    myGridBounds = targs.vb.sgb;
+    myGridBounds = rDom.get_rect<1>();
     const double *const rp = r.raw_rect_ptr<1>(myGridBounds, rsr, rOff);
     offd = offsetsAreDense<1, double>(myGridBounds, rOff);
     assert(offd);
     // now, actually perform the computation
     // forward sweep
-    if (0 == sweepi) {
+    if (0 == args.sweepi) {
         for (int64_t i = 0; i < lNRows; ++i) {
             // get to base of next row of values
             const double *const cVals = (avp + (i * lNCols));

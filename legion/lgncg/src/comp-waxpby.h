@@ -39,12 +39,14 @@
 #include "legion.h"
 
 namespace {
+
 struct waxpbyTaskArgs {
     double alpha;
     double beta;
 
     waxpbyTaskArgs(double alpha, double beta) : alpha(alpha), beta(beta) { ; }
 };
+
 }
 
 namespace lgncg {
