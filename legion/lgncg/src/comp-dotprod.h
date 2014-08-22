@@ -110,20 +110,11 @@ dotProdTask(const LegionRuntime::HighLevel::Task *task,
     // this is the same for all vectors
     Rect<1> myGridBounds = xDom.get_rect<1>();
     const int64_t lLen = myGridBounds.volume();
-    // x
-    Rect<1> xsr; ByteOffset xOff[1];
-    const double *const xp = x.raw_rect_ptr<1>(myGridBounds, xsr, xOff);
-    bool offd = offsetsAreDense<1, double>(myGridBounds, xOff);
-    assert(offd);
-    // y
-    Rect<1> ysr; ByteOffset yOff[1];
-    const double *const yp = y.raw_rect_ptr<1>(myGridBounds, ysr, yOff);
-    offd = offsetsAreDense<1, double>(myGridBounds, yOff);
-    assert(offd);
     // now, actually perform the computation
     double localRes = 0.0;
-    for (int64_t i = 0; i < lLen; ++i) {
-        localRes += xp[i] * yp[i];
+    for (GenericPointInRectIterator<1> itr(xDom.get_rect<1>()); itr; itr++) {
+        localRes += x.read(DomainPoint::from_point<1>(itr.p)) *
+                    y.read(DomainPoint::from_point<1>(itr.p));
     }
     return localRes;
 }
