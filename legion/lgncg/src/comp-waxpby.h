@@ -38,6 +38,15 @@
 
 #include "legion.h"
 
+namespace {
+struct waxpbyTaskArgs {
+    double alpha;
+    double beta;
+
+    waxpbyTaskArgs(double alpha, double beta) : alpha(alpha), beta(beta) { ; }
+};
+}
+
 namespace lgncg {
 
 /**
@@ -57,21 +66,10 @@ waxpby(double alpha,
     // sanity - make sure that all launch domains are the same size
     assert(x.lDom().get_volume() == y.lDom().get_volume() &&
            y.lDom().get_volume() == w.lDom().get_volume());
-    // no per-task arguments. CGTaskArgs has task-specific info.
     ArgumentMap argMap;
-    // setup the global task args
-    CGTaskArgs targs;
-    targs.alpha = alpha;
-    targs.beta  = beta;
-    targs.va = x;
-    targs.vb = y;
-    targs.vc = w;
-    for (int i = 0; i < x.lDom().get_volume(); ++i) {
-        targs.va.sgb = x.sgb()[i];
-        argMap.set_point(DomainPoint::from_point<1>(Point<1>(i)),
-                         TaskArgument(&targs, sizeof(targs)));
-    }
-    IndexLauncher il(LGNCG_WAXPBY_TID, x.lDom(), TaskArgument(NULL, 0), argMap);
+    waxpbyTaskArgs taskArgs(alpha, beta);
+    IndexLauncher il(LGNCG_WAXPBY_TID, x.lDom(),
+                     TaskArgument(&taskArgs, sizeof(taskArgs)), argMap);
     // x's regions /////////////////////////////////////////////////////////////
     il.add_region_requirement(
         RegionRequirement(x.lp(), 0, READ_ONLY, EXCLUSIVE, x.lr)
@@ -105,27 +103,28 @@ waxpbyTask(const LegionRuntime::HighLevel::Task *task,
     using namespace LegionRuntime::Accessor;
     using LegionRuntime::Arrays::Rect;
     (void)ctx; (void)lrt;
+    static const uint8_t xRID = 0;
+    static const uint8_t yRID = 1;
+    static const uint8_t wRID = 2;
     // x, y, w
     assert(3 == rgns.size());
-    size_t rid = 0;
-    CGTaskArgs targs = *(CGTaskArgs *)task->local_args;
-#if 0 // nice debug
-    printf("%d: sub-grid bounds: (%d) to (%d)\n",
-            getTaskID(task), rect.lo.x[0], rect.hi.x[0]);
-#endif
+    const waxpbyTaskArgs targs = *(waxpbyTaskArgs *)task->args;
     // name the regions
-    const PhysicalRegion &xpr  = rgns[rid++];
-    const PhysicalRegion &ypr  = rgns[rid++];
-    const PhysicalRegion &wpr  = rgns[rid++];
+    const PhysicalRegion &xpr = rgns[xRID];
+    const PhysicalRegion &ypr = rgns[yRID];
+    const PhysicalRegion &wpr = rgns[wRID];
     // convenience typedefs
     typedef RegionAccessor<AccessorType::Generic, double>  GDRA;
     // vectors
-    GDRA x = xpr.get_field_accessor(targs.va.fid).typeify<double>();
-    GDRA y = ypr.get_field_accessor(targs.vb.fid).typeify<double>();
-    GDRA w = wpr.get_field_accessor(targs.vc.fid).typeify<double>();
-    // x
+    GDRA x = xpr.get_field_accessor(0).typeify<double>();
+    Domain xDom = lrt->get_index_space_domain(
+        ctx, task->regions[xRID].region.get_index_space()
+    );
+    GDRA y = ypr.get_field_accessor(0).typeify<double>();
+    GDRA w = wpr.get_field_accessor(0).typeify<double>();
     // this is the same for all vectors -- only do this once for x, y, and w
-    Rect<1> myGridBounds = targs.va.sgb;
+    Rect<1> myGridBounds = xDom.get_rect<1>();
+    // x
     Rect<1> xsr; ByteOffset xOff[1];
     const double *const xp = x.raw_rect_ptr<1>(myGridBounds, xsr, xOff);
     bool offd = offsetsAreDense<1, double>(myGridBounds, xOff);
