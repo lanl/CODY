@@ -91,18 +91,12 @@ veccpTask(const LegionRuntime::HighLevel::Task *task,
         ctx, task->regions[fRID].region.get_index_space()
     );
     GDRA to = vt.get_field_accessor(0).typeify<double>();
-    // same for to and from, so pick one
-    Rect<1> vecBounds = fDom.get_rect<1>();
-    Rect<1> fSubRect, tSubRect;
-    ByteOffset fOff[1], tOff[1];
-    const double *const fp = fm.raw_rect_ptr<1>(vecBounds, fSubRect, fOff);
-    double *tp = to.raw_rect_ptr<1>(vecBounds, tSubRect, tOff);
-    // some sanity here...
-    assert(fOff[0] == tOff[0] && fSubRect == tSubRect);
-    bool offd = offsetsAreDense<1, double>(fSubRect, fOff);
-    assert(offd);
-    const int64_t lLen = fSubRect.volume();
-    (void)memmove(tp, fp, lLen * sizeof(*tp));
+    for (GenericPointInRectIterator<1> itr(fDom.get_rect<1>()); itr; itr++) {
+        to.write(
+            DomainPoint::from_point<1>(itr.p),
+            fm.read(DomainPoint::from_point<1>(itr.p))
+        );
+    }
 }
 
 } // end lgncg namespace

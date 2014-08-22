@@ -124,8 +124,6 @@ waxpbyTask(const LegionRuntime::HighLevel::Task *task,
     );
     GDRA y = ypr.get_field_accessor(0).typeify<double>();
     GDRA w = wpr.get_field_accessor(0).typeify<double>();
-    // this is the same for all vectors -- only do this once for x, y, and w
-    Rect<1> myGridBounds = xDom.get_rect<1>();
     // now, actually perform the computation
     const double alpha = targs.alpha;
     const double beta  = targs.beta;

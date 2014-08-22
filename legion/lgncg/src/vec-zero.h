@@ -79,13 +79,9 @@ veczeroTask(const LegionRuntime::HighLevel::Task *task,
     const Domain vDom = lrt->get_index_space_domain(
         ctx, task->regions[vRID].region.get_index_space()
     );
-    Rect<1> vSubRect; ByteOffset vOff[1];
-    Rect<1> vsr = vDom.get_rect<1>();
-    double *vp = v.raw_rect_ptr<1>(vsr, vSubRect, vOff);
-    bool offd = offsetsAreDense<1, double>(vsr, vOff);
-    assert(offd);
-    const int64_t lLen = vsr.volume();
-    memset(vp, 0, lLen * sizeof(*vp));
+    for (GenericPointInRectIterator<1> itr(vDom.get_rect<1>()); itr; itr++) {
+        v.write(DomainPoint::from_point<1>(itr.p), 0.0);
+    }
 }
 
 } // end lgncg namespace
