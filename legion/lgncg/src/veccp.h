@@ -50,16 +50,7 @@ veccp(const Vector &from,
     assert(from.lDom().get_volume() == to.lDom().get_volume());
     // and the # of sgbs
     assert(from.sgb().size() == to.sgb().size());
-    // setup per-task arguments. we pass each task its sub-grid bounds
-    CGTaskArgs targs;
-    targs.va = from;
-    targs.vb = to;
     ArgumentMap argMap;
-    for (int i = 0; i < from.lDom().get_volume(); ++i) {
-        targs.va.sgb = targs.vb.sgb = from.sgb()[i];
-        argMap.set_point(DomainPoint::from_point<1>(Point<1>(i)),
-                         TaskArgument(&targs, sizeof(targs)));
-    }
     IndexLauncher il(LGNCG_VECCP_TID, from.lDom(),
                      TaskArgument(NULL, 0), argMap);
     // from
@@ -89,26 +80,25 @@ veccpTask(const LegionRuntime::HighLevel::Task *task,
     using namespace LegionRuntime::Accessor;
     using LegionRuntime::Arrays::Rect;
     (void)ctx; (void)lrt;
-    size_t rid = 0;
-    CGTaskArgs targs = *(CGTaskArgs *)task->local_args;
-#if 0 // nice debug
-    printf("%d: sub-grid bounds: (%d) to (%d)\n",
-            getTaskID(task), rect.lo.x[0], rect.hi.x[0]);
-#endif
+    static const uint8_t fRID = 0;
+    static const uint8_t tRID = 1;
     // name the regions: from and to
-    const PhysicalRegion &vf = rgns[rid++];
-    const PhysicalRegion &vt = rgns[rid++];
-
+    const PhysicalRegion &vf = rgns[fRID];
+    const PhysicalRegion &vt = rgns[tRID];
     typedef RegionAccessor<AccessorType::Generic, double> GDRA;
-    GDRA fm = vf.get_field_accessor(targs.va.fid).typeify<double>();
-    GDRA to = vt.get_field_accessor(targs.vb.fid).typeify<double>();
+    GDRA fm = vf.get_field_accessor(0).typeify<double>();
+    const Domain fDom = lrt->get_index_space_domain(
+        ctx, task->regions[fRID].region.get_index_space()
+    );
+    GDRA to = vt.get_field_accessor(0).typeify<double>();
+    // same for to and from, so pick one
+    Rect<1> vecBounds = fDom.get_rect<1>();
     Rect<1> fSubRect, tSubRect;
     ByteOffset fOff[1], tOff[1];
-    const double *const fp = fm.raw_rect_ptr<1>(targs.va.sgb, fSubRect, fOff);
-    double *tp = to.raw_rect_ptr<1>(targs.vb.sgb, tSubRect, tOff);
+    const double *const fp = fm.raw_rect_ptr<1>(vecBounds, fSubRect, fOff);
+    double *tp = to.raw_rect_ptr<1>(vecBounds, tSubRect, tOff);
     // some sanity here...
-    assert(fOff[0] == tOff[0]);
-    assert(fSubRect == tSubRect);
+    assert(fOff[0] == tOff[0] && fSubRect == tSubRect);
     bool offd = offsetsAreDense<1, double>(fSubRect, fOff);
     assert(offd);
     const int64_t lLen = fSubRect.volume();
