@@ -47,15 +47,8 @@ veczero(Vector &v,
     int idx = 0;
     // setup per-task arguments. we pass each task its sub-grid bounds
     ArgumentMap argMap;
-    for (int i = 0; i < v.lDom().get_volume(); ++i) {
-        Rect<1> sgb = v.sgb()[i];
-        argMap.set_point(DomainPoint::from_point<1>(Point<1>(i)),
-                         TaskArgument(&sgb, sizeof(Rect<1>)));
-    }
-    DVector dv;
-    dv = v;
     IndexLauncher il(LGNCG_VEC_ZERO_TID, v.lDom(),
-                     TaskArgument(&dv, sizeof(DVector)), argMap);
+                     TaskArgument(NULL, 0), argMap);
     il.add_region_requirement(
         RegionRequirement(v.lp(), 0, WRITE_DISCARD, EXCLUSIVE, v.lr)
     );
@@ -77,21 +70,21 @@ veczeroTask(const LegionRuntime::HighLevel::Task *task,
     using namespace LegionRuntime::Accessor;
     using LegionRuntime::Arrays::Rect;
     (void)ctx; (void)lrt;
-    size_t rid = 0;
-    // cache the arguments
-    const DVector vec = *(DVector *)task->args;
-    const Rect<1> rect = *(Rect<1> *)task->local_args;
+    static const uint8_t vRID = 0;
     // name the region
-    const PhysicalRegion &vpr = rgns[rid++];
+    const PhysicalRegion &vpr = rgns[vRID];
     // convenience typedef
     typedef RegionAccessor<AccessorType::Generic, double> GDRA;
-    GDRA v = vpr.get_field_accessor(vec.fid).typeify<double>();
-    Rect<1> vSubRect;
-    ByteOffset vOff[1];
-    double *vp = v.raw_rect_ptr<1>(rect, vSubRect, vOff);
-    bool offd = offsetsAreDense<1, double>(vSubRect, vOff);
+    GDRA v = vpr.get_field_accessor(0).typeify<double>();
+    const Domain vDom = lrt->get_index_space_domain(
+        ctx, task->regions[vRID].region.get_index_space()
+    );
+    Rect<1> vSubRect; ByteOffset vOff[1];
+    Rect<1> vsr = vDom.get_rect<1>();
+    double *vp = v.raw_rect_ptr<1>(vsr, vSubRect, vOff);
+    bool offd = offsetsAreDense<1, double>(vsr, vOff);
     assert(offd);
-    const int64_t lLen = vSubRect.volume();
+    const int64_t lLen = vsr.volume();
     memset(vp, 0, lLen * sizeof(*vp));
 }
 
