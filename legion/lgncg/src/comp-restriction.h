@@ -56,23 +56,7 @@ restriction(SparseMatrix &A,
 {
     using namespace LegionRuntime::HighLevel;
     int idx = 0;
-    // no per-task arguments. CGTaskArgs has task-specific info.
     ArgumentMap argMap;
-    // setup the global task args
-    CGTaskArgs targs;
-    targs.va = A.mgData->Axf;
-    targs.vb = rf;
-    targs.vc = A.mgData->rc;
-    targs.vd = A.mgData->f2cOp;
-    for (int i = 0; i < A.vals.lDom().get_volume(); ++i) {
-        targs.va.sgb = A.mgData->Axf.sgb()[i];
-        targs.vb.sgb = rf.sgb()[i];
-        targs.vc.sgb = A.mgData->rc.sgb()[i];
-        targs.vd.sgb = A.mgData->f2cOp.sgb()[i];
-        argMap.set_point(DomainPoint::from_point<1>(Point<1>(i)),
-                         TaskArgument(&targs, sizeof(targs)));
-    }
-
     IndexLauncher il(LGNCG_RESTRICTION_TID, A.mgData->Axf.lDom(),
                      TaskArgument(NULL, 0), argMap);
     // A.mgData->Axf
@@ -117,47 +101,62 @@ restrictionTask(
     using namespace LegionRuntime::Accessor;
     using LegionRuntime::Arrays::Rect;
     (void)ctx; (void)lrt;
+    static const uint8_t AxfRID  = 0;
+    static const uint8_t rfRID   = 1;
+    static const uint8_t rcRID   = 2;
+    static const uint8_t f2cRID  = 3;
     // A.mgData->Axf, rf, A.mgData->rc, A.mgData->f2cOp
     assert(4 == rgns.size());
-    size_t rid = 0;
-    const CGTaskArgs targs = *(CGTaskArgs *)task->local_args;
     // name the regions
-    const PhysicalRegion &Axfpr = rgns[rid++];
-    const PhysicalRegion &rfpr  = rgns[rid++];
-    const PhysicalRegion &rcpr  = rgns[rid++];
-    const PhysicalRegion &f2cpr = rgns[rid++];
+    const PhysicalRegion &Axfpr = rgns[AxfRID];
+    const PhysicalRegion &rfpr  = rgns[rfRID];
+    const PhysicalRegion &rcpr  = rgns[rcRID];
+    const PhysicalRegion &f2cpr = rgns[f2cRID];
     // convenience typedefs
     typedef RegionAccessor<AccessorType::Generic, double>  GDRA;
     typedef RegionAccessor<AccessorType::Generic, int64_t> GLRA;
     // vectors
-    GDRA Axf = Axfpr.get_field_accessor(targs.va.fid).typeify<double>();
-    GDRA rf  = rfpr.get_field_accessor(targs.vb.fid).typeify<double>();
-    GDRA rc  = rcpr.get_field_accessor(targs.vc.fid).typeify<double>();
-    GLRA f2c = f2cpr.get_field_accessor(targs.vd.fid).typeify<int64_t>();
-
+    GDRA Axf = Axfpr.get_field_accessor(0).typeify<double>();
+    const Domain AxfDom = lrt->get_index_space_domain(
+        ctx, task->regions[AxfRID].region.get_index_space()
+    );
+    GDRA rf  = rfpr.get_field_accessor(0).typeify<double>();
+    const Domain rfDom = lrt->get_index_space_domain(
+        ctx, task->regions[rfRID].region.get_index_space()
+    );
+    GDRA rc  = rcpr.get_field_accessor(0).typeify<double>();
+    const Domain rcDom = lrt->get_index_space_domain(
+        ctx, task->regions[rcRID].region.get_index_space()
+    );
+    GLRA f2c = f2cpr.get_field_accessor(0).typeify<int64_t>();
+    const Domain f2cDom = lrt->get_index_space_domain(
+        ctx, task->regions[f2cRID].region.get_index_space()
+    );
+    Rect<1> myGridBounds = AxfDom.get_rect<1>();
     Rect<1> rec; ByteOffset boff[1];
     // Axf
-    Rect<1> myGridBounds = targs.va.sgb;
     const double *const Axfp = Axf.raw_rect_ptr<1>(myGridBounds, rec, boff);
     bool offd = offsetsAreDense<1, double>(myGridBounds, boff);
     assert(offd);
     // rf
-    myGridBounds = targs.vb.sgb;
+    myGridBounds = rfDom.get_rect<1>();
     const double *const rfp = rf.raw_rect_ptr<1>(myGridBounds, rec, boff);
     offd = offsetsAreDense<1, double>(myGridBounds, boff);
     assert(offd);
     // rc
-    myGridBounds = targs.vc.sgb;
+    myGridBounds = rcDom.get_rect<1>();
     double *rcp = rc.raw_rect_ptr<1>(myGridBounds, rec, boff);
     offd = offsetsAreDense<1, double>(myGridBounds, boff);
     assert(offd);
     // f2c
-    myGridBounds = targs.vd.sgb;
-    const int64_t *const f2cp = f2c.raw_rect_ptr<1>(myGridBounds, rec, boff);
+    myGridBounds = f2cDom.get_rect<1>();
+    Rect<1> f2csr; ByteOffset f2cOff[1];
+    const int64_t *const f2cp = f2c.raw_rect_ptr<1>(myGridBounds,
+                                                    f2csr, f2cOff);
     offd = offsetsAreDense<1, int64_t>(myGridBounds, boff);
     assert(offd);
     // now, actually perform the computation
-    const int64_t nc = targs.vc.sgb.volume(); // length of rc
+    const int64_t nc = rcDom.get_rect<1>().volume();
     for (int64_t i = 0; i < nc; ++i) {
         rcp[i] = rfp[f2cp[i]] - Axfp[f2cp[i]];
     }
