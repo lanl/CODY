@@ -117,7 +117,7 @@ waxpbyTask(const LegionRuntime::HighLevel::Task *task,
     typedef RegionAccessor<AccessorType::Generic, double>  GDRA;
     // vectors
     GDRA x = xpr.get_field_accessor(0).typeify<double>();
-    Domain xDom = lrt->get_index_space_domain(
+    const Domain xDom = lrt->get_index_space_domain(
         ctx, task->regions[xRID].region.get_index_space()
     );
     GDRA y = ypr.get_field_accessor(0).typeify<double>();

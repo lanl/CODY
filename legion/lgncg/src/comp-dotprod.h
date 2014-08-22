@@ -56,15 +56,6 @@ dotprod(Vector &x,
     assert(x.lDom().get_volume() == y.lDom().get_volume());
     // no per-task arguments. CGTaskArgs has task-specific info.
     ArgumentMap argMap;
-    // setup the global task args
-    CGTaskArgs targs;
-    targs.va = x;
-    targs.vb = y;
-    for (int i = 0; i < x.lDom().get_volume(); ++i) {
-        targs.va.sgb = x.sgb()[i];
-        argMap.set_point(DomainPoint::from_point<1>(Point<1>(i)),
-                         TaskArgument(&targs, sizeof(targs)));
-    }
     IndexLauncher il(LGNCG_DOTPROD_TID, x.lDom(),
                      TaskArgument(NULL, 0), argMap);
     // x's regions /////////////////////////////////////////////////////////////
@@ -77,20 +68,10 @@ dotprod(Vector &x,
         RegionRequirement(y.lp(), 0, READ_ONLY, EXCLUSIVE, y.lr)
     );
     il.add_field(idx++, y.fid);
-#if 1 // Better reduction way
     // execute the thing...
     Future fResult = lrt->execute_index_space(ctx, il, LGNCG_DOTPROD_RED_ID);
     // now sum up all the answers
     result = fResult.get_result<double>();
-#else // Explicit wait on Futures
-    FutureMap fm = lrt->execute_index_space(ctx, il);
-    typedef GenericPointInRectIterator<1> GPRI1D;
-    result = 0.0;
-    for (GPRI1D pi(x.lDom().get_rect<1>()); pi; pi++) {
-        Future f = fm.get_future(DomainPoint::from_point<1>(pi.p));
-        result += f.get_result<double>();
-    }
-#endif
 }
 
 /**
@@ -107,25 +88,29 @@ dotProdTask(const LegionRuntime::HighLevel::Task *task,
     using namespace LegionRuntime::Accessor;
     using LegionRuntime::Arrays::Rect;
     (void)ctx; (void)lrt;
+    static const uint8_t xRID = 0;
+    static const uint8_t yRID = 1;
     // x, y
     assert(2 == rgns.size());
-    size_t rid = 0;
-    const CGTaskArgs targs = *(CGTaskArgs *)task->local_args;
 #if 0 // nice debug
     printf("%d: sub-grid bounds: (%d) to (%d)\n",
             getTaskID(task), rect.lo.x[0], rect.hi.x[0]);
 #endif
     // name the regions
-    const PhysicalRegion &xpr = rgns[rid++];
-    const PhysicalRegion &ypr = rgns[rid++];
+    const PhysicalRegion &xpr = rgns[xRID];
+    const PhysicalRegion &ypr = rgns[yRID];
     // convenience typedefs
     typedef RegionAccessor<AccessorType::Generic, double>  GDRA;
     // vectors
-    GDRA x = xpr.get_field_accessor(targs.va.fid).typeify<double>();
-    GDRA y = ypr.get_field_accessor(targs.vb.fid).typeify<double>();
-    // x
+    GDRA x = xpr.get_field_accessor(0).typeify<double>();
+    const Domain xDom = lrt->get_index_space_domain(
+        ctx, task->regions[xRID].region.get_index_space()
+    );
+    GDRA y = ypr.get_field_accessor(0).typeify<double>();
     // this is the same for all vectors
-    Rect<1> myGridBounds = targs.va.sgb;
+    Rect<1> myGridBounds = xDom.get_rect<1>();
+    const int64_t lLen = myGridBounds.volume();
+    // x
     Rect<1> xsr; ByteOffset xOff[1];
     const double *const xp = x.raw_rect_ptr<1>(myGridBounds, xsr, xOff);
     bool offd = offsetsAreDense<1, double>(myGridBounds, xOff);
@@ -136,7 +121,6 @@ dotProdTask(const LegionRuntime::HighLevel::Task *task,
     offd = offsetsAreDense<1, double>(myGridBounds, yOff);
     assert(offd);
     // now, actually perform the computation
-    const int64_t lLen = myGridBounds.volume();
     double localRes = 0.0;
     for (int64_t i = 0; i < lLen; ++i) {
         localRes += xp[i] * yp[i];
