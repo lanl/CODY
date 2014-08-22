@@ -126,27 +126,13 @@ waxpbyTask(const LegionRuntime::HighLevel::Task *task,
     GDRA w = wpr.get_field_accessor(0).typeify<double>();
     // this is the same for all vectors -- only do this once for x, y, and w
     Rect<1> myGridBounds = xDom.get_rect<1>();
-    // x
-    Rect<1> xsr; ByteOffset xOff[1];
-    const double *const xp = x.raw_rect_ptr<1>(myGridBounds, xsr, xOff);
-    bool offd = offsetsAreDense<1, double>(myGridBounds, xOff);
-    assert(offd);
-    // y
-    Rect<1> ysr; ByteOffset yOff[1];
-    const double *const yp = y.raw_rect_ptr<1>(myGridBounds, ysr, yOff);
-    offd = offsetsAreDense<1, double>(myGridBounds, yOff);
-    assert(offd);
-    // w
-    Rect<1> wsr; ByteOffset wOff[1];
-    double *wp = w.raw_rect_ptr<1>(myGridBounds, wsr, wOff);
-    offd = offsetsAreDense<1, double>(myGridBounds, wOff);
-    assert(offd);
     // now, actually perform the computation
     const double alpha = targs.alpha;
     const double beta  = targs.beta;
-    const int64_t lLen = myGridBounds.volume();
-    for (int64_t i = 0; i < lLen; ++i) {
-        wp[i] = (alpha * xp[i]) + (beta * yp[i]);
+    for (GenericPointInRectIterator<1> itr(xDom.get_rect<1>()); itr; itr++) {
+        double tmp = (alpha * x.read(DomainPoint::from_point<1>(itr.p))) +
+                     (beta  * y.read(DomainPoint::from_point<1>(itr.p)));
+        w.write(DomainPoint::from_point<1>(itr.p), tmp);
     }
 }
 
