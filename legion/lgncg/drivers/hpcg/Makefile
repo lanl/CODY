@@ -68,9 +68,9 @@ CC_FLAGS := $(LGNCG_CC_FLAGS)
 # optimized
 #CC_FLAGS     += -Wall -Wextra -Ofast -ffast-math
 # optimized/w profiling make sure OUTPUT_LEVEL=LEVEL_DEBUG
-#CC_FLAGS     += -Wall -Wextra -Ofast -ffast-math -DLEGION_PROF
+CC_FLAGS     += -Wall -Wextra -Ofast -ffast-math -DLEGION_PROF
 # debug
-CC_FLAGS += -Wall -Wextra -O0 -DPRIVILEGE_CHECKS -DBOUNDS_CHECKS -DINORDER_EXECUTION -DFULL_SIZE_INSTANCES
+#CC_FLAGS += -Wall -Wextra -O0 -DPRIVILEGE_CHECKS -DBOUNDS_CHECKS -DINORDER_EXECUTION -DFULL_SIZE_INSTANCES
 #CC_FLAGS     += -Wall -Ofast -ffast-math -ftree-vectorize -ftree-vectorizer-verbose=0 -Wa,-q
 # debug
 #CC_FLAGS     += -Wall -O0 -g
