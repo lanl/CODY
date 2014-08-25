@@ -107,9 +107,6 @@ dotProdTask(const LegionRuntime::HighLevel::Task *task,
         ctx, task->regions[xRID].region.get_index_space()
     );
     GDRA y = ypr.get_field_accessor(0).typeify<double>();
-    // this is the same for all vectors
-    Rect<1> myGridBounds = xDom.get_rect<1>();
-    const int64_t lLen = myGridBounds.volume();
     // now, actually perform the computation
     double localRes = 0.0;
     for (GenericPointInRectIterator<1> itr(xDom.get_rect<1>()); itr; itr++) {

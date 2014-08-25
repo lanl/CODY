@@ -177,9 +177,6 @@ symgsTask(const LegionRuntime::HighLevel::Task *task,
     );
     GLRA ai = aipr.get_field_accessor(0).typeify<int64_t>();
     GSRA az = azpr.get_field_accessor(0).typeify<uint8_t>();
-    const Domain nZiRDom = lrt->get_index_space_domain(
-        ctx, task->regions[aNZiRRID].region.get_index_space()
-    );
     // vectors
     GDRA xrw = xrwpr.get_field_accessor(0).typeify<double>();
     const Domain xRWDom = lrt->get_index_space_domain(

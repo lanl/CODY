@@ -71,6 +71,20 @@ offsetsAreDense(const Rect<DIM> &bounds,
 #endif
 }
 
+/**
+ * courtesy of some other legion code.
+ */
+static inline bool
+offsetMismatch(int i,
+               const LegionRuntime::Accessor::ByteOffset *off1,
+               const LegionRuntime::Accessor::ByteOffset *off2)
+{
+    while (i-- > 0) {
+        if ((off1++)->offset != (off2++)->offset) return true;
+    }
+    return false;
+}
+
 } // end lgncg namespace
 
 #endif

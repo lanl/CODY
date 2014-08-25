@@ -40,12 +40,98 @@
 
 namespace {
 
+namespace lra = LegionRuntime::Accessor;
+
+typedef lra::RegionAccessor<lra::AccessorType::Generic, double>  GDRA;
+typedef lra::RegionAccessor<lra::AccessorType::Generic, int64_t> GLRA;
+
 struct spmvTaskArgs {
 
     int64_t nCols;
 
     spmvTaskArgs(int64_t nCols) : nCols(nCols) { ; }
 };
+
+#define LGNCG_DENSE_SPMV_STRIP_SIZE 256
+
+/**
+ * Adapted from another Legion CG code.
+ */
+template<int MAX_NZEROS>
+bool
+denseSPMV(const Rect<1> &subGridBounds,
+		  const Rect<1> &elemBounds,
+		  const Rect<1> &vecBounds,
+          GLRA &faCol,
+          GDRA &faVal,
+          GDRA &faX,
+          GDRA &faY)
+{
+    using namespace lgncg;
+    using namespace LegionRuntime::HighLevel;
+    using namespace LegionRuntime::Accessor;
+
+    Rect<1> subrect;
+    ByteOffset inOffsets[1], offsets[1];
+    //
+    const int64_t *colp = faCol.raw_rect_ptr<1>(
+        elemBounds, subrect, inOffsets
+    );
+    if (!colp || (subrect != elemBounds) ||
+        !offsetsAreDense<1, double>(elemBounds, inOffsets)) return false;
+    //
+    const double *valp = faVal.raw_rect_ptr<1>(
+        elemBounds, subrect, offsets
+    );
+    if (!valp || (subrect != elemBounds) ||
+        offsetMismatch(1, inOffsets, offsets)) return false;
+    //
+    const double *xp = faX.raw_rect_ptr<1>(
+        vecBounds, subrect, offsets
+    );
+    if (!xp || (subrect != vecBounds) ||
+        !offsetsAreDense<1, double>(vecBounds, offsets)) return false;
+    //
+    double *yp = faY.raw_rect_ptr<1>(
+        subGridBounds, subrect, offsets
+    );
+    if (!yp || (subrect != subGridBounds) ||
+        !offsetsAreDense<1, double>(subGridBounds, offsets)) return false;
+    // if we are here, then let the calculation begin
+    int nRows = subGridBounds.volume();
+    while (nRows > 0) {
+        if (nRows >= LGNCG_DENSE_SPMV_STRIP_SIZE) {
+            for (int i = 0; i < LGNCG_DENSE_SPMV_STRIP_SIZE; ++i) {
+                double sum = 0.0;
+                for (int j = 0; j < MAX_NZEROS; ++j) {
+                    const int index = colp[i * MAX_NZEROS + j];
+                    const double val = valp[i * MAX_NZEROS + j];
+                    const double xval = xp[index];
+                    sum += (val * xval);
+                }
+                yp[i] = sum;
+            }
+            nRows -= LGNCG_DENSE_SPMV_STRIP_SIZE;
+            colp += (MAX_NZEROS * LGNCG_DENSE_SPMV_STRIP_SIZE);
+            valp += (MAX_NZEROS * LGNCG_DENSE_SPMV_STRIP_SIZE);
+            yp += LGNCG_DENSE_SPMV_STRIP_SIZE;
+        }
+        else {
+            for (int i = 0; i < nRows; ++i) {
+                double sum = 0.0;
+                for (int j = 0; j < MAX_NZEROS; ++j) {
+                    const int index = colp[i * MAX_NZEROS + j];
+                    const double val = valp[i * MAX_NZEROS + j];
+                    const double xval = xp[index];
+                    sum += (val * xval);
+                }
+                yp[i] = sum;
+            }
+            nRows = 0;
+        }
+    }
+    return true;
+}
 
 }
 
@@ -146,20 +232,35 @@ spmvTask(const LegionRuntime::HighLevel::Task *task,
     );
     // vectors
     GDRA x = xpr.get_field_accessor(0).typeify<double>();
+    const Domain xDom = lrt->get_index_space_domain(
+        ctx, task->regions[xRID].region.get_index_space()
+    );
     GDRA y = ypr.get_field_accessor(0).typeify<double>();
     const Domain yDom = lrt->get_index_space_domain(
         ctx, task->regions[yRID].region.get_index_space()
     );
-    //
-    const int64_t lNCols = targs.nCols;
-    const int64_t lNRows = aValsDom.get_rect<1>().volume() / lNCols;
     // now, actually perform the computation
+    const int64_t maxNon0sInCol = targs.nCols;
+    const int64_t lNRows = aValsDom.get_rect<1>().volume() / maxNon0sInCol;
+    Rect<1> rowRect  = yDom.get_rect<1>();
+    Rect<1> elemRect = aMIdxsDom.get_rect<1>();
+    Rect<1> vecRect  = xDom.get_rect<1>();
+    // try fast path
+    switch (maxNon0sInCol) {
+        case 27: {
+            if (denseSPMV<27>(rowRect, elemRect, vecRect, ai, av, x, y)) {
+                // done
+                return;
+            }
+        }
+    }
+    // if here, then we are going with the slower path
     DomainPoint pir; pir.dim = 1;
     GenericPointInRectIterator<1> rowItr(yDom.get_rect<1>());
     GenericPointInRectIterator<1> ciItr(aMIdxsDom.get_rect<1>());
     for (int64_t i = 0; i < lNRows; ++i, rowItr++) {
         double sum = 0.0;
-        for (int64_t j = 0; j < lNCols; ++j, ciItr++) {
+        for (int64_t j = 0; j < maxNon0sInCol; ++j, ciItr++) {
             int64_t index = ai.read(DomainPoint::from_point<1>(ciItr.p));
             pir.point_data[0] = index;
             sum += av.read(DomainPoint::from_point<1>(ciItr.p)) * x.read(pir);

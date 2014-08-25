@@ -66,11 +66,11 @@ CC_FLAGS := $(LGNCG_CC_FLAGS)
 # for gcc on OS X
 #CC_FLAGS     := -Wall -O2 -Wa,-q
 # optimized
-#CC_FLAGS     += -Wall -Wextra -Ofast -ffast-math
+#CC_FLAGS     += -Wall -Wextra -Ofast -ftree-vectorize -ffast-math -Wa,-q
 # optimized/w profiling make sure OUTPUT_LEVEL=LEVEL_DEBUG
-#CC_FLAGS     += -Wall -Wextra -Ofast -ffast-math -DLEGION_PROF
+CC_FLAGS     += -Wall -Ofast -ffast-math -DLEGION_PROF
 # debug
-CC_FLAGS += -Wall -Wextra -O0 -DPRIVILEGE_CHECKS -DBOUNDS_CHECKS -DINORDER_EXECUTION -DFULL_SIZE_INSTANCES -Wa,-q
+#CC_FLAGS += -Wall -Wextra -O0 -DPRIVILEGE_CHECKS -DBOUNDS_CHECKS -DINORDER_EXECUTION -DFULL_SIZE_INSTANCES -Wa,-q
 #CC_FLAGS += -Wall -Wextra -O0 -DPRIVILEGE_CHECKS -DBOUNDS_CHECKS -Wa,-q
 #CC_FLAGS     += -Wall -Ofast -ffast-math -ftree-vectorize -ftree-vectorizer-verbose=0 -Wa,-q
 # debug
@@ -105,9 +105,10 @@ ECHO	:= echo
 TOUCH	:= touch
 MAKE	:= make
 ifndef GCC
-#GCC	:= g++
+GCC	:= g++
 # for gcc on OS X
-GCC	:= g++-4.8 -mavx -march=corei7-avx
+#GCC	:= g++-4.8 -mavx -march=corei7-avx
+#GCC	:= g++-4.8
 endif
 ifndef NVCC
 NVCC	:= $(CUDA)/bin/nvcc
