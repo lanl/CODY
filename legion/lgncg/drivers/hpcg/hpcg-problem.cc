@@ -64,17 +64,14 @@ struct HPCGTaskArgs {
  * task arguments for populatef2cTasks
  */
 struct PF2CTaskArgs {
-    // fine to coarse operator vector
-    lgncg::DVector f2c;
     // fine geometry
     lgncg::Geometry fGeom;
     // coarse geometry
     lgncg::Geometry cGeom;
 
-    PF2CTaskArgs(const lgncg::Vector &f2c,
-                 const lgncg::Geometry &fGeom,
+    PF2CTaskArgs(const lgncg::Geometry &fGeom,
                  const lgncg::Geometry cGeom)
-        : fGeom(fGeom), cGeom(cGeom) { this->f2c = f2c; }
+        : fGeom(fGeom), cGeom(cGeom) { ; }
 };
 
 } // end namespace
@@ -339,20 +336,14 @@ Problem::populatef2c(lgncg::SparseMatrix &Af,
     using LegionRuntime::Arrays::Rect;
     // start task launch prep
     int idx = 0;
-    // setup task launcher to populate f2cOp
     ArgumentMap argMap;
-    PF2CTaskArgs targs(Af.mgData->f2cOp, fineGeom, coarseGeom);
-    for (int i = 0; i < Af.vals.lDom().get_volume(); ++i) {
-        targs.f2c.sgb = Af.mgData->f2cOp.sgb()[i];
-        argMap.set_point(DomainPoint::from_point<1>(Point<1>(i)),
-                         TaskArgument(&targs, sizeof(targs)));
-    }
+    PF2CTaskArgs targs(fineGeom, coarseGeom);
     lgncg::MGData *mgd = Af.mgData;
     IndexLauncher il(Problem::populatef2cTID, mgd->f2cOp.lDom(),
-                     TaskArgument(NULL, 0), argMap);
+                     TaskArgument(&targs, sizeof(targs)), argMap);
     // f2cOp
     il.add_region_requirement(
-        RegionRequirement(mgd->f2cOp.lp(), 0, READ_WRITE,
+        RegionRequirement(mgd->f2cOp.lp(), 0, WRITE_DISCARD,
                           EXCLUSIVE, mgd->f2cOp.lr)
     );
     il.add_field(idx++, mgd->f2cOp.fid);
@@ -376,41 +367,39 @@ populatef2cTask(
     using namespace lgncg;
     (void)ctx;
     (void)lrt;
+    static const uint8_t f2cOpFID = 0;
     // f2cOp
     assert(1 == rgns.size());
-    size_t rid = 0;
-    const PF2CTaskArgs args = *(PF2CTaskArgs *)task->local_args;
-    const lgncg::DVector &f2cv = args.f2c;
+    const PF2CTaskArgs args = *(PF2CTaskArgs *)task->args;
     const Geometry &fGeom = args.fGeom;
     const Geometry &cGeom = args.cGeom;
     // name the regions
-    const PhysicalRegion &f2cpr = rgns[rid++];
+    const PhysicalRegion &f2cpr = rgns[f2cOpFID];
     // convenience typedefs
     typedef RegionAccessor<AccessorType::Generic, int64_t>  GIRA;
     // get handles to all the matrix accessors that we need
     // fine length (both are the same)
-    GIRA f2c = f2cpr.get_field_accessor(f2cv.fid).typeify<int64_t>();
-    Rect<1> f2csr; ByteOffset f2cOff[1];
-    int64_t *f2cp = f2c.raw_rect_ptr<1>(f2cv.sgb, f2csr, f2cOff);
-    bool offd = offsetsAreDense<1, int64_t>(f2cv.sgb, f2cOff);
-    assert(offd);
-
-    const size_t f2cLen = args.f2c.sgb.volume();
-    (void)memset(f2cp, 0, f2cLen * sizeof(*f2cp));
+    GIRA f2c = f2cpr.get_field_accessor(0).typeify<int64_t>();
+    const Domain f2cOpDom = lrt->get_index_space_domain(
+        ctx, task->regions[f2cOpFID].region.get_index_space()
+    );
     const int64_t nxf = fGeom.nx;
     const int64_t nyf = fGeom.ny;
     const int64_t nxc = cGeom.nx;
     const int64_t nyc = cGeom.ny;
     const int64_t nzc = cGeom.nz;
+    GenericPointInRectIterator<1> f2cOpItr(f2cOpDom.get_rect<1>());
     for (int64_t izc = 0; izc < nzc; ++izc) {
         const int64_t izf = 2 * izc;
         for (int64_t iyc = 0; iyc < nyc; ++iyc) {
             const int64_t iyf = 2 * iyc;
             for (int64_t ixc = 0; ixc < nxc; ++ixc) {
                 const int64_t ixf = 2 * ixc;
-                const int64_t currentCoarseRow = izc * nxc * nyc + iyc * nxc + ixc;
+                //const int64_t currentCoarseRow = izc * nxc * nyc + iyc * nxc + ixc;
                 const int64_t currentFineRow   = izf * nxf * nyf + iyf * nxf + ixf;
-                f2cp[currentCoarseRow] = currentFineRow;
+                f2c.write(DomainPoint::from_point<1>(f2cOpItr.p), currentFineRow);
+                f2cOpItr++;
+                //f2cp[currentCoarseRow] = currentFineRow;
             } // end iy loop
         } // end even iz if statement
     } // end iz loop
