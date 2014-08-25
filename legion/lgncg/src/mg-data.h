@@ -73,7 +73,7 @@ struct MGData {
         // must be the same
         nPresmootherSteps = nPostsmootherSteps = 1;
         // XXX - in HPCG the length of f2cOp is nFineRows, but I don't think
-        // that's needed, at least how it's used in this code.
+        // that's needed -- at least based on how it's used in this code.
         f2cOp.create<int64_t>(nCoarseRows, ctx, lrt);
         // about the size here: read comment above.
         Axf.create<double>(nFineRows, ctx, lrt);

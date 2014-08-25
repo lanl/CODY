@@ -41,8 +41,8 @@ endif
 LGCG_DIR := ../../src
 
 #Flags for directing the runtime makefile what to include
-DEBUG=0                   # Do NOT Include debugging symbols
-#DEBUG=1                   # Include debugging symbols
+#DEBUG=0                   # Do NOT Include debugging symbols
+DEBUG=1                   # Include debugging symbols
 OUTPUT_LEVEL=LEVEL_DEBUG  # Compile time print level
 #OUTPUT_LEVEL=LEVEL_NONE # Compile time print level
 SHARED_LOWLEVEL=1	  # Use the shared low level
@@ -68,9 +68,10 @@ CC_FLAGS := $(LGNCG_CC_FLAGS)
 # optimized
 #CC_FLAGS     += -Wall -Wextra -Ofast -ffast-math
 # optimized/w profiling make sure OUTPUT_LEVEL=LEVEL_DEBUG
-CC_FLAGS     += -Wall -Wextra -Ofast -ffast-math -DLEGION_PROF
+#CC_FLAGS     += -Wall -Wextra -Ofast -ffast-math -DLEGION_PROF
 # debug
-#CC_FLAGS += -Wall -Wextra -O0 -DPRIVILEGE_CHECKS -DBOUNDS_CHECKS -DINORDER_EXECUTION -DFULL_SIZE_INSTANCES
+CC_FLAGS += -Wall -Wextra -O0 -DPRIVILEGE_CHECKS -DBOUNDS_CHECKS -DINORDER_EXECUTION -DFULL_SIZE_INSTANCES -Wa,-q
+#CC_FLAGS += -Wall -Wextra -O0 -DPRIVILEGE_CHECKS -DBOUNDS_CHECKS -Wa,-q
 #CC_FLAGS     += -Wall -Ofast -ffast-math -ftree-vectorize -ftree-vectorizer-verbose=0 -Wa,-q
 # debug
 #CC_FLAGS     += -Wall -O0 -g
@@ -104,9 +105,9 @@ ECHO	:= echo
 TOUCH	:= touch
 MAKE	:= make
 ifndef GCC
-GCC	:= g++
+#GCC	:= g++
 # for gcc on OS X
-#GCC	:= g++-4.8 -mavx -march=corei7-avx
+GCC	:= g++-4.8 -mavx -march=corei7-avx
 endif
 ifndef NVCC
 NVCC	:= $(CUDA)/bin/nvcc
