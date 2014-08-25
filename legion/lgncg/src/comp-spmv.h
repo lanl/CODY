@@ -39,6 +39,7 @@
 #include "legion.h"
 
 namespace {
+
 struct spmvTaskArgs {
 
     int64_t nCols;
@@ -113,7 +114,7 @@ spmvTask(const LegionRuntime::HighLevel::Task *task,
     using namespace LegionRuntime::HighLevel;
     using namespace LegionRuntime::Accessor;
     using LegionRuntime::Arrays::Rect;
-    (void)ctx; (void)lrt;
+    (void)ctx;
     static const uint8_t aValsRID  = 0;
     static const uint8_t aMIdxsRID = 1;
     static const uint8_t xRID      = 2;

@@ -71,26 +71,10 @@ setupHalo(SparseMatrix &A,
 {
     using namespace LegionRuntime::HighLevel;
     int idx = 0;
-    // setup per-task args
     ArgumentMap argMap;
-    CGTaskArgs targs;
-    targs.sa = A;
-    for (int i = 0; i < A.vals.lDom().get_volume(); ++i) {
-        targs.sa.nzir.sgb  = A.nzir.sgb()[i];
-        targs.sa.mIdxs.sgb = A.mIdxs.sgb()[i];
-        // notice the entire bounds
-        targs.sa.g2g.sgb = A.g2g.bounds;
-        argMap.set_point(DomainPoint::from_point<1>(Point<1>(i)),
-                         TaskArgument(&targs, sizeof(targs)));
-    }
     IndexLauncher il(LGNCG_SETUP_HALO_TID, A.nzir.lDom(),
                      TaskArgument(NULL, 0), argMap);
     // A's regions /////////////////////////////////////////////////////////////
-    // # non 0s in row
-    il.add_region_requirement(
-        RegionRequirement(A.nzir.lp(), 0, READ_ONLY, EXCLUSIVE, A.nzir.lr)
-    );
-    il.add_field(idx++, A.nzir.fid);
     // mIdxs
     il.add_region_requirement(
         RegionRequirement(A.mIdxs.lp(), 0, READ_WRITE, EXCLUSIVE, A.mIdxs.lr)
@@ -117,59 +101,43 @@ setupHaloTask(const LegionRuntime::HighLevel::Task *task,
     using namespace LegionRuntime::HighLevel;
     using namespace LegionRuntime::Accessor;
     using LegionRuntime::Arrays::Rect;
-    (void)ctx; (void)lrt;
-    // A (x3)
-    assert(3 == rgns.size());
-    size_t rid = 0;
-    const CGTaskArgs targs = *(CGTaskArgs *)task->local_args;
+    (void)ctx;
+    static const uint8_t aMIdxsRID = 0;
+    static const uint8_t g2gRID    = 1;
+    // A (x2)
+    assert(2 == rgns.size());
     // name the regions
-    const PhysicalRegion &azpr = rgns[rid++];
-    const PhysicalRegion &aipr = rgns[rid++];
-    const PhysicalRegion &ggpr = rgns[rid++];
+    const PhysicalRegion &aipr = rgns[aMIdxsRID];
+    const PhysicalRegion &ggpr = rgns[g2gRID];
     // convenience typedefs
-    typedef RegionAccessor<AccessorType::Generic, uint8_t>  GSRA;
     typedef RegionAccessor<AccessorType::Generic, int64_t>  GLRA;
     typedef RegionAccessor<AccessorType::Generic, I64Tuple> GTRA;
     // sparse matrix
-    GSRA az = azpr.get_field_accessor(targs.sa.nzir.fid).typeify<uint8_t>();
-    GLRA ai = aipr.get_field_accessor(targs.sa.mIdxs.fid).typeify<int64_t>();
-    GTRA gg = ggpr.get_field_accessor(targs.sa.g2g.fid).typeify<I64Tuple>();
-    // primarily used for offset density tests
-    Rect<1> sr; ByteOffset bOff[1];
-    const Rect<1> mgb = targs.sa.nzir.sgb;
-    // now start getting pointers to the data we are going to work with
-    const uint8_t *const non0sInRow = az.raw_rect_ptr<1>(mgb, sr, bOff);
-    bool offd = offsetsAreDense<1, uint8_t>(mgb, bOff);
-    assert(offd);
-    //
-    int64_t *const mIdxs = ai.raw_rect_ptr<1>(targs.sa.mIdxs.sgb, sr, bOff);
-    offd = offsetsAreDense<1, int64_t>(mgb, bOff);
-    assert(offd);
-    //
-    const I64Tuple *const g2gMap = gg.raw_rect_ptr<1>(targs.sa.g2g.sgb, sr, bOff);
-    offd = offsetsAreDense<1, I64Tuple>(mgb, bOff);
-    assert(offd);
-    ////////////////////////////////////////////////////////////////////////////
+    GLRA ai = aipr.get_field_accessor(0).typeify<int64_t>();
+    const Domain aMIdxsDom = lrt->get_index_space_domain(
+        ctx, task->regions[aMIdxsRID].region.get_index_space()
+    );
+    GTRA gg = ggpr.get_field_accessor(0).typeify<I64Tuple>();
+    const Domain g2gDom = lrt->get_index_space_domain(
+        ctx, task->regions[g2gRID].region.get_index_space()
+    );
     // let the games begin...
-    // stash local number of rows and columns
-    const int64_t lNRows = mgb.volume();
-    const int64_t lNCols = targs.sa.nCols;
     // Create a mapping between the real cell indicies in where they are
     // actually located in the global logical region. For example, a task may
     // need cell index 5, but 5 may actually be at cell 27. So, given an index
     // you need, I'll give you where it actually lives.
+    Rect<1> mIdxRect = aMIdxsDom.get_rect<1>();
+    Rect<1> g2gRect  = g2gDom.get_rect<1>();
     std::map<int64_t, int64_t> cellIDMap;
-    for (int64_t i = 0; i < targs.sa.g2g.sgb.volume(); ++i) {
-        cellIDMap[g2gMap[i].b] = g2gMap[i].a;
+    for (GenericPointInRectIterator<1> itr(g2gRect); itr; itr++) {
+        I64Tuple tmp = gg.read(DomainPoint::from_point<1>(itr.p));
+        cellIDMap[tmp.b] = tmp.a;
     }
-    for (int64_t i = 0; i < lNRows; ++i) {
-        const int64_t cNon0sInRow = non0sInRow[i];
-        for (int64_t j = 0; j < cNon0sInRow; ++j) {
-            int64_t *cIndxs = (mIdxs + (i * lNCols));
-            const int64_t curIndex = cIndxs[j];
-            // at [i][j]
-            cIndxs[j] = cellIDMap[curIndex];
-        }
+    for (GenericPointInRectIterator<1> itr(mIdxRect); itr; itr++) {
+        // get old index
+        int64_t index = ai.read(DomainPoint::from_point<1>(itr.p));
+        // replace with real index
+        ai.write(DomainPoint::from_point<1>(itr.p), cellIDMap[index]);
     }
 }
 

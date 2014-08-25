@@ -223,7 +223,6 @@ setICsTask(
     ////////////////////////////////////////////////////////////////////////////
     // construct new initial conditions for this sub-region
     ProblemGenerator ic(targs.sa, taskID);
-    // okay - now write out to regions. FIXME: just pass raw pointers to problem
     // setup to avoid memory bloat during init
     // the bounds of all entries
     typedef GenericPointInRectIterator<1> GPRI1D;
@@ -377,8 +376,6 @@ populatef2cTask(
     const PhysicalRegion &f2cpr = rgns[f2cOpFID];
     // convenience typedefs
     typedef RegionAccessor<AccessorType::Generic, int64_t>  GIRA;
-    // get handles to all the matrix accessors that we need
-    // fine length (both are the same)
     GIRA f2c = f2cpr.get_field_accessor(0).typeify<int64_t>();
     const Domain f2cOpDom = lrt->get_index_space_domain(
         ctx, task->regions[f2cOpFID].region.get_index_space()
