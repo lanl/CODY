@@ -40,12 +40,72 @@
 
 namespace {
 
+#define LGNCG_DENSE_WAXPBY_STRIP_SIZE 256
+
+#define GDRA LegionRuntime::Accessor::RegionAccessor \
+    <LegionRuntime::Accessor::AccessorType::Generic, double>
+
+#define GLRA LegionRuntime::Accessor::RegionAccessor \
+    <LegionRuntime::Accessor::AccessorType::Generic, int64_t>
+
 struct waxpbyTaskArgs {
     double alpha;
     double beta;
-
     waxpbyTaskArgs(double alpha, double beta) : alpha(alpha), beta(beta) { ; }
 };
+
+/**
+ * w = alpha * x + beta * y
+ */
+bool
+denseWAXPBY(const Rect<1> &subgridBounds,
+            double alpha,
+            double beta,
+            GDRA &fax,
+            GDRA &fay,
+            GDRA &faw)
+{
+    using namespace lgncg;
+    using namespace LegionRuntime::HighLevel;
+    using namespace LegionRuntime::Accessor;
+
+    Rect<1> subrect;
+    ByteOffset inOffsets[1], offsets[1], woffsets[1];
+    //
+    const double *xp = fax.raw_rect_ptr<1>(subgridBounds, subrect, inOffsets);
+    if (!xp || (subrect != subgridBounds) ||
+        !offsetsAreDense<1, double>(subgridBounds, inOffsets)) return false;
+    //
+    double *yp = fay.raw_rect_ptr<1>(subgridBounds, subrect, offsets);
+    if (!yp || (subrect != subgridBounds) ||
+        offsetMismatch(1, inOffsets, offsets)) return false;
+    //
+    double *wp = faw.raw_rect_ptr<1>(subgridBounds, subrect, woffsets);
+    if (!wp || (subrect != subgridBounds) ||
+        !offsetsAreDense<1, double>(subgridBounds, woffsets)) return false;
+
+    int npts = subgridBounds.volume();
+    while (npts > 0) {
+        if (npts >= LGNCG_DENSE_WAXPBY_STRIP_SIZE) {
+            for (int i = 0; i < LGNCG_DENSE_WAXPBY_STRIP_SIZE; i++) {
+                wp[i] = (alpha * xp[i]) + (beta * yp[i]);
+            }
+            npts -= LGNCG_DENSE_WAXPBY_STRIP_SIZE;
+            xp   += LGNCG_DENSE_WAXPBY_STRIP_SIZE;
+            yp   += LGNCG_DENSE_WAXPBY_STRIP_SIZE;
+            wp   += LGNCG_DENSE_WAXPBY_STRIP_SIZE;
+        } else {
+            for (int i = 0; i < npts; i++) {
+                wp[i] = (alpha * xp[i]) + (beta * yp[i]);
+            }
+            npts = 0;
+        }
+    }
+    return true;
+}
+
+#undef GDRA
+#undef GLRA
 
 }
 
@@ -127,6 +187,8 @@ waxpbyTask(const LegionRuntime::HighLevel::Task *task,
     // now, actually perform the computation
     const double alpha = targs.alpha;
     const double beta  = targs.beta;
+    if (denseWAXPBY(xDom.get_rect<1>(), alpha, beta, x, y, w)) return;
+    // else slow path
     for (GenericPointInRectIterator<1> itr(xDom.get_rect<1>()); itr; itr++) {
         double tmp = (alpha * x.read(DomainPoint::from_point<1>(itr.p))) +
                      (beta  * y.read(DomainPoint::from_point<1>(itr.p)));

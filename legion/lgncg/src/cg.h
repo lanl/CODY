@@ -184,10 +184,14 @@ solv(SparseMatrix &A,
     cgData.free(ctx, lrt);
 }
 
+#include "cgmapper.hpp"
+
 static inline void
 init(void)
 {
     using namespace LegionRuntime::HighLevel;
+
+    //HighLevelRuntime::set_registration_callback(mapper_registration);
 
     HighLevelRuntime::register_legion_task<setupHaloTask>(
         LGNCG_SETUP_HALO_TID /* task id */,

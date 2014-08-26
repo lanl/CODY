@@ -40,32 +40,32 @@
 
 namespace {
 
-namespace lra = LegionRuntime::Accessor;
+#define LGNCG_DENSE_SPMV_STRIP_SIZE 256
 
-typedef lra::RegionAccessor<lra::AccessorType::Generic, double>  GDRA;
-typedef lra::RegionAccessor<lra::AccessorType::Generic, int64_t> GLRA;
+#define GDRA LegionRuntime::Accessor::RegionAccessor \
+    <LegionRuntime::Accessor::AccessorType::Generic, double>
+
+#define GLRA LegionRuntime::Accessor::RegionAccessor \
+    <LegionRuntime::Accessor::AccessorType::Generic, int64_t>
 
 struct spmvTaskArgs {
-
     int64_t nCols;
-
     spmvTaskArgs(int64_t nCols) : nCols(nCols) { ; }
 };
-
-#define LGNCG_DENSE_SPMV_STRIP_SIZE 256
 
 /**
  * Adapted from another Legion CG code.
  */
 template<int MAX_NZEROS>
 bool
-denseSPMV(const Rect<1> &subGridBounds,
-		  const Rect<1> &elemBounds,
-		  const Rect<1> &vecBounds,
-          GLRA &faCol,
-          GDRA &faVal,
-          GDRA &faX,
-          GDRA &faY)
+denseSPMV(
+    const Rect<1> &subGridBounds,
+    const Rect<1> &elemBounds,
+    const Rect<1> &vecBounds,
+    GLRA &faCol,
+    GDRA &faVal,
+    GDRA &faX,
+    GDRA &faY)
 {
     using namespace lgncg;
     using namespace LegionRuntime::HighLevel;
@@ -132,6 +132,9 @@ denseSPMV(const Rect<1> &subGridBounds,
     }
     return true;
 }
+
+#undef GDRA
+#undef GLRA
 
 }
 

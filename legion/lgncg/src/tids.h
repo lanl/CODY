@@ -33,16 +33,15 @@
 namespace lgncg {
 
 enum {
-    // FIXME - central registration thing again...
-    LGNCG_SETUP_HALO_TID = 32,
-    LGNCG_VECCP_TID,
-    LGNCG_VEC_ZERO_TID,
-    LGNCG_SPMV_TID,
-    LGNCG_WAXPBY_TID,
-    LGNCG_DOTPROD_TID,
-    LGNCG_SYMGS_TID,
-    LGNCG_RESTRICTION_TID,
-    LGNCG_PROLONGATION_TID
+    LGNCG_SETUP_HALO_TID   = 32,
+    LGNCG_VECCP_TID        = 33,
+    LGNCG_VEC_ZERO_TID     = 34,
+    LGNCG_SPMV_TID         = 35,
+    LGNCG_WAXPBY_TID       = 36,
+    LGNCG_DOTPROD_TID      = 37,
+    LGNCG_SYMGS_TID        = 38,
+    LGNCG_RESTRICTION_TID  = 39,
+    LGNCG_PROLONGATION_TID = 40
 };
 
 enum {
