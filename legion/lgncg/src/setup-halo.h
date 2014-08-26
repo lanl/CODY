@@ -47,7 +47,6 @@
 #include "vector.h"
 #include "sparsemat.h"
 #include "utils.h"
-#include "cg-task-args.h"
 #include "tids.h"
 
 #include "legion.h"

@@ -151,42 +151,6 @@ struct SparseMatrix {
     // TODO add unpartition
 };
 
-struct DSparseMatrix {
-    // geometry associated with this matrix
-    Geometry geom;
-    // total number of rows and columns
-    int64_t nRows, nCols;
-    // total number of non 0s
-    int64_t tNon0;
-    // current number of partitions
-    int64_t nParts;
-    // matrix values
-    DVector vals;
-    // matrix diagonal values
-    DVector diag;
-    // matrix idxs
-    DVector mIdxs;
-    // # non-0s in row
-    DVector nzir;
-    //
-    DVector g2g;
-
-    void
-    operator=(const SparseMatrix &rhs)
-    {
-        geom = rhs.geom;
-        nRows = rhs.nRows;
-        nCols = rhs.nCols;
-        tNon0 = rhs.tNon0;
-        nParts = rhs.nParts;
-        vals = rhs.vals;
-        diag = rhs.diag;
-        mIdxs = rhs.mIdxs;
-        nzir = rhs.nzir;
-        g2g = rhs.g2g;
-    }
-};
-
 } // end lgncg namespace
 
 #endif

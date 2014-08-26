@@ -274,28 +274,6 @@ public:
     }
 };
 
-struct DVector {
-    // field ID
-    LegionRuntime::HighLevel::FieldID fid;
-    // the vector rect bounds (entire)
-    Rect<1> bounds;
-    // sub-grid bounds for a particular task
-    Rect<1> sgb;
-
-    /**
-     * overload the assignment operator to simplify converting from a structure
-     * that cannot easily (and more importantly safely) be automatically
-     * serialized into a structure that can -- namely this structure.
-     */
-    void
-    operator=(const Vector &rhs)
-    {
-        fid = rhs.fid;
-        bounds = rhs.bounds;
-        // leave the sub-grid bounds empty -- the caller can populate if need be
-    }
-};
-
 } // end lgncg namespace
 
 #endif

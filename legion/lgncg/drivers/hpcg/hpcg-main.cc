@@ -187,13 +187,6 @@ checkcg(lgncg::Vector &x,
     int idx = 0;
     // no per-task arguments.
     ArgumentMap argMap;
-    DVector targs;
-    targs = x;
-    for (int i = 0; i < x.lDom().get_volume(); ++i) {
-        targs.sgb = x.sgb()[i];
-        argMap.set_point(DomainPoint::from_point<1>(Point<1>(i)),
-                         TaskArgument(&targs, sizeof(targs)));
-    }
     IndexLauncher il(CHECK_CG_TASK_ID, x.lDom(),
                      TaskArgument(NULL, 0), argMap);
     // x
@@ -219,24 +212,26 @@ checkCGTask(const lrthl::Task *task,
     using namespace lgncg;
     using LegionRuntime::Arrays::Rect;
     // silence warnings
-    (void)ctx; (void)lrt;
+    (void)ctx;
+    static const uint8_t xRID = 0;
     // we are expecting exactly one region in this routine
     assert(1 == rgns.size());
-    size_t rid = 0;
     const int tid = task->index_point.point_data[0];
-    // get the args
-    const lgncg::DVector &vx = *(lgncg::DVector *)task->local_args;
     // name the physical regions
-    const PhysicalRegion &xpr = rgns[rid++];
-
+    const PhysicalRegion &xpr = rgns[xRID];
+    //
     typedef RegionAccessor<AccessorType::Generic, double> GDRA;
-    GDRA x = xpr.get_field_accessor(vx.fid).typeify<double>();
+    GDRA x = xpr.get_field_accessor(0).typeify<double>();
+    const Domain xDom = lrt->get_index_space_domain(
+        ctx, task->regions[xRID].region.get_index_space()
+    );
+    Rect<1> xRect = xDom.get_rect<1>();
     typedef GenericPointInRectIterator<1> GPRI1D;
     typedef DomainPoint DomPt;
     // this is what we expect the final answer to be
     static const double expectedAnswer = 1.0;
     static const double epsilon = 0.1;
-    for (GPRI1D xpi(vx.sgb); xpi; xpi++) {
+    for (GPRI1D xpi(xRect); xpi; xpi++) {
         double val = x.read(DomPt::from_point<1>(xpi.p));
         if (fabs(expectedAnswer - val) > epsilon) {
             printf("%d WARNING: check failure. "

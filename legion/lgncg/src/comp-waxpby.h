@@ -34,7 +34,6 @@
 #include "vector.h"
 #include "sparsemat.h"
 #include "utils.h"
-#include "cg-task-args.h"
 
 #include "legion.h"
 

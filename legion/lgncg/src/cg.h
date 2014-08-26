@@ -35,7 +35,6 @@
 #include "sparsemat.h"
 #include "utils.h"
 #include "cg-data.h"
-#include "cg-task-args.h"
 #include "veccp.h"
 #include "vec-zero.h"
 #include "comp-spmv.h"
