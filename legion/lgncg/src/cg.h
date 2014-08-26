@@ -202,6 +202,7 @@ init(void)
         TaskConfigOptions(true /* leaf task */),
         "lgncg-setup-halo-task"
     );
+#if 0 // Using CopyLauncher -- Much faster!
     HighLevelRuntime::register_legion_task<veccpTask>(
         LGNCG_VECCP_TID /* task id */,
         Processor::LOC_PROC /* proc kind  */,
@@ -211,6 +212,7 @@ init(void)
         TaskConfigOptions(true /* leaf task */),
         "lgncg-veccp-task"
     );
+#endif
     HighLevelRuntime::register_legion_task<veczeroTask>(
         LGNCG_VEC_ZERO_TID /* task id */,
         Processor::LOC_PROC /* proc kind  */,

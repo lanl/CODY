@@ -45,28 +45,24 @@ veccp(const Vector &from,
       LegionRuntime::HighLevel::HighLevelRuntime *lrt)
 {
     using namespace LegionRuntime::HighLevel;
-    int idx = 0;
     // sanity - make sure that both launch domains are the same size
     assert(from.lDom().get_volume() == to.lDom().get_volume());
     // and the # of sgbs
     assert(from.sgb().size() == to.sgb().size());
-    ArgumentMap argMap;
-    IndexLauncher il(LGNCG_VECCP_TID, from.lDom(),
-                     TaskArgument(NULL, 0), argMap);
+    CopyLauncher cpl;
+    //
+    cpl.add_copy_requirements(
+        RegionRequirement(from.lr, READ_ONLY, EXCLUSIVE, from.lr),
+        RegionRequirement(to.lr, WRITE_DISCARD, EXCLUSIVE, to.lr)
+    );
     // from
-    il.add_region_requirement(
-        RegionRequirement(from.lp(), 0, READ_ONLY, EXCLUSIVE, from.lr)
-    );
-    il.add_field(idx++, from.fid);
-    // to
-    il.add_region_requirement(
-        RegionRequirement(to.lp(), 0, WRITE_DISCARD, EXCLUSIVE, to.lr)
-    );
-    il.add_field(idx++, to.fid);
+    cpl.src_requirements[0].add_field(from.fid);
+    cpl.dst_requirements[0].add_field(to.fid);
     // execute the thing...
-    (void)lrt->execute_index_space(ctx, il);
+    (void)lrt->issue_copy_operation(ctx, cpl);
 }
 
+#if 0 // Using CopyLauncher -- Much faster!
 /**
  * veccp task
  */
@@ -98,6 +94,7 @@ veccpTask(const LegionRuntime::HighLevel::Task *task,
         );
     }
 }
+#endif
 
 } // end lgncg namespace
 
