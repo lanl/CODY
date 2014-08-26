@@ -138,8 +138,9 @@ Problem::setICs(lgncg::SparseMatrix &A,
         );
         il.add_field(idx++, b->fid);
     }
-    // ... and go!
-    (void)lrt->execute_index_space(ctx, il);
+    // ... and go! Wait here for more accurate timings (at least we hope)... The
+    // idea is that we want to separate initialization from the solve.
+    lrt->execute_index_space(ctx, il).wait_all_results();
 }
 
 /**

@@ -84,8 +84,9 @@ setupHalo(SparseMatrix &A,
         RegionRequirement(A.g2g.lr, 0, READ_ONLY, EXCLUSIVE, A.g2g.lr)
     );
     il.add_field(idx++, A.g2g.fid);
-    // execute the thing...
-    (void)lrt->execute_index_space(ctx, il);
+    // ... and go! Wait here for more accurate timings (at least we hope)... The
+    // idea is that we want to separate initialization from the solve.
+    lrt->execute_index_space(ctx, il).wait_all_results();
 }
 
 /**
