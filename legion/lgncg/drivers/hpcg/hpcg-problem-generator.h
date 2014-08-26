@@ -71,12 +71,11 @@ struct ProblemGenerator {
     /**
      * akin to HPCG's GenerateProblem
      */
-    ProblemGenerator(const lgncg::DSparseMatrix &sm,
+    ProblemGenerator(const lgncg::Geometry &geom,
+                     int64_t maxNon0sInCol,
                      int taskID)
     {
         using lgncg::Geometry;
-
-        const Geometry &geom = sm.geom;
 
         const int64_t nx  = geom.nx;
         const int64_t ny  = geom.ny;
@@ -84,12 +83,12 @@ struct ProblemGenerator {
         const int64_t npx = geom.npx;
         const int64_t npy = geom.npy;
         const int64_t npz = geom.npz;
-        //current task's x location in the npx by npy by npz processor grid
-        const int64_t ipx = geom.ipx;
-        //current task's y location in the npx by npy by npz processor grid
-        const int64_t ipy = geom.ipy;
         //current task's z location in the npx by npy by npz processor grid
-        const int64_t ipz = geom.ipz;
+        const int64_t ipz = taskID / (npx * npy);
+        //current task's y location in the npx by npy by npz processor grid
+        const int64_t ipy = (taskID - ipz * npx * npy) / npx;
+        //current task's x location in the npx by npy by npz processor grid
+        const int64_t ipx = taskID % npx;
         // global geometry
         const int64_t gnx = npx * nx;
         const int64_t gny = npy * ny;
@@ -97,7 +96,7 @@ struct ProblemGenerator {
         // number of local rows for this task
         this->nLocalRows = nx * ny * nz;
         // stencil size
-        const int64_t stencilSize = sm.nCols;
+        const int64_t stencilSize = maxNon0sInCol;
         // max stencilSize for number of non-zeros per row
         const int64_t nNon0sPerRow = stencilSize;
         // allocate arrays that are of length nLocalRows

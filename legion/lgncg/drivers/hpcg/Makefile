@@ -41,8 +41,8 @@ endif
 LGCG_DIR := ../../src
 
 #Flags for directing the runtime makefile what to include
-DEBUG=0                   # Do NOT Include debugging symbols
-#DEBUG=1                   # Include debugging symbols
+#DEBUG=0                   # Do NOT Include debugging symbols
+DEBUG=1                   # Include debugging symbols
 OUTPUT_LEVEL=LEVEL_DEBUG  # Compile time print level
 #OUTPUT_LEVEL=LEVEL_NONE # Compile time print level
 SHARED_LOWLEVEL=1	  # Use the shared low level
@@ -68,13 +68,13 @@ CC_FLAGS := $(LGNCG_CC_FLAGS)
 # optimized
 #CC_FLAGS     += -Wall -Wextra -Ofast -ftree-vectorize -ffast-math -Wa,-q
 # optimized/w profiling make sure OUTPUT_LEVEL=LEVEL_DEBUG
-CC_FLAGS     += -Wall -Ofast -ffast-math -DLEGION_PROF -DMAX_FIELDS=64 -DFIELD_LOG2=6
+#CC_FLAGS     += -Wall -Ofast -ffast-math -DLEGION_PROF -DMAX_FIELDS=64 -DFIELD_LOG2=6
 # debug
 #CC_FLAGS += -Wall -Wextra -O0 -DPRIVILEGE_CHECKS -DBOUNDS_CHECKS -DINORDER_EXECUTION -DFULL_SIZE_INSTANCES -Wa,-q
 #CC_FLAGS += -Wall -Wextra -O0 -DPRIVILEGE_CHECKS -DBOUNDS_CHECKS -Wa,-q
 #CC_FLAGS     += -Wall -Ofast -ffast-math -ftree-vectorize -ftree-vectorizer-verbose=0 -Wa,-q
 # debug
-#CC_FLAGS     += -Wall -O0 -g
+CC_FLAGS     += -Wall -O0 -g
 NVCC_FLAGS   :=
 GASNET_FLAGS :=
 

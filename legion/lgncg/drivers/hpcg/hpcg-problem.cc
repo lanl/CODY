@@ -47,17 +47,12 @@ namespace {
  * task arguments for HPCG driver
  */
 struct HPCGTaskArgs {
-    lgncg::DSparseMatrix sa;
-    lgncg::DVector va;
-    lgncg::DVector vb;
+    lgncg::Geometry geom;
+    int64_t maxColNonZeros;
 
-    HPCGTaskArgs(const lgncg::SparseMatrix &sma,
-                 const lgncg::Vector *const vpa,
-                 const lgncg::Vector *const vpb) {
-        sa = sma;
-        if (vpa) va = *vpa;
-        if (vpb) vb = *vpb;
-    }
+    HPCGTaskArgs(const lgncg::Geometry &geom,
+                 int64_t maxColNonZeros) :
+        geom(geom), maxColNonZeros(maxColNonZeros) { ; }
 };
 
 /**
@@ -91,34 +86,11 @@ Problem::setICs(lgncg::SparseMatrix &A,
 
     int idx = 0;
     // setup task args
-    HPCGTaskArgs targs(A, x, b);
+    HPCGTaskArgs targs(A.geom, A.nCols);
     ArgumentMap argMap;
-    const int64_t npx = A.geom.npx;
-    const int64_t npy = A.geom.npy;
-    for (int i = 0; i < A.vals.lDom().get_volume(); ++i) {
-        targs.sa.vals.sgb  = A.vals.sgb()[i];
-        targs.sa.diag.sgb  = A.diag.sgb()[i];
-        targs.sa.mIdxs.sgb = A.mIdxs.sgb()[i];
-        targs.sa.nzir.sgb  = A.nzir.sgb()[i];
-        targs.sa.g2g.sgb   = A.g2g.sgb()[i];
-        // setup task to global geometry
-        targs.sa.geom.ipz = i / (npx * npy);
-        targs.sa.geom.ipy = (i - targs.sa.geom.ipz * npx * npy) / npx;
-        targs.sa.geom.ipx = i % npx;
-#if 0 // debug
-        std::cout << "task: " << i
-                  << " ipx: " << targs.sa.geom.ipx
-                  << " ipy: " << targs.sa.geom.ipy
-                  << " ipz: " << targs.sa.geom.ipz << std::endl;
-#endif
-        if (x) targs.va.sgb = x->sgb()[i];
-        if (b) targs.vb.sgb = b->sgb()[i];
-        argMap.set_point(DomainPoint::from_point<1>(Point<1>(i)),
-                         TaskArgument(&targs, sizeof(targs)));
-    }
     // setup task launcher
     IndexLauncher il(Problem::genProbTID, A.vals.lDom(),
-                     TaskArgument(NULL, 0), argMap);
+                     TaskArgument(&targs, sizeof(targs)), argMap);
     // for each logical region
     //     add a region requirement
     //     and for each field the region contains
@@ -147,7 +119,7 @@ Problem::setICs(lgncg::SparseMatrix &A,
         RegionRequirement(A.nzir.lp(), 0, WRITE_DISCARD, EXCLUSIVE, A.nzir.lr)
     );
     il.add_field(idx++, A.nzir.fid);
-    // A's global to global table 
+    // A's global to global table
     il.add_region_requirement(
         RegionRequirement(A.g2g.lp(), 0, WRITE_DISCARD, EXCLUSIVE, A.g2g.lr)
     );
@@ -184,9 +156,14 @@ setICsTask(
     using namespace LegionRuntime::HighLevel;
     using namespace LegionRuntime::Accessor;
     using namespace lgncg;
-
     (void)ctx;
-    (void)lrt;
+    static const uint8_t aValsRID  = 0;
+    static const uint8_t aDiagRID  = 1;
+    static const uint8_t aMIdxsRID = 2;
+    static const uint8_t aNZiRRID  = 3;
+    static const uint8_t aG2GRID   = 4;
+    static const uint8_t xRID      = 5;
+    static const uint8_t bRID      = 6;
     // stash my task ID
     const int taskID = task->index_point.point_data[0];
     // capture how many regions were passed to us. this number dictates what
@@ -196,42 +173,55 @@ setICsTask(
     assert(nRgns >= 5 && nRgns <= 7);
     const bool haveX = nRgns > 5;
     const bool haveB = nRgns > 6;
-    size_t rid = 0;
     // get our task arguments
-    const HPCGTaskArgs targs = *(HPCGTaskArgs *)task->local_args;
+    const HPCGTaskArgs targs = *(HPCGTaskArgs *)task->args;
     ////////////////////////////////////////////////////////////////////////////
     // Sparse Matrix A
     ////////////////////////////////////////////////////////////////////////////
-    const PhysicalRegion &avpr  = rgns[rid++];
-    const PhysicalRegion &adpr  = rgns[rid++];
-    const PhysicalRegion &aipr  = rgns[rid++];
-    const PhysicalRegion &azpr  = rgns[rid++];
-    const PhysicalRegion &g2gpr = rgns[rid++];
+    const PhysicalRegion &avpr  = rgns[aValsRID];
+    const PhysicalRegion &adpr  = rgns[aDiagRID];
+    const PhysicalRegion &aipr  = rgns[aMIdxsRID];
+    const PhysicalRegion &azpr  = rgns[aNZiRRID];
+    const PhysicalRegion &g2gpr = rgns[aG2GRID];
     // convenience typedefs
     typedef RegionAccessor<AccessorType::Generic, double>   GDRA;
     typedef RegionAccessor<AccessorType::Generic, int64_t>  GLRA;
     typedef RegionAccessor<AccessorType::Generic, uint8_t>  GSRA;
     typedef RegionAccessor<AccessorType::Generic, I64Tuple> GTRA;
     // get handles to all the matrix accessors that we need
-    GDRA av = avpr.get_field_accessor(targs.sa.vals.fid).typeify<double>();
-    GDRA ad = adpr.get_field_accessor(targs.sa.diag.fid).typeify<double>();
-    GLRA ai = aipr.get_field_accessor(targs.sa.mIdxs.fid).typeify<int64_t>();
-    GSRA az = azpr.get_field_accessor(targs.sa.nzir.fid).typeify<uint8_t>();
-    GTRA at = g2gpr.get_field_accessor(targs.sa.g2g.fid).typeify<I64Tuple>();
+    GDRA av = avpr.get_field_accessor(0).typeify<double>();
+    const Domain aValsDom = lrt->get_index_space_domain(
+        ctx, task->regions[aValsRID].region.get_index_space()
+    );
+    Rect<1> aValsRect = aValsDom.get_rect<1>();
+    //
+    GDRA ad = adpr.get_field_accessor(0).typeify<double>();
+    const Domain aDiagDom = lrt->get_index_space_domain(
+        ctx, task->regions[aDiagRID].region.get_index_space()
+    );
+    Rect<1> aDiagRect = aDiagDom.get_rect<1>();
+    //
+    GLRA ai = aipr.get_field_accessor(0).typeify<int64_t>();
+    GSRA az = azpr.get_field_accessor(0).typeify<uint8_t>();
+    GTRA at = g2gpr.get_field_accessor(0).typeify<I64Tuple>();
+    const Domain aG2GDom = lrt->get_index_space_domain(
+        ctx, task->regions[aG2GRID].region.get_index_space()
+    );
+    Rect<1> aG2GRect = aG2GDom.get_rect<1>();
     ////////////////////////////////////////////////////////////////////////////
     // all problem setup logic in the ProblemGenerator /////////////////////////
     ////////////////////////////////////////////////////////////////////////////
     // construct new initial conditions for this sub-region
-    ProblemGenerator ic(targs.sa, taskID);
+    ProblemGenerator ic(targs.geom, targs.maxColNonZeros, taskID);
     // setup to avoid memory bloat during init
     // the bounds of all entries
     typedef GenericPointInRectIterator<1> GPRI1D;
     typedef DomainPoint DomPt;
     do {
-        const int64_t nLocalCols = targs.sa.nCols;
-        const int64_t nLocalRows = targs.sa.diag.sgb.volume();
-        GPRI1D p(targs.sa.vals.sgb);
-        GPRI1D q(targs.sa.diag.sgb);
+        const int64_t nLocalCols = targs.maxColNonZeros;
+        const int64_t nLocalRows = aDiagRect.volume();
+        GPRI1D p(aValsRect);
+        GPRI1D q(aDiagRect);
         for (int64_t i = 0; i < nLocalRows; ++i, q++) {
             for (int64_t j = 0; j < nLocalCols; ++j, p++) {
                 av.write(DomPt::from_point<1>(p.p), ic.A[i][j]);
@@ -244,9 +234,9 @@ setICsTask(
     } while(0);
     // Populate g2g
     do {
-        const int64_t offset = taskID * targs.sa.g2g.sgb.volume();
+        const int64_t offset = taskID * aG2GRect.volume();
         int64_t row = 0;
-        for (GPRI1D p(targs.sa.g2g.sgb); p; p++, row++) {
+        for (GPRI1D p(aG2GRect); p; p++, row++) {
             at.write(DomPt::from_point<1>(p.p),
                      I64Tuple(offset + row, ic.l2gTab[row]));
         }
@@ -255,21 +245,29 @@ setICsTask(
         ////////////////////////////////////////////////////////////////////////
         // Vector x - initial guess of all zeros
         ////////////////////////////////////////////////////////////////////////
-        const PhysicalRegion &vecXPr = rgns[rid++];
-        GDRA vVals = vecXPr.get_field_accessor(targs.va.fid).typeify<double>();
-        for (GPRI1D p(targs.va.sgb); p; p++) {
-            vVals.write(DomPt::from_point<1>(p.p), 0.0);
+        const PhysicalRegion &vecXPr = rgns[xRID];
+        GDRA x = vecXPr.get_field_accessor(0).typeify<double>();
+        const Domain xDom = lrt->get_index_space_domain(
+            ctx, task->regions[xRID].region.get_index_space()
+        );
+        Rect<1> xRect = xDom.get_rect<1>();
+        for (GPRI1D p(xRect); p; p++) {
+            x.write(DomPt::from_point<1>(p.p), 0.0);
         }
     }
     if (haveB) {
         ////////////////////////////////////////////////////////////////////////
         // Vector b
         ////////////////////////////////////////////////////////////////////////
-        const PhysicalRegion &vecBPr = rgns[rid++];
-        GDRA vVals = vecBPr.get_field_accessor(targs.vb.fid).typeify<double>();
-        GPRI1D p(targs.vb.sgb);
+        const PhysicalRegion &vecBPr = rgns[bRID];
+        GDRA b = vecBPr.get_field_accessor(0).typeify<double>();
+        const Domain bDom = lrt->get_index_space_domain(
+            ctx, task->regions[bRID].region.get_index_space()
+        );
+        Rect<1> bRect = bDom.get_rect<1>();
+        GPRI1D p(bRect);
         for (int64_t i = 0; p; ++i, p++) {
-            vVals.write(DomPt::from_point<1>(p.p), ic.b[i]);
+            b.write(DomPt::from_point<1>(p.p), ic.b[i]);
         }
     }
 }
@@ -299,7 +297,7 @@ Problem::genCoarseProbGeom(lgncg::SparseMatrix &Af,
     const int64_t cGlobalXYZ = (npx * cnx) * (npy * cny) * (npz * cnz);
     // sanity
     assert(0 == (nx % 2) && 0 == (ny % 2) && 0 == (nz % 2));
-    assert(Af.nRows == globalXYZ); 
+    assert(Af.nRows == globalXYZ);
     // now construct the required data structures for the coarse grid
     Af.Ac = new lgncg::SparseMatrix();
     assert(Af.Ac);
