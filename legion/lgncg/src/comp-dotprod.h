@@ -37,6 +37,66 @@
 
 #include "legion.h"
 
+namespace {
+
+#define LGNCG_DENSE_DOTPROD_STRIP_SIZE 256
+
+#define GDRA LegionRuntime::Accessor::RegionAccessor \
+    <LegionRuntime::Accessor::AccessorType::Generic, double>
+
+/**
+ * Adapted from another Legion CG code.
+ */
+bool
+denseDotProd(const Rect<1> &subGridBounds,
+             double &result,
+             GDRA &faX,
+             GDRA &faY)
+{
+    using namespace lgncg;
+    using namespace LegionRuntime::HighLevel;
+    using namespace LegionRuntime::Accessor;
+
+    Rect<1> subrect;
+    ByteOffset inOffsets[1], offsets[1];
+    //
+    const double *xp = faX.raw_rect_ptr<1>(
+        subGridBounds, subrect, inOffsets
+    );
+    if (!xp || (subrect != subGridBounds) ||
+        !offsetsAreDense<1, double>(subGridBounds, inOffsets)) return false;
+    //
+    double *yp = faY.raw_rect_ptr<1>(
+        subGridBounds, subrect, offsets
+    );
+    if (!yp || (subrect != subGridBounds) ||
+        offsetMismatch(1, inOffsets, offsets)) return false;
+    // if we are here, then let the calculation begin
+    int nPnts = subGridBounds.volume();
+    result = 0.0;
+    while (nPnts > 0) {
+        if (nPnts >= LGNCG_DENSE_DOTPROD_STRIP_SIZE) {
+            for (int i = 0; i < LGNCG_DENSE_DOTPROD_STRIP_SIZE; i++) {
+                result += (xp[i] * yp[i]);
+            }
+            nPnts -= LGNCG_DENSE_DOTPROD_STRIP_SIZE;
+            xp += LGNCG_DENSE_DOTPROD_STRIP_SIZE;
+            yp += LGNCG_DENSE_DOTPROD_STRIP_SIZE;
+        }
+        else {
+            for (int i = 0; i < nPnts; i++) {
+                result += (xp[i] * yp[i]);
+            }
+            nPnts = 0;
+        }
+    }
+    return true;
+}
+
+#undef GDRA
+
+}
+
 namespace lgncg {
 
 /**
@@ -108,6 +168,10 @@ dotProdTask(const LegionRuntime::HighLevel::Task *task,
     GDRA y = ypr.get_field_accessor(0).typeify<double>();
     // now, actually perform the computation
     double localRes = 0.0;
+    if (denseDotProd(xDom.get_rect<1>(), localRes, x, y)) {
+        return localRes;
+    }
+    // else slower path
     for (GenericPointInRectIterator<1> itr(xDom.get_rect<1>()); itr; itr++) {
         localRes += x.read(DomainPoint::from_point<1>(itr.p)) *
                     y.read(DomainPoint::from_point<1>(itr.p));
