@@ -182,8 +182,6 @@ solv(SparseMatrix &A,
     cgData.free(ctx, lrt);
 }
 
-#include "cgmapper.hpp"
-
 static inline void
 init(void)
 {
