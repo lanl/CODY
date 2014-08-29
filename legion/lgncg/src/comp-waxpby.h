@@ -50,7 +50,13 @@ namespace {
 struct waxpbyTaskArgs {
     double alpha;
     double beta;
-    waxpbyTaskArgs(double alpha, double beta) : alpha(alpha), beta(beta) { ; }
+    bool xySame;
+    bool xwSame;
+    waxpbyTaskArgs(double alpha,
+                   double beta,
+                   bool xySame,
+                   bool xwSame)
+        : alpha(alpha), beta(beta), xySame(xySame), xwSame(xwSame) { ; }
 };
 
 /**
@@ -128,25 +134,36 @@ waxpby(double alpha,
     // sanity - make sure that all launch domains are the same size
     assert(x.lDom().get_volume() == y.lDom().get_volume() &&
            y.lDom().get_volume() == w.lDom().get_volume());
+
+    bool xySame = Vector::same(x, y);
+    bool xwSame = Vector::same(x, w);
+    bool ywSame = Vector::same(y, w);
+
     ArgumentMap argMap;
-    waxpbyTaskArgs taskArgs(alpha, beta);
+    waxpbyTaskArgs taskArgs(alpha, beta, xySame, xwSame);
     IndexLauncher il(LGNCG_WAXPBY_TID, x.lDom(),
                      TaskArgument(&taskArgs, sizeof(taskArgs)), argMap);
     // x's regions /////////////////////////////////////////////////////////////
     il.add_region_requirement(
-        RegionRequirement(x.lp(), 0, READ_ONLY, EXCLUSIVE, x.lr)
+        RegionRequirement(x.lp(), 0, xwSame ? READ_WRITE : READ_ONLY,
+                          EXCLUSIVE, x.lr)
     );
     il.add_field(idx++, x.fid);
     // y's regions /////////////////////////////////////////////////////////////
-    il.add_region_requirement(
-        RegionRequirement(y.lp(), 0, READ_ONLY, EXCLUSIVE, y.lr)
-    );
-    il.add_field(idx++, y.fid);
+    if (!xySame) {
+        il.add_region_requirement(
+            RegionRequirement(y.lp(), 0, ywSame ? READ_WRITE : READ_ONLY,
+                              EXCLUSIVE, y.lr)
+        );
+        il.add_field(idx++, y.fid);
+    }
     // w's regions /////////////////////////////////////////////////////////////
-    il.add_region_requirement(
-        RegionRequirement(w.lp(), 0, WRITE_DISCARD, EXCLUSIVE, w.lr)
-    );
-    il.add_field(idx++, w.fid);
+    if (!xwSame && !ywSame) {
+        il.add_region_requirement(
+            RegionRequirement(w.lp(), 0, WRITE_DISCARD, EXCLUSIVE, w.lr)
+        );
+        il.add_field(idx++, w.fid);
+    }
     // execute the thing...
     (void)lrt->execute_index_space(ctx, il);
 }
@@ -165,16 +182,24 @@ waxpbyTask(const LegionRuntime::HighLevel::Task *task,
     using namespace LegionRuntime::Accessor;
     using LegionRuntime::Arrays::Rect;
     (void)ctx; (void)lrt;
-    static const uint8_t xRID = 0;
-    static const uint8_t yRID = 1;
-    static const uint8_t wRID = 2;
-    // x, y, w
-    assert(3 == rgns.size());
     const waxpbyTaskArgs targs = *(waxpbyTaskArgs *)task->args;
+    uint8_t xRID = 0;
+    uint8_t yRID = 1;
+    uint8_t wRID = 2;
+    // aliased regions
+    if (2 == rgns.size()) {
+        bool xySame = targs.xySame;
+        bool xwSame = targs.xwSame;
+        yRID = xySame ? 0 : 1;
+        wRID = xwSame ? 0 : 1;
+    }
+    else {
+        assert(3 == rgns.size());
+    }
     // name the regions
-    const PhysicalRegion &xpr = rgns[xRID];
-    const PhysicalRegion &ypr = rgns[yRID];
-    const PhysicalRegion &wpr = rgns[wRID];
+    PhysicalRegion xpr = rgns[xRID];
+    PhysicalRegion ypr = rgns[yRID];
+    PhysicalRegion wpr = rgns[wRID];
     // convenience typedefs
     typedef RegionAccessor<AccessorType::Generic, double>  GDRA;
     // vectors

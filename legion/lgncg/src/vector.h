@@ -77,6 +77,11 @@ private:
     LegionRuntime::HighLevel::FieldSpace fs;
     // vector of partition items
     std::vector<PVecItem> pvec;
+    // the following are used for vector equality tests. that is, equality in
+    // the "are these vectors the same from legion's perspective."
+    id_t indexSpaceID;
+    LegionRuntime::HighLevel::FieldSpaceID fieldSpaceID;
+    LegionRuntime::HighLevel::RegionTreeID rTreeID;
 
 public:
     template <typename T>
@@ -108,6 +113,10 @@ public:
         // now create the logical region
         this->lr = lrt->create_logical_region(ctx, is, fs);
         // at this point we don't have a logical partition
+        // stash some info for equality checks
+        indexSpaceID = this->lr.get_index_space().id;
+        fieldSpaceID = this->lr.get_field_space().get_id();
+        rTreeID      = this->lr.get_tree_id();
     }
 
     /**
@@ -125,6 +134,16 @@ public:
         lrt->destroy_logical_region(ctx, lr);
         lrt->destroy_field_space(ctx, fs);
         lrt->destroy_index_space(ctx, is);
+    }
+
+    /**
+     *
+     */
+    static bool
+    same(const Vector &a, const Vector &b) {
+        return a.indexSpaceID == b.indexSpaceID &&
+               a.fieldSpaceID == b.fieldSpaceID &&
+               a.rTreeID      == b.rTreeID;
     }
 
     /**
@@ -243,34 +262,6 @@ public:
             }
             std::cout << std::setfill(' ') << std::setw(3) << val << " ";
         }
-    }
-    /**
-     * FIXME i don't like this. make more scalable and more general.
-     * FIXME make a reduction task
-     */
-    template<typename T>
-    T
-    sum(LegionRuntime::HighLevel::Context &ctx,
-        LegionRuntime::HighLevel::HighLevelRuntime *lrt)
-    {
-        using namespace LegionRuntime::HighLevel;
-        using namespace LegionRuntime::Accessor;
-        using LegionRuntime::Arrays::Rect;
-
-        RegionRequirement req(lr, READ_ONLY, EXCLUSIVE, lr);
-        req.add_field(fid);
-        InlineLauncher suml(req);
-        PhysicalRegion reg = lrt->map_region(ctx, suml);
-        reg.wait_until_valid();
-        typedef RegionAccessor<AccessorType::Generic, T> GTRA;
-        GTRA acc = reg.get_field_accessor(fid).typeify<T>();
-        typedef GenericPointInRectIterator<1> GPRI1D;
-        typedef DomainPoint DomPt;
-        T total = static_cast<T>(0);
-        for (GPRI1D pi(bounds); pi; pi++) {
-            total += acc.read(DomPt::from_point<1>(pi.p));
-        }
-        return total;
     }
 };
 
