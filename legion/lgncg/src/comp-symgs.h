@@ -189,7 +189,6 @@ symgsTask(const LegionRuntime::HighLevel::Task *task,
     const Domain rDom = lrt->get_index_space_domain(
         ctx, task->regions[rRID].region.get_index_space()
     );
-
     // calculate nRows and nCols for the local subgrid
     Rect<1> myGridBounds = aValsDom.get_rect<1>();
     assert(0 == myGridBounds.volume() % nMatCols);

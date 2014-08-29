@@ -97,7 +97,6 @@ solv(SparseMatrix &A,
      double tolerance,
      int64_t maxIters,
      Vector &x,
-     int64_t nParts,
      bool doPreconditioning,
      LegionRuntime::HighLevel::Context &ctx,
      LegionRuntime::HighLevel::HighLevelRuntime *lrt)
@@ -112,7 +111,7 @@ solv(SparseMatrix &A,
     // A, x, and b all have the same number of rows, so choose one
     CGData cgData(A.nRows, ctx, lrt);
     // performs all prep on the data structures we are going to work on
-    preSolvPrep(A, b, x, cgData, nParts, doPreconditioning, ctx, lrt);
+    preSolvPrep(A, b, x, cgData, A.geom.size, doPreconditioning, ctx, lrt);
     // convenience refs to CG data
     Vector &r  = cgData.r;
     Vector &z  = cgData.z;

@@ -278,7 +278,6 @@ mainTask(const lrthl::Task *task,
                   params.tolerance,
                   params.maxIters,
                   problem.x,
-                  params.nSubRgns,
                   params.doPreconditioning,
                   ctx,
                   lrt);

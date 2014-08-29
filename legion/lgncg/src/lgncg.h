@@ -54,7 +54,6 @@ cgSolv(SparseMatrix &A,
        double tolerance,
        int64_t maxIters,
        Vector &x,
-       int64_t nParts,
        bool doPreconditioning,
        LegionRuntime::HighLevel::Context ctx,
        LegionRuntime::HighLevel::HighLevelRuntime *lrt);
