@@ -35,6 +35,7 @@
 #include "sparsemat.h"
 #include "utils.h"
 #include "cg-data.h"
+#include "cg-mapper.h"
 #include "veccp.h"
 #include "vec-zero.h"
 #include "comp-spmv.h"
@@ -186,13 +187,13 @@ static inline void
 init(void)
 {
     using namespace LegionRuntime::HighLevel;
-
-    //HighLevelRuntime::set_registration_callback(mapper_registration);
+    // register custom mapper
+    HighLevelRuntime::set_registration_callback(mapperRegistration);
 
     HighLevelRuntime::register_legion_task<setupHaloTask>(
         LGNCG_SETUP_HALO_TID /* task id */,
         Processor::LOC_PROC /* proc kind  */,
-        false /* single */,
+        true /* single */,
         true /* index */,
         AUTO_GENERATE_ID,
         TaskConfigOptions(true /* leaf task */),
@@ -202,7 +203,7 @@ init(void)
     HighLevelRuntime::register_legion_task<veccpTask>(
         LGNCG_VECCP_TID /* task id */,
         Processor::LOC_PROC /* proc kind  */,
-        false /* single */,
+        true /* single */,
         true /* index */,
         AUTO_GENERATE_ID,
         TaskConfigOptions(true /* leaf task */),
@@ -212,7 +213,7 @@ init(void)
     HighLevelRuntime::register_legion_task<veczeroTask>(
         LGNCG_VEC_ZERO_TID /* task id */,
         Processor::LOC_PROC /* proc kind  */,
-        false /* single */,
+        true /* single */,
         true /* index */,
         AUTO_GENERATE_ID,
         TaskConfigOptions(true /* leaf task */),
@@ -221,7 +222,7 @@ init(void)
     HighLevelRuntime::register_legion_task<spmvTask>(
         LGNCG_SPMV_TID /* task id */,
         Processor::LOC_PROC /* proc kind  */,
-        false /* single */,
+        true /* single */,
         true /* index */,
         AUTO_GENERATE_ID,
         TaskConfigOptions(true /* leaf task */),
@@ -230,7 +231,7 @@ init(void)
     HighLevelRuntime::register_legion_task<waxpbyTask>(
         LGNCG_WAXPBY_TID /* task id */,
         Processor::LOC_PROC /* proc kind  */,
-        false /* single */,
+        true /* single */,
         true /* index */,
         AUTO_GENERATE_ID,
         TaskConfigOptions(true /* leaf task */),
@@ -239,7 +240,7 @@ init(void)
     HighLevelRuntime::register_legion_task<double, dotProdTask>(
         LGNCG_DOTPROD_TID /* task id */,
         Processor::LOC_PROC /* proc kind  */,
-        false /* single */,
+        true /* single */,
         true /* index */,
         AUTO_GENERATE_ID,
         TaskConfigOptions(true /* leaf task */),
@@ -251,7 +252,7 @@ init(void)
     HighLevelRuntime::register_legion_task<symgsTask>(
         LGNCG_SYMGS_TID /* task id */,
         Processor::LOC_PROC /* proc kind  */,
-        false /* single */,
+        true /* single */,
         true /* index */,
         AUTO_GENERATE_ID,
         TaskConfigOptions(true /* leaf task */),
@@ -260,7 +261,7 @@ init(void)
     HighLevelRuntime::register_legion_task<restrictionTask>(
         LGNCG_RESTRICTION_TID /* task id */,
         Processor::LOC_PROC /* proc kind  */,
-        false /* single */,
+        true /* single */,
         true /* index */,
         AUTO_GENERATE_ID,
         TaskConfigOptions(true /* leaf task */),
@@ -269,7 +270,7 @@ init(void)
     HighLevelRuntime::register_legion_task<prolongationTask>(
         LGNCG_PROLONGATION_TID /* task id */,
         Processor::LOC_PROC /* proc kind  */,
-        false /* single */,
+        true /* single */,
         true /* index */,
         AUTO_GENERATE_ID,
         TaskConfigOptions(true /* leaf task */),

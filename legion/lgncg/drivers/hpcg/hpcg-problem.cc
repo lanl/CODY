@@ -416,7 +416,7 @@ Problem::init(void)
         HighLevelRuntime::register_legion_task<setICsTask>(
             Problem::genProbTID /* task id */,
             Processor::LOC_PROC /* proc kind  */,
-            false /* single */,
+            true /* single */,
             true /* index */,
             AUTO_GENERATE_ID,
             TaskConfigOptions(true /* leaf task */),
@@ -427,7 +427,7 @@ Problem::init(void)
         HighLevelRuntime::register_legion_task<populatef2cTask>(
             Problem::populatef2cTID /* task id */,
             Processor::LOC_PROC /* proc kind  */,
-            false /* single */,
+            true /* single */,
             true /* index */,
             AUTO_GENERATE_ID,
             TaskConfigOptions(true /* leaf task */),

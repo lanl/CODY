@@ -317,7 +317,7 @@ init(void)
     HighLevelRuntime::register_legion_task<checkCGTask>(
         CHECK_CG_TASK_ID /* task id */,
         Processor::LOC_PROC /* proc kind  */,
-        false /* single */,
+        true /* single */,
         true /* index */,
         AUTO_GENERATE_ID,
         TaskConfigOptions(true /* leaf task */),
