@@ -197,9 +197,9 @@ waxpbyTask(const LegionRuntime::HighLevel::Task *task,
         assert(3 == rgns.size());
     }
     // name the regions
-    PhysicalRegion xpr = rgns[xRID];
-    PhysicalRegion ypr = rgns[yRID];
-    PhysicalRegion wpr = rgns[wRID];
+    const PhysicalRegion &xpr = rgns[xRID];
+    const PhysicalRegion &ypr = rgns[yRID];
+    const PhysicalRegion &wpr = rgns[wRID];
     // convenience typedefs
     typedef RegionAccessor<AccessorType::Generic, double>  GDRA;
     // vectors
