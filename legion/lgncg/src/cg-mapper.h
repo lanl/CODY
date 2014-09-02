@@ -40,6 +40,7 @@ enum {
 };
 
 class CGMapper : public LegionRuntime::HighLevel::DefaultMapper {
+    LegionRuntime::HighLevel::Memory localSysMem;
 public:
     CGMapper(LegionRuntime::HighLevel::Machine *machine,
              LegionRuntime::HighLevel::HighLevelRuntime *rt,
@@ -59,6 +60,9 @@ public:
             printf("cgmapper: %ld memories visible from processor %x\n",
                     visMems.size(), local_proc.id);
         }
+        localSysMem = machine_interface.find_memory_kind(
+                           local_proc, Memory::SYSTEM_MEM
+                      );
     }
 
 #if 0
@@ -123,11 +127,9 @@ CGMapper::map_task(LegionRuntime::HighLevel::Task *task)
 {
     using namespace LegionRuntime::HighLevel;
     // put everything in the system memory
-    Memory sysMem = machine_interface.find_memory_kind(task->target_proc,
-                                                       Memory::SYSTEM_MEM);
-    assert(sysMem.exists());
+    assert(localSysMem.exists());
     for (unsigned idx = 0; idx < task->regions.size(); idx++) {
-        task->regions[idx].target_ranking.push_back(sysMem);
+        task->regions[idx].target_ranking.push_back(localSysMem);
         task->regions[idx].virtual_map = false;
         task->regions[idx].enable_WAR_optimization = war_enabled;
         task->regions[idx].reduction_list = false;
