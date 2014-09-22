@@ -37,10 +37,6 @@
 
 #include "legion.h"
 
-/**
- * computes the coarse residual vector.
- */
-
 namespace lgncg {
 
 /**
