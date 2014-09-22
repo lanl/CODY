@@ -118,7 +118,6 @@ namespace lgncg {
 
 /**
  * responsible for setting up the task launch of the waxpby.
- * TODO fix region aliasing...
  */
 static inline void
 waxpby(double alpha,
