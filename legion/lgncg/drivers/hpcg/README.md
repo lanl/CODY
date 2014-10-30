@@ -1,9 +1,6 @@
-HPCG-like problem driver
+HPCG-like Problem Driver
 ========================
 
 ### Run
-
-### TODO
-- Optimize SYGS.
 
 **LA-CC 10-123**
