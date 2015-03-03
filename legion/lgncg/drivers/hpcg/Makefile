@@ -41,8 +41,8 @@ endif
 LGCG_DIR := ../../src
 
 #Flags for directing the runtime makefile what to include
-#DEBUG=0                   # Do NOT Include debugging symbols
-DEBUG=1                   # Include debugging symbols
+DEBUG=0                   # Do NOT Include debugging symbols
+#DEBUG=1                   # Include debugging symbols
 #OUTPUT_LEVEL=LEVEL_DEBUG  # Compile time print level
 OUTPUT_LEVEL=LEVEL_NONE # Compile time print level
 SHARED_LOWLEVEL=1	  # Use the shared low level

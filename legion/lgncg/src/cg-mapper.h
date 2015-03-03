@@ -42,21 +42,24 @@ enum {
 class CGMapper : public LegionRuntime::HighLevel::DefaultMapper {
     LegionRuntime::HighLevel::Memory localSysMem;
 public:
-    CGMapper(LegionRuntime::HighLevel::Machine *machine,
+    CGMapper(LegionRuntime::HighLevel::Machine machine,
              LegionRuntime::HighLevel::HighLevelRuntime *rt,
              LegionRuntime::HighLevel::Processor p) :
         LegionRuntime::HighLevel::DefaultMapper(machine, rt, p) {
         using namespace LegionRuntime::HighLevel;
         using namespace LegionRuntime::Accessor;
         using namespace LegionRuntime::Arrays;
-        const std::set<Processor> &allProcs = machine->get_all_processors();
+        std::set<Processor> allProcs;
+        machine.get_all_processors(allProcs);
         if ((*(allProcs.begin())) == local_proc) {
             printf("cgmapper: number of processors: %ld\n", allProcs.size());
             //
-            const std::set<Memory> &allMems = machine->get_all_memories();
+            std::set<Memory> allMems;
+            machine.get_all_memories(allMems);
             printf("cgmapper: number of memories: %ld\n", allMems.size());
             //
-            const std::set<Memory> visMems = machine->get_visible_memories(local_proc);
+            std::set<Memory> visMems;
+            machine.get_visible_memories(local_proc, visMems);
             printf("cgmapper: %ld memories visible from processor %x\n",
                     visMems.size(), local_proc.id);
         }
@@ -92,7 +95,7 @@ public:
 };
 
 void
-mapperRegistration(LegionRuntime::HighLevel::Machine *machine,
+mapperRegistration(LegionRuntime::HighLevel::Machine machine,
                     LegionRuntime::HighLevel::HighLevelRuntime *rt,
                     const std::set<LegionRuntime::HighLevel::Processor> &lProcs)
 {
