@@ -420,7 +420,7 @@ Problem::init(void)
             true /* index */,
             AUTO_GENERATE_ID,
             TaskConfigOptions(true /* leaf task */),
-            "set-ics-task"
+            "setics"
         );
         // register the populate f2cOperator task
         Problem::populatef2cTID = POP_F2C_FID;
@@ -431,7 +431,7 @@ Problem::init(void)
             true /* index */,
             AUTO_GENERATE_ID,
             TaskConfigOptions(true /* leaf task */),
-            "populate-f2c-task"
+            "populatef2c"
         );
         registeredTasks = true;
     }

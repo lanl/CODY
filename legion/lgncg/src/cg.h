@@ -197,7 +197,7 @@ init(void)
         true /* index */,
         AUTO_GENERATE_ID,
         TaskConfigOptions(true /* leaf task */),
-        "lgncg-setup-halo-task"
+        "halosetup"
     );
 #if 0 // Using CopyLauncher -- Much faster!
     HighLevelRuntime::register_legion_task<veccpTask>(
@@ -207,7 +207,7 @@ init(void)
         true /* index */,
         AUTO_GENERATE_ID,
         TaskConfigOptions(true /* leaf task */),
-        "lgncg-veccp-task"
+        "veccp"
     );
 #endif
     HighLevelRuntime::register_legion_task<veczeroTask>(
@@ -217,7 +217,7 @@ init(void)
         true /* index */,
         AUTO_GENERATE_ID,
         TaskConfigOptions(true /* leaf task */),
-        "lgncg-veczero-task"
+        "veczero"
     );
     HighLevelRuntime::register_legion_task<spmvTask>(
         LGNCG_SPMV_TID /* task id */,
@@ -226,7 +226,7 @@ init(void)
         true /* index */,
         AUTO_GENERATE_ID,
         TaskConfigOptions(true /* leaf task */),
-        "lgncg-spmv-task"
+        "spmv"
     );
     HighLevelRuntime::register_legion_task<waxpbyTask>(
         LGNCG_WAXPBY_TID /* task id */,
@@ -235,7 +235,7 @@ init(void)
         true /* index */,
         AUTO_GENERATE_ID,
         TaskConfigOptions(true /* leaf task */),
-        "lgncg-waxpby-task"
+        "waxpby"
     );
     HighLevelRuntime::register_legion_task<double, dotProdTask>(
         LGNCG_DOTPROD_TID /* task id */,
@@ -244,7 +244,7 @@ init(void)
         true /* index */,
         AUTO_GENERATE_ID,
         TaskConfigOptions(true /* leaf task */),
-        "lgncg-dotprod-task"
+        "dotprod"
     );
     HighLevelRuntime::register_reduction_op<DotProdAccumulate>(
         LGNCG_DOTPROD_RED_ID
@@ -256,7 +256,7 @@ init(void)
         true /* index */,
         AUTO_GENERATE_ID,
         TaskConfigOptions(true /* leaf task */),
-        "lgncg-symgs-task"
+        "symgs"
     );
     HighLevelRuntime::register_legion_task<restrictionTask>(
         LGNCG_RESTRICTION_TID /* task id */,
@@ -265,7 +265,7 @@ init(void)
         true /* index */,
         AUTO_GENERATE_ID,
         TaskConfigOptions(true /* leaf task */),
-        "lgncg-restriction-task"
+        "restriction"
     );
     HighLevelRuntime::register_legion_task<prolongationTask>(
         LGNCG_PROLONGATION_TID /* task id */,
@@ -274,7 +274,7 @@ init(void)
         true /* index */,
         AUTO_GENERATE_ID,
         TaskConfigOptions(true /* leaf task */),
-        "lgncg-prolongation-task"
+        "prolongation"
     );
 }
 

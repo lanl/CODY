@@ -312,7 +312,7 @@ init(void)
         false /* index */,
         AUTO_GENERATE_ID,
         TaskConfigOptions(false /* leaf task */),
-        "main-task"
+        "maintask"
     );
     HighLevelRuntime::register_legion_task<checkCGTask>(
         CHECK_CG_TASK_ID /* task id */,
@@ -321,7 +321,7 @@ init(void)
         true /* index */,
         AUTO_GENERATE_ID,
         TaskConfigOptions(true /* leaf task */),
-        "check-cg-task"
+        "checkcg"
     );
     // now do any Problem-related init
     Problem::init();
