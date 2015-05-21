@@ -164,7 +164,7 @@ solv(SparseMatrix &A,
         alpha = rtz / pAp;
         // x = 1 * x + alpha * p
         waxpby(1.0, x, alpha, p, x, ctx, lrt);
-        // r = 1 * r + -alpha * p
+        // r = 1 * r + -alpha * Ap
         waxpby(1.0, r, -alpha, Ap, r, ctx, lrt);
         // normr = r' * r
         dotprod(r, r, normr, ctx, lrt);

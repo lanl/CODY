@@ -31,13 +31,41 @@
 
 1;
 
+function x = hpcg(A, b, tol, maxIts, x)
+    p = x;
+    Ap = A * p;
+    r = b - Ap;
+    normr0 = normr = sqrt(r' * r);
+    k = 1;
+    while k < maxIts && normr / normr0 > tol
+        z = r;
+        if k == 1
+            p = z;
+            rtz = r' * z;
+        else
+            rtzOld = rtz;
+            rtz = r' * z;
+            beta = rtz / rtzOld;
+            p = z + (beta * p);
+        end
+        Ap = A * p;
+        pAp = p' * Ap;
+        alpha = rtz / pAp;
+        x = x + (alpha * p);
+        r = r + (-alpha * Ap);
+        normr = sqrt(r' * r);
+        k = k + 1;
+    endwhile
+    k - 1
+endfunction
+
 function x = cg(A, b, tol, maxIts, x)
     r = b - A * x;
     p = r;
     rsold = r' * r;
     for i = 1:maxIts
         Ap = A * p;
-        alpha = rsold / (p' * Ap)
+        alpha = rsold / (p' * Ap);
         x = x + alpha * p;
         r = r - alpha * Ap;
         rsnew = r' * r;
@@ -45,18 +73,23 @@ function x = cg(A, b, tol, maxIts, x)
             break
         end
         p = r + (rsnew / rsold * p);
-        rsold = rsnew
+        rsold = rsnew;
     end
+    i
 endfunction
 
 A = [4 1; 1 3]
-x = [1 ; 1]
+x = [0 ; 0]
 b = [1 ; 2]
 
 cganswer = cg(A, b, 0.1, 128, x)
 
+x = [0 ; 0];
+
+hpcganswer = hpcg(A, b, 0.1, 128, x)
+
 A = [4 1; 1 3];
-x = [1 ; 1];
+x = [0 ; 0];
 b = [1 ; 2];
 
 pcranswer = pcr(A, b, 0.001, 128)
