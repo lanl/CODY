@@ -222,7 +222,6 @@ spmvTask(const LegionRuntime::HighLevel::Task *task,
     // convenience typedefs
     typedef RegionAccessor<AccessorType::Generic, double>  GDRA;
     typedef RegionAccessor<AccessorType::Generic, int64_t> GLRA;
-    typedef RegionAccessor<AccessorType::Generic, uint8_t> GSRA;
     // sparse matrix
     GDRA av = avpr.get_field_accessor(0).typeify<double>();
     const Domain aValsDom = lrt->get_index_space_domain(
