@@ -114,7 +114,7 @@ public:
         this->lr = lrt->create_logical_region(ctx, is, fs);
         // at this point we don't have a logical partition
         // stash some info for equality checks
-        indexSpaceID = this->lr.get_index_space().id;
+        indexSpaceID = this->lr.get_index_space().get_id();
         fieldSpaceID = this->lr.get_field_space().get_id();
         rTreeID      = this->lr.get_tree_id();
     }
