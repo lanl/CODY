@@ -22,6 +22,9 @@ ifndef LG_RT_DIR
 $(error LG_RT_DIR variable is not defined, aborting build)
 endif
 
+# whether or not to use the shared low-level RT.
+LGNCG_SHARED_LOWLEVEL = 1
+
 # Flag indicating whether or not run-time offset density checks will be
 # performed. See: offsetsAreDense in src/utils.h. Calls to offsetsAreDense are
 # not free, but are useful when writing code and moving to new architectures.
@@ -45,7 +48,15 @@ DEBUG=0                   # Do NOT Include debugging symbols
 #DEBUG=1                   # Include debugging symbols
 #OUTPUT_LEVEL=LEVEL_DEBUG  # Compile time print level
 OUTPUT_LEVEL=LEVEL_NONE # Compile time print level
+
+ifeq ($(LGNCG_SHARED_LOWLEVEL), 1)
 SHARED_LOWLEVEL=1	  # Use the shared low level
+else
+SHARED_LOWLEVEL=0	  # Use GASNet
+USE_CUDA=0
+GASNET=$(HOME)/local/gasnet/1.22.0
+endif
+
 #ALT_MAPPERS=1		  # Compile the alternative mappers
 
 # Put the binary file name here
