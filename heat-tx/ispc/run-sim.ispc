@@ -77,7 +77,7 @@ run_simulation(uniform simulation_t *uniform sim)
             double *uniform ocin = old_cells[i + 1];
             foreach (j = 1 ... ny - 1) {
                 double ocij = oci[j];
-                nci[j] = ocij + (cdtods2 * (ocin[j] + ocip[j] - 4.0 *
+                nci[j] = ocij + (cdtods2 * (ocin[j] + ocip[j] - DOUBLE_C(4.0) *
                                             ocij + oci[j + 1] + oci[j - 1]));
             }
         }

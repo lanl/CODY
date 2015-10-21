@@ -57,14 +57,22 @@ enum {
     FAILURE_INVALID_ARG
 };
 
+/* C floating-point constants defaults to double; ISPC floating-point
+ * constants defaults to float.  DOUBLE_C makes both double. */
+#ifdef ISPC
+# define DOUBLE_C(N) N ## d
+#else
+# define DOUBLE_C(N) N
+#endif
+
 /* max simulation time */
 #define T_MAX 1024
 /* nx and ny */
 #define N 512
 /* thermal conductivity */
-#define THERM_COND 0.6
+#define THERM_COND DOUBLE_C(0.6)
 /* some constant */
-#define K 0.4
+#define K DOUBLE_C(0.4)
 
 /* Bridge the gap between C and ISPC. */
 #ifdef ISPC

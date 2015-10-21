@@ -43,8 +43,11 @@
 all: heat-tx
 
 CFLAGS = -Wall -Wextra -Ofast -march=native -g
-ISPCFLAGS = --target=sse4-i32x8 -O3 -g
+
+# Consider adding a --target option to ISPCFLAGS.  Use trial and error to
+# find the best performing target for your platform.
 ISPC = ispc
+ISPCFLAGS = -O3 -g
 
 heat-tx: heat-tx.o run-sim.o
 
