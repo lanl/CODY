@@ -1,4 +1,4 @@
-# Copyright (c) 2014, Los Alamos National Security, LLC All rights reserved.
+# Copyright (c) 2015, Los Alamos National Security, LLC All rights reserved.
 #
 # This software was produced under U.S. Government contract DE-AC52-06NA25396
 # for Los Alamos National Laboratory (LANL), which is operated by Los Alamos
@@ -43,9 +43,16 @@
 all: heat-tx
 
 CFLAGS = -Wall -Wextra -Ofast -march=native -g
+ISPCFLAGS = --target=sse4-i32x8 -O3 -g
+ISPC = ispc
 
-heat-tx: heat-tx.c
+heat-tx: heat-tx.o run-sim.o
+
+heat-tx.o: heat-tx.c heat-tx.h
+
+run-sim.o: run-sim.ispc heat-tx.h
+	$(ISPC) $(ISPCFLAGS) run-sim.ispc -o run-sim.o
 
 clean:
-	rm -f heat-tx
-	rm -rf heat-tx.dSYM
+	$(RM) heat-tx heat-tx.o run-sim.o
+	$(RM) -r heat-tx.dSYM
