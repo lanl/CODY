@@ -318,7 +318,6 @@ set_initial_conds(mesh_t *mesh)
     int radius_err = 1 - x;
 
     while (x >= y) {
-        mesh->cells[ x + x0][ y + y0] = K;
         mesh->cells[ x + x0][ y + y0] = K * .50;
         mesh->cells[ y + x0][ x + y0] = K * .60;
         mesh->cells[-x + x0][ y + y0] = K * .70;

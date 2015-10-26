@@ -1,7 +1,8 @@
 #!/usr/bin/env rdmd
 
 /**
- * Copyright (c) 2014, Los Alamos National Security, LLC All rights reserved.
+ * Copyright (c) 2014-2015 Los Alamos National Security, LLC
+ *                         All rights reserved.
  *
  * This software was produced under U.S. Government contract DE-AC52-06NA25396
  * for Los Alamos National Laboratory (LANL), which is operated by Los Alamos
@@ -78,7 +79,6 @@ public:
         auto x  = nx / 4, y = 0;
         long radius_err = 1 - x;
         while (x >= y) {
-            cells[ x + x0][ y + y0] = K;
             cells[ x + x0][ y + y0] = K * .50;
             cells[ y + x0][ x + y0] = K * .60;
             cells[-x + x0][ y + y0] = K * .70;
@@ -155,7 +155,7 @@ public:
 void main()
 {
     writeln(APP_NAME, " ", APP_VER);
-    Simulation sim = new Simulation(N, K, T_MAX);
+    Simulation sim = new Simulation(N, THERM_COND, T_MAX);
     sim.oldMesh.setInitialConds();
     sim.run();
     sim.dump();

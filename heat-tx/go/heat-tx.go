@@ -1,4 +1,5 @@
-// Copyright (c) 2014, Los Alamos National Security, LLC All rights reserved.
+// Copyright (c) 2014-2015 Los Alamos National Security, LLC
+//                         All rights reserved.
 //
 // This software was produced under U.S. Government contract DE-AC52-06NA25396
 // for Los Alamos National Laboratory (LANL), which is operated by Los Alamos
@@ -163,7 +164,6 @@ func (m *Mesh) SetInitConds() {
     radiusErr := int64(1 - x)
 
     for x >= y {
-        m.cells[ x + x0][ y + y0] = K
         m.cells[ x + x0][ y + y0] = K * .50
         m.cells[ y + x0][ x + y0] = K * .60
         m.cells[-x + x0][ y + y0] = K * .70

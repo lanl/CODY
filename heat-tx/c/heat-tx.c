@@ -1,5 +1,6 @@
 /**
- * Copyright (c) 2014, Los Alamos National Security, LLC All rights reserved.
+ * Copyright (c) 2014-2015 Los Alamos National Security, LLC
+ *                         All rights reserved.
  *
  * This software was produced under U.S. Government contract DE-AC52-06NA25396
  * for Los Alamos National Laboratory (LANL), which is operated by Los Alamos
@@ -394,7 +395,6 @@ set_initial_conds(mesh_t *mesh)
     int radius_err = 1 - x;
 
     while (x >= y) {
-        mesh->cells[ x + x0][ y + y0] = K;
         mesh->cells[ x + x0][ y + y0] = K * .50;
         mesh->cells[ y + x0][ x + y0] = K * .60;
         mesh->cells[-x + x0][ y + y0] = K * .70;
