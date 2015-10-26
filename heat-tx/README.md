@@ -3,7 +3,7 @@ heat-tx
 
 ### Description
 
-Simple heat transfer simulations in C, D, and Go.
+Simple heat transfer simulations in C, D, Go, and ISPC.
 
 ### Plot Output
 gnuplot> plot './heat-img.dat' matrix with image
