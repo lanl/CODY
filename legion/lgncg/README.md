@@ -7,6 +7,6 @@ optimized.
 
 ### Description
 A [Legion](http://legion.stanford.edu/) implementation of
-[HPCG](https://software.sandia.gov/hpcg/).
+[HPCG](http://hpcg-benchmark.org/).
 
 **LA-CC 10-123**
