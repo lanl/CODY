@@ -33,13 +33,19 @@
 
 #include <vector>
 
-#include "TaskIDs.hpp"
-
 #include "legion.h"
 
 using namespace LegionRuntime::HighLevel;
 using namespace LegionRuntime::HighLevel;
 using namespace LegionRuntime::Accessor;
+
+////////////////////////////////////////////////////////////////////////////////
+// Task IDs
+////////////////////////////////////////////////////////////////////////////////
+enum {
+    MAIN_TID,
+    SPMD_MAIN_TID
+};
 
 ////////////////////////////////////////////////////////////////////////////////
 // Task forward declarations.
@@ -51,14 +57,30 @@ mainTask(
     Context ctx, HighLevelRuntime *runtime
 );
 
+void
+spmdMainTask(
+    const Task *task,
+    const std::vector<PhysicalRegion> &regions,
+    Context ctx, HighLevelRuntime *runtime
+);
+
+////////////////////////////////////////////////////////////////////////////////
+// Task Registration
 ////////////////////////////////////////////////////////////////////////////////
 inline void
 registerTasks(void) {
+    {
     TaskVariantRegistrar tvr(MAIN_TID, "mainTask");
     tvr.add_constraint(ProcessorConstraint(Processor::LOC_PROC));
     Runtime::preregister_task_variant<mainTask>(tvr, "mainTask");
     Runtime::set_top_level_task_id(MAIN_TID);
+    }
     //
+    {
+    TaskVariantRegistrar tvr(SPMD_MAIN_TID, "spmdMainTask");
+    tvr.add_constraint(ProcessorConstraint(Processor::LOC_PROC));
+    Runtime::preregister_task_variant<spmdMainTask>(tvr, "spmdMainTask");
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -74,7 +96,6 @@ protected:
   // this is shared by all FieldHelper<T>'s
   static FieldID sNextID;
 };
-//
 
 ////////////////////////////////////////////////////////////////////////////////
 template <typename T>
@@ -87,13 +108,14 @@ public:
     static const FieldID ASSIGN_STATIC_ID = AUTO_GENERATE_ID - 1;
     ////////////////////////////////////////////////////////////////////////////
     FieldHelper(
-        const char *_name,
-        FieldID _fid = ASSIGN_STATIC_ID
-    ) : name(_name),
-        fid(_fid)
+        const char *mName,
+        FieldID mFID = ASSIGN_STATIC_ID
+    ) : name(mName),
+        fid(mFID)
     {
         if(fid == ASSIGN_STATIC_ID) fid = sNextID++;
     }
+
     ////////////////////////////////////////////////////////////////////////////
     ~FieldHelper(void) = default;
 

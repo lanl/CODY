@@ -39,16 +39,18 @@
 #include "CheckAspectRatio.hpp"
 
 #include "LegionStuff.hpp"
+#include "CGMapper.h"
 
 using namespace std;
 
 LegionRuntime::Logger::Category Logger("LGNCG");
 
 /**
- * Main Task ///////////////////////////////////////////////////////////////////
+ * SPMD Main Task //////////////////////////////////////////////////////////////
+ *
  */
 void
-mainTask(
+spmdMainTask(
     const Task *task,
     const std::vector<PhysicalRegion> &regions,
     Context ctx, HighLevelRuntime *runtime
@@ -75,6 +77,24 @@ mainTask(
     ////////////////////////////////////////////////////////////////////////////
 }
 
+/**
+ * Main Task ///////////////////////////////////////////////////////////////////
+ * Responsible for setting up the SPMD launch.
+ */
+void
+mainTask(
+    const Task *task,
+    const std::vector<PhysicalRegion> &regions,
+    Context ctx, HighLevelRuntime *runtime
+) {
+    // step 1: ask the mapper how many shards we should even have
+    //int nShards = runtime->get_tunable_value(ctx, CGMapper::TID_NUM_SHARDS);
+}
+
+/**
+ * Main ////////////////////////////////////////////////////////////////////////
+ * Responsible for RT initialization.
+ */
 int
 main(int argc, char **argv)
 {

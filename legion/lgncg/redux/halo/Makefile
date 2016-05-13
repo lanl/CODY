@@ -31,7 +31,7 @@ OUTFILE		?= halo-exchange
 # List all the application source files here
 GEN_SRC		?= \
 main.cc init.cc \
-LegionStuff.cc \
+LegionStuff.cc CGMapper.cc \
 ReadHpcgDat.cc CheckAspectRatio.cc
 GEN_GPU_SRC	?= 					# .cu files
 
