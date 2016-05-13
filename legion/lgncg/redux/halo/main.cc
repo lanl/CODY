@@ -35,6 +35,8 @@
 #include <cstdlib>
 
 #include "hpcg.hpp"
+#include "Geometry.hpp"
+#include "CheckAspectRatio.hpp"
 
 #include "LegionStuff.hpp"
 
@@ -51,10 +53,21 @@ mainTask(
 ) {
     HPCG_Params params;
     HPCG_Init(params);
-    cout << params.nx << endl;
-    cout << params.ny << endl;
-    cout << params.nz << endl;
-    cout << params.runningTime << endl;
+    // Check if QuickPath option is enabled.  If the running time is set to
+    // zero, we minimize all paths through the program
+    bool quickPath = (params.runningTime == 0);
+    // Number of MPI processes, My process ID
+    // TODO FIXME get from mapper
+    int size = params.comm_size, rank = params.comm_rank;
+    //
+    local_int_t nx,ny,nz;
+    nx = (local_int_t)params.nx;
+    ny = (local_int_t)params.ny;
+    nz = (local_int_t)params.nz;
+    // Used to check return codes on function calls
+    int ierr = 0;
+    ierr = CheckAspectRatio(0.125, nx, ny, nz, "local problem", rank == 0);
+    if (ierr) exit(ierr);
 }
 
 int
