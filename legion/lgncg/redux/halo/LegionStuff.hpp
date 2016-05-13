@@ -2,6 +2,8 @@
  * Copyright (c) 2016      Los Alamos National Security, LLC
  *                         All rights reserved.
  *
+ * Copyright (c) 2016      Stanford University
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
  *
@@ -29,15 +31,19 @@
 
 #pragma once
 
+#include <vector>
+
 #include "TaskIDs.hpp"
 
 #include "legion.h"
 
 using namespace LegionRuntime::HighLevel;
+using namespace LegionRuntime::HighLevel;
+using namespace LegionRuntime::Accessor;
 
-/**
- * Task forward declarations.
- */
+////////////////////////////////////////////////////////////////////////////////
+// Task forward declarations.
+////////////////////////////////////////////////////////////////////////////////
 void
 mainTask(
     const Task *task,
@@ -45,6 +51,7 @@ mainTask(
     Context ctx, HighLevelRuntime *runtime
 );
 
+////////////////////////////////////////////////////////////////////////////////
 inline void
 registerTasks(void) {
     TaskVariantRegistrar tvr(MAIN_TID, "mainTask");
@@ -54,8 +61,82 @@ registerTasks(void) {
     //
 }
 
+////////////////////////////////////////////////////////////////////////////////
 inline void
 LegionInit(void)
 {
     registerTasks();
 }
+
+////////////////////////////////////////////////////////////////////////////////
+class FieldHelperBase {
+protected:
+  // this is shared by all FieldHelper<T>'s
+  static FieldID sNextID;
+};
+//
+
+////////////////////////////////////////////////////////////////////////////////
+template <typename T>
+class FieldHelper : protected FieldHelperBase {
+protected:
+    const char *name;
+    FieldID fid;
+
+public:
+    static const FieldID ASSIGN_STATIC_ID = AUTO_GENERATE_ID - 1;
+    ////////////////////////////////////////////////////////////////////////////
+    FieldHelper(
+        const char *_name,
+        FieldID _fid = ASSIGN_STATIC_ID
+    ) : name(_name),
+        fid(_fid)
+    {
+        if(fid == ASSIGN_STATIC_ID) fid = sNextID++;
+    }
+    ////////////////////////////////////////////////////////////////////////////
+    ~FieldHelper(void) = default;
+
+    ////////////////////////////////////////////////////////////////////////////
+    operator
+    FieldID(void) const
+    {
+        assert(fid != AUTO_GENERATE_ID);
+        return fid;
+    }
+
+    ////////////////////////////////////////////////////////////////////////////
+    void
+    allocate(
+        Runtime *runtime,
+        Context ctx,
+        FieldSpace fs
+    ) {
+        FieldAllocator fa = runtime->create_field_allocator(ctx, fs);
+        fid = fa.allocate_field(sizeof(T), fid);
+        runtime->attach_name(fs, fid, name);
+    }
+
+    ////////////////////////////////////////////////////////////////////////////
+    template <typename AT>
+    RegionAccessor<AT, T>
+    accessor(const PhysicalRegion& pr)
+    {
+        assert(fid != AUTO_GENERATE_ID);
+        return pr.get_field_accessor(
+                  fid
+               ).template typeify<T>().template convert<AT>();
+    }
+
+    ////////////////////////////////////////////////////////////////////////////
+    template <typename AT>
+    RegionAccessor<AT, T>
+    foldAccessor(const PhysicalRegion& pr)
+    {
+        assert(fid != AUTO_GENERATE_ID);
+        std::vector<FieldID> fields;
+        pr.get_fields(fields);
+        assert((fields.size() == 1) && (fields[0] == fid));
+        return pr.get_accessor().template typeify<T>().template convert<AT>();
+    }
+};
