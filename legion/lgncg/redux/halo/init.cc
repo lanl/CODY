@@ -15,6 +15,7 @@
 #include <cstring>
 
 #include "hpcg.hpp"
+#include "ReadHpcgDat.hpp"
 
 #include "LegionStuff.hpp"
 
@@ -49,6 +50,16 @@ HPCG_Init(
             }
         }
     }
+    // Check if --rt was specified on the command line
+    // Assume runtime was not specified and will be read from the hpcg.dat file
+    int *rt = iparams + 3;
+    // If --rt was specified, we already have the runtime, so don't read it from
+    // file
+    if (iparams[3]) rt = NULL;
+    // no geometry arguments on the command line
+    if (!iparams[0] && !iparams[1] && !iparams[2]) {
+        ReadHpcgDat(iparams, rt);
+    }
     // Check for small or unspecified nx, ny, nz values If any dimension is less
     // than 16, make it the max over the other two dimensions, or 16, whichever
     // is largest
@@ -65,7 +76,6 @@ HPCG_Init(
     params.ny = iparams[1];
     params.nz = iparams[2];
     //
-    if (!iparams[3]) iparams[3] = 60;
     params.runningTime = iparams[3];
     //
     params.comm_rank = 0;

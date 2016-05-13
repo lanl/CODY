@@ -51,6 +51,10 @@ mainTask(
 ) {
     HPCG_Params params;
     HPCG_Init(params);
+    cout << params.nx << endl;
+    cout << params.ny << endl;
+    cout << params.nz << endl;
+    cout << params.runningTime << endl;
 }
 
 int

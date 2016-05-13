@@ -29,7 +29,8 @@ ALT_MAPPERS     ?= 0		# Include alternative mappers (not recommended)
 # Put the binary file name here
 OUTFILE		?= halo-exchange
 # List all the application source files here
-GEN_SRC		?= main.cc init.cc
+GEN_SRC		?= \
+main.cc init.cc ReadHpcgDat.cc
 GEN_GPU_SRC	?= 					# .cu files
 
 # You can modify these variables, some will be appended to by the runtime makefile
