@@ -34,34 +34,28 @@
 #include <iostream>
 #include <cstdlib>
 
-#include "legion.h"
+#include "hpcg.hpp"
 
-#include "TaskIDs.h"
-
-using namespace LegionRuntime::HighLevel;
+#include "LegionStuff.hpp"
 
 using namespace std;
 
+/**
+ * Main Task ///////////////////////////////////////////////////////////////////
+ */
 void
 mainTask(
     const Task *task,
     const std::vector<PhysicalRegion> &regions,
     Context ctx, HighLevelRuntime *runtime
 ) {
-
-}
-
-void
-registerTasks(void) {
-    TaskVariantRegistrar tvr(MAIN_TID, "mainTask");
-    tvr.add_constraint(ProcessorConstraint(Processor::LOC_PROC));
-    Runtime::preregister_task_variant<mainTask>(tvr, "mainTask");
-    Runtime::set_top_level_task_id(MAIN_TID);
+    HPCG_Params params;
+    HPCG_Init(params);
 }
 
 int
 main(int argc, char **argv)
 {
-    registerTasks();
+    LegionInit();
     return Runtime::start(argc, argv);
 }
