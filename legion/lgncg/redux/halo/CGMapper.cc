@@ -1,6 +1,6 @@
 // mapper for SPMD CG solver
 
-#include "CGMapper.h"
+#include "cgmapper.h"
 
 LegionRuntime::Logger::Category log_cgmap("cgmapper");
 
@@ -9,7 +9,7 @@ LegionRuntime::Logger::Category log_cgmap("cgmapper");
 #if 0
 namespace Realm {
   template <typename T>
-  std::ostream& operator<<(std::ostream& os, const std::vector<T>& v)
+  LoggerMessage& operator<<(std::ostream& os, const std::vector<T>& v)
   {
     switch(v.size()) {
     case 0: 
@@ -73,9 +73,7 @@ CGMapper::CGMapper(Machine machine, HighLevelRuntime *rt, Processor local)
 	sysmems.push_back(m);
 	procs.push_back(std::vector<Processor>(1, p));
 	proc_to_shard[p] = sysmems.size() - 1;
-#if 0
 	log_cgmap.debug() << "sysmem=" << m << " proc=" << p;
-#endif
       }
     } else {
       // get one representative CPU processor associated with the memory
@@ -127,9 +125,7 @@ CGMapper::CGMapper(Machine machine, HighLevelRuntime *rt, Processor local)
 #endif
 
   if(sysmems.empty()) {
-#if 0
     log_cgmap.fatal() << "HELP!  No system memories found!?";
-#endif
     assert(false);
   }
 }
@@ -141,9 +137,7 @@ CGMapper::~CGMapper(void)
 
 void CGMapper::select_task_options(Task *task)
 {
-#if 0
   log_cgmap.print() << "select_task_options: id=" << task->task_id << " tag=" << task->tag;
-#endif
 
   // is this a sharded task?
   if(task->tag >= TAG_SHARD_BASE) {
@@ -181,10 +175,8 @@ bool CGMapper::pre_map_task(Task *task)
   // assume that all must_early_map regions have an existing instance and just use that
   for(unsigned idx = 0; idx < task->regions.size(); idx++)
     if(task->regions[idx].must_early_map || (task->regions[idx].prop == SIMULTANEOUS)) {
-#if 0
       log_cgmap.print() << "pre_map_task needs early map: id " << task->task_id << " tag=" << task->tag 
 			<< ": #" << idx << ": " << task->regions[idx].region << " (" << task->regions[idx].current_instances.size() << " current)";
-#endif
       task->regions[idx].virtual_map = false;
       task->regions[idx].early_map = true;
       task->regions[idx].enable_WAR_optimization = false;
@@ -223,18 +215,18 @@ bool CGMapper::map_must_epoch(const std::vector<Task*> &tasks,
 
 void CGMapper::notify_mapping_result(const Mappable *mappable)
 {
-#if 0
   const Task *task = mappable->as_mappable_task();
   const char *name = "(unknown)";
   runtime->retrieve_name(task->task_id, name);
   log_cgmap.print() << "task " << task->task_id << "(" << name << ") mapped on " << task->target_proc;
   for(unsigned idx = 0; idx < task->regions.size(); idx++) {
     const RegionRequirement& rr = task->regions[idx];
+#if 0
     log_cgmap.print() << " region #" << idx << ": " << rr.region << " (" << rr.privilege << "," << rr.prop
 		      << ") mapped on " << task->regions[idx].selected_memory
 		      << ", fields=" << task->regions[idx].instance_fields;
-  }
 #endif
+  }
 }
 
 int CGMapper::get_tunable_value(const Task *task, 
