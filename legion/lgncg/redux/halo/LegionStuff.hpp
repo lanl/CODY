@@ -175,7 +175,7 @@ public:
     ////////////////////////////////////////////////////////////////////////////
     template <typename AT>
     RegionAccessor<AT, T>
-    accessor(const PhysicalRegion& pr)
+    accessor(const PhysicalRegion &pr)
     {
         assert(fid != AUTO_GENERATE_ID);
         return pr.get_field_accessor(
@@ -186,7 +186,7 @@ public:
     ////////////////////////////////////////////////////////////////////////////
     template <typename AT>
     RegionAccessor<AT, T>
-    foldAccessor(const PhysicalRegion& pr)
+    foldAccessor(const PhysicalRegion &pr)
     {
         assert(fid != AUTO_GENERATE_ID);
         std::vector<FieldID> fields;
@@ -197,11 +197,37 @@ public:
 };
 
 /**
- * convenience routine to get a task's ID
+ * courtesy of some other legion code.
  */
-inline int
-getTaskID(const LegionRuntime::HighLevel::Task *task)
+template <unsigned DIM, typename T>
+inline bool
+offsetsAreDense(const Rect<DIM> &bounds,
+                const LegionRuntime::Accessor::ByteOffset *offset)
 {
-    //return task->index_point.point_data[0];
-    return task->index_point.get_point<1>();
+    off_t exp_offset = sizeof(T);
+    for (unsigned i = 0; i < DIM; i++) {
+        bool found = false;
+        for (unsigned j = 0; j < DIM; j++)
+            if (offset[j].offset == exp_offset) {
+                found = true;
+                exp_offset *= (bounds.hi[j] - bounds.lo[j] + 1);
+                break;
+            }
+        if (!found) return false;
+    }
+    return true;
+}
+
+/**
+ * courtesy of some other legion code.
+ */
+inline bool
+offsetMismatch(int i,
+               const LegionRuntime::Accessor::ByteOffset *off1,
+               const LegionRuntime::Accessor::ByteOffset *off2)
+{
+    while (i-- > 0) {
+        if ((off1++)->offset != (off2++)->offset) return true;
+    }
+    return false;
 }

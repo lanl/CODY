@@ -41,7 +41,7 @@
 //@HEADER
 
 /**
- * A simple example illustrating a halo exchange using control replication. 
+ *
  */
 
 #include <iostream>
@@ -55,6 +55,7 @@
 #include "GenerateGeometry.hpp"
 
 #include "LegionStuff.hpp"
+#include "LegionArray.hpp"
 #include "CGMapper.h"
 
 using namespace std;
@@ -70,22 +71,8 @@ spmdMainTask(
     const std::vector<PhysicalRegion> &regions,
     Context ctx, HighLevelRuntime *runtime
 ) {
+#if 0
     const SPMDContext &spmdCtx = *(const SPMDContext *)(task->args);
-}
-
-/**
- * Main Task ///////////////////////////////////////////////////////////////////
- * Responsible for setting up the SPMD launch.
- */
-void
-mainTask(
-    const Task *task,
-    const std::vector<PhysicalRegion> &regions,
-    Context ctx, HighLevelRuntime *runtime
-) {
-    // ask the mapper how many shards we can have
-    int nShards = runtime->get_tunable_value(ctx, CGMapper::TID_NUM_SHARDS);
-    cout << "*** Number of Shards (~ NUMPE): " << nShards << endl;;
     //
     HPCG_Params params;
     SPMDMeta spmdMeta = {.nRanks = nShards /* One rank/shard (for now) */};
@@ -119,7 +106,30 @@ mainTask(
     std::vector< double > times(10,0.0);
 
     double setup_time = mytimer();
- 
+#endif
+}
+
+/**
+ * Main Task ///////////////////////////////////////////////////////////////////
+ * First task that gets spawned. Responsible for setup, etc.
+ */
+void
+mainTask(
+    const Task *task,
+    const std::vector<PhysicalRegion> &regions,
+    Context ctx, HighLevelRuntime *runtime
+) {
+    // ask the mapper how many shards we can have
+    int nShards = runtime->get_tunable_value(ctx, CGMapper::TID_NUM_SHARDS);
+    cout << "*** Number of Shards (~ NUMPE): " << nShards << endl;;
+    ////////////////////////////////////////////////////////////////////////////
+    cout << "*** Starting Initialization..." << endl;;
+    // Legion array holding HPCG parameters that impact run.
+    LegionArray<HPCG_Params> hpcgParams;
+    hpcgParams.allocate(nShards, ctx, runtime);
+    // Legion array holding problem geometries.
+    LegionArray<Geometry> geometries;
+    hpcgParams.allocate(nShards, ctx, runtime);
     ////////////////////////////////////////////////////////////////////////////
     cout << "*** Launching Initialization Tasks..." << endl;;
     std::deque<Future> futures;
@@ -137,6 +147,9 @@ mainTask(
         futures.push_back(f);
     }
     cout << "*** Waiting for Initialization Tasks" << endl;
+
+    cout << "*** Cleaning Up..." << endl;
+    hpcgParams.deallocate(ctx, runtime);
 }
 
 /**
