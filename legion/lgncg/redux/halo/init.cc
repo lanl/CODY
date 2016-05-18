@@ -38,7 +38,7 @@ startswith(
 int
 HPCG_Init(
     HPCG_Params &params,
-    const SPMDContext &spmdCtx
+    const SPMDMeta &spmdMeta
 ) {
     int iparams[4];
     char cparams[4][6] = {"--nx=", "--ny=", "--nz=", "--rt="};
@@ -84,8 +84,8 @@ HPCG_Init(
     //
     params.runningTime = iparams[3];
     //
-    params.comm_rank = spmdCtx.rank;
-    params.comm_size = spmdCtx.nRanks;
+    params.comm_rank = 0; // Zero for now, since called by top-level task.
+    params.comm_size = spmdMeta.nRanks;
     //
     params.numThreads = 1;
     //

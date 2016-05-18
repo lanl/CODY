@@ -40,7 +40,7 @@ struct HPCG_Params_STRUCT {
  */
 typedef HPCG_Params_STRUCT HPCG_Params;
 
-extern int HPCG_Init(HPCG_Params &params, const SPMDContext &spmdCtx);
+extern int HPCG_Init(HPCG_Params &params, const SPMDMeta &spmdMeta);
 extern int HPCG_Finalize(void);
 
 #endif // HPCG_HPP

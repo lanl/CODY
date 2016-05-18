@@ -27,6 +27,19 @@
  * LA-CC 10-123
  */
 
+//@HEADER
+// ***************************************************
+//
+// HPCG: High Performance Conjugate Gradient Benchmark
+//
+// Contact:
+// Michael A. Heroux ( maherou@sandia.gov)
+// Jack Dongarra     (dongarra@eecs.utk.edu)
+// Piotr Luszczek    (luszczek@eecs.utk.edu)
+//
+// ***************************************************
+//@HEADER
+
 /**
  * A simple example illustrating a halo exchange using control replication. 
  */
@@ -36,8 +49,10 @@
 #include <deque>
 
 #include "hpcg.hpp"
+#include "mytimer.hpp"
 #include "Geometry.hpp"
 #include "CheckAspectRatio.hpp"
+#include "GenerateGeometry.hpp"
 
 #include "LegionStuff.hpp"
 #include "CGMapper.h"
@@ -48,7 +63,6 @@ LegionRuntime::Logger::Category Logger("LGNCG");
 
 /**
  * SPMD Main Task //////////////////////////////////////////////////////////////
- *
  */
 void
 spmdMainTask(
@@ -57,9 +71,25 @@ spmdMainTask(
     Context ctx, HighLevelRuntime *runtime
 ) {
     const SPMDContext &spmdCtx = *(const SPMDContext *)(task->args);
+}
+
+/**
+ * Main Task ///////////////////////////////////////////////////////////////////
+ * Responsible for setting up the SPMD launch.
+ */
+void
+mainTask(
+    const Task *task,
+    const std::vector<PhysicalRegion> &regions,
+    Context ctx, HighLevelRuntime *runtime
+) {
+    // ask the mapper how many shards we can have
+    int nShards = runtime->get_tunable_value(ctx, CGMapper::TID_NUM_SHARDS);
+    cout << "*** Number of Shards (~ NUMPE): " << nShards << endl;;
     //
     HPCG_Params params;
-    HPCG_Init(params, spmdCtx);
+    SPMDMeta spmdMeta = {.nRanks = nShards /* One rank/shard (for now) */};
+    HPCG_Init(params, spmdMeta);
     // Check if QuickPath option is enabled.  If the running time is set to
     // zero, we minimize all paths through the program
     bool quickPath = (params.runningTime == 0);
@@ -77,26 +107,23 @@ spmdMainTask(
     ////////////////////////////////////////////////////////////////////////////
     // Problem setup Phase /////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////
-}
+    // Construct the geometry and linear system
+    Geometry *geom = new Geometry;
+    GenerateGeometry(size, rank, params.numThreads, nx, ny, nz, geom);
 
-/**
- * Main Task ///////////////////////////////////////////////////////////////////
- * Responsible for setting up the SPMD launch.
- */
-void
-mainTask(
-    const Task *task,
-    const std::vector<PhysicalRegion> &regions,
-    Context ctx, HighLevelRuntime *runtime
-) {
-    // ask the mapper how many shards we can have
-    int nShards = runtime->get_tunable_value(ctx, CGMapper::TID_NUM_SHARDS);
-    cout << "*** Number of Shards: " << nShards << endl;;
+    ierr = CheckAspectRatio(0.125, geom->npx, geom->npy, geom->npz,
+                            "process grid", rank == 0);
+    if (ierr) exit(ierr);
+
+    // Use this array for collecting timing information
+    std::vector< double > times(10,0.0);
+
+    double setup_time = mytimer();
+ 
     ////////////////////////////////////////////////////////////////////////////
     cout << "*** Launching Initialization Tasks..." << endl;;
-    //
-    SPMDContext spmdArgs = {.rank = 0, .nRanks = nShards /* One rank/shard */};
     std::deque<Future> futures;
+    SPMDContext spmdArgs;
     for(int shard = 0; shard < nShards; ++shard) {
         spmdArgs.rank = shard;
         TaskLauncher launcher(

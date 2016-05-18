@@ -30,9 +30,11 @@ ALT_MAPPERS     ?= 0		# Include alternative mappers (not recommended)
 OUTFILE		?= halo-exchange
 # List all the application source files here
 GEN_SRC		?= \
-main.cc init.cc \
+main.cc init.cc mytimer.cc \
 LegionStuff.cc CGMapper.cc \
-ReadHpcgDat.cc CheckAspectRatio.cc
+ReadHpcgDat.cc CheckAspectRatio.cc \
+MixedBaseCounter.cc ComputeOptimalShapeXYZ.cc GenerateGeometry.cc
+
 GEN_GPU_SRC	?= 					# .cu files
 
 # You can modify these variables, some will be appended to by the runtime makefile
