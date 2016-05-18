@@ -33,6 +33,8 @@
 
 #include <vector>
 
+#include "CGMapper.h"
+
 #include "legion.h"
 
 using namespace LegionRuntime::HighLevel;
@@ -45,6 +47,16 @@ using namespace LegionRuntime::Accessor;
 enum {
     MAIN_TID,
     SPMD_MAIN_TID
+};
+
+////////////////////////////////////////////////////////////////////////////////
+// SPMD context information.
+////////////////////////////////////////////////////////////////////////////////
+struct SPMDContext {
+    // Unique identifier for SPMD work.
+    int rank;
+    // Number of participants in SPMD.
+    int nRanks;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -84,10 +96,23 @@ registerTasks(void) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+static void
+updateMappers(
+    Machine machine,
+    HighLevelRuntime *runtime,
+    const std::set<Processor> &local_procs
+) {
+    for (const auto &p : local_procs) {
+        runtime->replace_default_mapper(new CGMapper(machine, runtime, p), p);
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////
 inline void
 LegionInit(void)
 {
     registerTasks();
+    Runtime::set_registration_callback(updateMappers);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -162,3 +187,13 @@ public:
         return pr.get_accessor().template typeify<T>().template convert<AT>();
     }
 };
+
+/**
+ * convenience routine to get a task's ID
+ */
+inline int
+getTaskID(const LegionRuntime::HighLevel::Task *task)
+{
+    //return task->index_point.point_data[0];
+    return task->index_point.get_point<1>();
+}

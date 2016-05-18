@@ -35,24 +35,14 @@ namespace Realm {
 };
 #endif
 
-CGMapper::CGMapper(Machine machine, HighLevelRuntime *rt, Processor local)
-  : DefaultMapper(machine, rt, local)
-  , shard_per_proc(false)
+CGMapper::CGMapper(
+    Machine machine,
+    HighLevelRuntime *rt,
+    Processor local
+) : DefaultMapper(machine, rt, local)
+  , shard_per_proc(true)
   , runtime(rt)
 {
-  // check to see if there any input arguments to parse
-  {
-    int argc = HighLevelRuntime::get_input_args().argc;
-    const char **argv = (const char **)HighLevelRuntime::get_input_args().argv;
-
-    for(int i=1; i < argc; i++) {
-      if(!strcmp(argv[i], "-perproc")) {
-	shard_per_proc = true;
-	continue;
-      }
-    }
-  }
-
   // we're going to do a SPMD distribution with one shard per "system memory"
   // (there's one of these per node right now, but we might have more with NUMA
   // eventually)

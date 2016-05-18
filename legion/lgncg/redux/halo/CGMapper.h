@@ -1,3 +1,4 @@
+#pragma once
 // mapper for SPMD CG solver
 
 #include "legion.h"

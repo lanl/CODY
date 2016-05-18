@@ -33,6 +33,7 @@
 
 #include <iostream>
 #include <cstdlib>
+#include <deque>
 
 #include "hpcg.hpp"
 #include "Geometry.hpp"
@@ -55,16 +56,17 @@ spmdMainTask(
     const std::vector<PhysicalRegion> &regions,
     Context ctx, HighLevelRuntime *runtime
 ) {
+    const SPMDContext &spmdCtx = *(const SPMDContext *)(task->args);
+    //
     HPCG_Params params;
-    HPCG_Init(params);
+    HPCG_Init(params, spmdCtx);
     // Check if QuickPath option is enabled.  If the running time is set to
     // zero, we minimize all paths through the program
     bool quickPath = (params.runningTime == 0);
-    // Number of MPI processes, My process ID
-    // TODO FIXME get from mapper
+    // Number of processes, my process ID
     int size = params.comm_size, rank = params.comm_rank;
     //
-    local_int_t nx,ny,nz;
+    local_int_t nx, ny,nz;
     nx = (local_int_t)params.nx;
     ny = (local_int_t)params.ny;
     nz = (local_int_t)params.nz;
@@ -87,8 +89,27 @@ mainTask(
     const std::vector<PhysicalRegion> &regions,
     Context ctx, HighLevelRuntime *runtime
 ) {
-    // step 1: ask the mapper how many shards we should even have
-    //int nShards = runtime->get_tunable_value(ctx, CGMapper::TID_NUM_SHARDS);
+    // ask the mapper how many shards we can have
+    int nShards = runtime->get_tunable_value(ctx, CGMapper::TID_NUM_SHARDS);
+    cout << "*** Number of Shards: " << nShards << endl;;
+    ////////////////////////////////////////////////////////////////////////////
+    cout << "*** Launching Initialization Tasks..." << endl;;
+    //
+    SPMDContext spmdArgs = {.rank = 0, .nRanks = nShards /* One rank/shard */};
+    std::deque<Future> futures;
+    for(int shard = 0; shard < nShards; ++shard) {
+        spmdArgs.rank = shard;
+        TaskLauncher launcher(
+            SPMD_MAIN_TID,
+            TaskArgument(&spmdArgs, sizeof(spmdArgs)),
+            Predicate::TRUE_PRED,
+            0 /*default mapper*/,
+            CGMapper::SHARD_TAG(shard)
+        );
+        Future f = runtime->execute_task(ctx, launcher);
+        futures.push_back(f);
+    }
+    cout << "*** Waiting for Initialization Tasks" << endl;
 }
 
 /**

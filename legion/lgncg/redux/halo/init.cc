@@ -37,7 +37,8 @@ startswith(
 
 int
 HPCG_Init(
-    HPCG_Params &params
+    HPCG_Params &params,
+    const SPMDContext &spmdCtx
 ) {
     int iparams[4];
     char cparams[4][6] = {"--nx=", "--ny=", "--nz=", "--rt="};
@@ -60,7 +61,7 @@ HPCG_Init(
     int *rt = iparams + 3;
     // If --rt was specified, we already have the runtime, so don't read it from
     // file
-    if (iparams[3]) rt = NULL;
+    if (iparams[3]) rt = 0;
     // no geometry arguments on the command line
     if (!iparams[0] && !iparams[1] && !iparams[2]) {
         ReadHpcgDat(iparams, rt);
@@ -83,8 +84,8 @@ HPCG_Init(
     //
     params.runningTime = iparams[3];
     //
-    params.comm_rank = 0;
-    params.comm_size = 1;
+    params.comm_rank = spmdCtx.rank;
+    params.comm_size = spmdCtx.nRanks;
     //
     params.numThreads = 1;
     //

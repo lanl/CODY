@@ -21,7 +21,7 @@
 #ifndef HPCG_HPP
 #define HPCG_HPP
 
-#include "legion.h"
+#include "LegionStuff.hpp"
 
 extern LegionRuntime::Logger::Category Logger;
 #define HPCG_fout Logger.print()
@@ -40,7 +40,7 @@ struct HPCG_Params_STRUCT {
  */
 typedef HPCG_Params_STRUCT HPCG_Params;
 
-extern int HPCG_Init(HPCG_Params &params);
+extern int HPCG_Init(HPCG_Params &params, const SPMDContext &spmdCtx);
 extern int HPCG_Finalize(void);
 
 #endif // HPCG_HPP
