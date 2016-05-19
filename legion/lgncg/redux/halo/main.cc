@@ -66,17 +66,16 @@ LegionRuntime::Logger::Category Logger("LGNCG");
  * SPMD Main Task //////////////////////////////////////////////////////////////
  */
 void
-spmdMainTask(
+spmdInitTask(
     const Task *task,
     const std::vector<PhysicalRegion> &regions,
     Context ctx, HighLevelRuntime *runtime
 ) {
-#if 0
-    const SPMDContext &spmdCtx = *(const SPMDContext *)(task->args);
+    const int taskID = getTaskID(task);
+    return;
     //
     HPCG_Params params;
-    SPMDMeta spmdMeta = {.nRanks = nShards /* One rank/shard (for now) */};
-    HPCG_Init(params, spmdMeta);
+    //HPCG_Init(params, spmdMeta);
     // Check if QuickPath option is enabled.  If the running time is set to
     // zero, we minimize all paths through the program
     bool quickPath = (params.runningTime == 0);
@@ -106,7 +105,6 @@ spmdMainTask(
     std::vector< double > times(10,0.0);
 
     double setup_time = mytimer();
-#endif
 }
 
 /**
@@ -120,7 +118,9 @@ mainTask(
     Context ctx, HighLevelRuntime *runtime
 ) {
     // ask the mapper how many shards we can have
-    int nShards = runtime->get_tunable_value(ctx, CGMapper::TID_NUM_SHARDS);
+    const int nShards = runtime->get_tunable_value(
+                            ctx, CGMapper::TID_NUM_SHARDS
+                        );
     cout << "*** Number of Shards (~ NUMPE): " << nShards << endl;;
     ////////////////////////////////////////////////////////////////////////////
     cout << "*** Starting Initialization..." << endl;;
@@ -134,12 +134,14 @@ mainTask(
     geometries.partition(nShards, ctx, runtime);
     //
     cout << "*** Launching Initialization Tasks..." << endl;;
+    const double initStart = mytimer();
     IndexLauncher launcher(
         SPMD_INIT_TID,
         hpcgParams.launchDomain(),
         TaskArgument(nullptr, 0),
         ArgumentMap()
     );
+    //
     launcher.add_region_requirement(
         RegionRequirement(
             hpcgParams.logicalPartition(),
@@ -159,12 +161,17 @@ mainTask(
             geometries.logicalRegion
         )
     ).add_field(geometries.fid);
+    //
     auto futureMap = runtime->execute_index_space(ctx, launcher);
-    futureMap.wait_all_results();
     cout << "*** Waiting for Initialization Tasks" << endl;
-
+    futureMap.wait_all_results();
+    const double initEnd = mytimer();
+    const double initTime = initEnd - initStart;
+    cout << "*** Initialization Time (s): " << initTime << endl;
+    //
     cout << "*** Cleaning Up..." << endl;
     hpcgParams.deallocate(ctx, runtime);
+    geometries.deallocate(ctx, runtime);
 }
 
 /**

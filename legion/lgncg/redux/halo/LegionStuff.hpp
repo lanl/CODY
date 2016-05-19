@@ -45,7 +45,7 @@ using namespace LegionRuntime::Accessor;
 // Task IDs
 ////////////////////////////////////////////////////////////////////////////////
 enum {
-    MAIN_TID,
+    MAIN_TID = 0,
     SPMD_INIT_TID
 };
 
@@ -78,7 +78,7 @@ mainTask(
 );
 
 void
-spmdMainTask(
+spmdInitTask(
     const Task *task,
     const std::vector<PhysicalRegion> &regions,
     Context ctx, HighLevelRuntime *runtime
@@ -87,6 +87,7 @@ spmdMainTask(
 ////////////////////////////////////////////////////////////////////////////////
 // Task Registration
 ////////////////////////////////////////////////////////////////////////////////
+// TODO: be explicit about leaf tasks in registration.
 inline void
 registerTasks(void) {
     {
@@ -96,11 +97,15 @@ registerTasks(void) {
     Runtime::set_top_level_task_id(MAIN_TID);
     }
     //
-    {
-    TaskVariantRegistrar tvr(SPMD_INIT_TID, "spmdMainTask");
-    tvr.add_constraint(ProcessorConstraint(Processor::LOC_PROC));
-    Runtime::preregister_task_variant<spmdMainTask>(tvr, "spmdMainTask");
-    }
+    HighLevelRuntime::register_legion_task<spmdInitTask>(
+        SPMD_INIT_TID /* task id */,
+        Processor::LOC_PROC /* proc kind  */,
+        true /* single */,
+        true /* index */,
+        AUTO_GENERATE_ID,
+        TaskConfigOptions(true /* leaf task */),
+        "spmdInitTask"
+    );
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -230,4 +235,14 @@ offsetMismatch(int i,
         if ((off1++)->offset != (off2++)->offset) return true;
     }
     return false;
+}
+
+/**
+ * convenience routine to get a task's ID
+ */
+inline int
+getTaskID(
+    const LegionRuntime::HighLevel::Task *task
+) {
+    return task->index_point.point_data[0];
 }
