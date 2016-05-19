@@ -21,6 +21,8 @@
 #ifndef GEOMETRY_HPP
 #define GEOMETRY_HPP
 
+#include <ostream>
+
 /*!
   This defines the type for integers that have local subdomain dimension.
 
@@ -84,5 +86,8 @@ inline int ComputeRankOfMatrixRow(const Geometry & geom, global_int_t index) {
   return rank;
 }
 
+////////////////////////////////////////////////////////////////////////////////
+std::ostream &
+operator<<(std::ostream &os, const Geometry &geom);
 
 #endif // GEOMETRY_HPP

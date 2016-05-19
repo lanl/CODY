@@ -72,28 +72,29 @@ spmdInitTask(
     const std::vector<PhysicalRegion> &regions,
     Context ctx, HighLevelRuntime *runtime
 ) {
+    static const int ridParams = 0;
+    static const int ridGeom   = 1;
+    //
+    const int nShards = *(int *)task->args;
     const int taskID = getTaskID(task);
     //
-    PhysicalArray<HPCG_Params> paHPCGParams(regions[0], ctx, runtime);
+    PhysicalArray<HPCG_Params> paHPCGParams(regions[ridParams], ctx, runtime);
     const size_t paramLen = paHPCGParams.length();
     HPCG_Params *params = paHPCGParams.data();
-    assert(params && paramLen);
-    params->comm_rank = taskID;
-    return;
-#if 0
+    assert(params && paramLen == 1);
     //
-    HPCG_Params params;
-    //HPCG_Init(params, spmdMeta);
+    SPMDMeta spmdMeta = {.rank = taskID, .nRanks = nShards};
+    HPCG_Init(*params, spmdMeta);
     // Check if QuickPath option is enabled.  If the running time is set to
     // zero, we minimize all paths through the program
-    bool quickPath = (params.runningTime == 0);
+    bool quickPath = (params->runningTime == 0);
     // Number of processes, my process ID
-    int size = params.comm_size, rank = params.comm_rank;
+    int size = params->comm_size, rank = params->comm_rank;
     //
     local_int_t nx, ny,nz;
-    nx = (local_int_t)params.nx;
-    ny = (local_int_t)params.ny;
-    nz = (local_int_t)params.nz;
+    nx = (local_int_t)params->nx;
+    ny = (local_int_t)params->ny;
+    nz = (local_int_t)params->nz;
     // Used to check return codes on function calls
     int ierr = 0;
     ierr = CheckAspectRatio(0.125, nx, ny, nz, "local problem", rank == 0);
@@ -102,8 +103,11 @@ spmdInitTask(
     // Problem setup Phase /////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////
     // Construct the geometry and linear system
-    Geometry *geom = new Geometry;
-    GenerateGeometry(size, rank, params.numThreads, nx, ny, nz, geom);
+    PhysicalArray<Geometry> paGeometry(regions[ridGeom], ctx, runtime);
+    const size_t geomLen = paHPCGParams.length();
+    Geometry *geom = paGeometry.data();
+    assert(geom && geomLen == 1);
+    GenerateGeometry(size, rank, params->numThreads, nx, ny, nz, geom);
 
     ierr = CheckAspectRatio(0.125, geom->npx, geom->npy, geom->npz,
                             "process grid", rank == 0);
@@ -113,7 +117,6 @@ spmdInitTask(
     std::vector< double > times(10,0.0);
 
     double setup_time = mytimer();
-#endif
 }
 
 /**
@@ -147,7 +150,7 @@ mainTask(
     IndexLauncher launcher(
         SPMD_INIT_TID,
         hpcgParams.launchDomain(),
-        TaskArgument(nullptr, 0),
+        TaskArgument(&nShards, sizeof(nShards)),
         ArgumentMap()
     );
     //
@@ -177,7 +180,8 @@ mainTask(
     const double initEnd = mytimer();
     const double initTime = initEnd - initStart;
     cout << "*** Initialization Time (s): " << initTime << endl;
-    hpcgParams.dump("PARAMS", 1, ctx, runtime);
+    hpcgParams.dump("HPCG_Params", 1, ctx, runtime);
+    geometries.dump("Geometry", 1, ctx, runtime);
     //
     cout << "*** Cleaning Up..." << endl;
     hpcgParams.deallocate(ctx, runtime);

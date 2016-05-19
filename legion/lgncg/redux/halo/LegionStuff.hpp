@@ -52,6 +52,7 @@ enum {
 // SPMD metadata.
 ////////////////////////////////////////////////////////////////////////////////
 struct SPMDMeta {
+    int rank;
     // Number of participants in SPMD computation.
     int nRanks;
 };

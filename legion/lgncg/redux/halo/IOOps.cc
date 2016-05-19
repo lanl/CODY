@@ -28,6 +28,7 @@
  */
 
 #include "hpcg.hpp"
+#include "Geometry.hpp"
 
 /**
  *
@@ -36,12 +37,30 @@ std::ostream &
 operator<<(std::ostream &os, const HPCG_Params &params) {
     using namespace std;
     //
-    os << "Running Time: " << params.runningTime << endl;
-    os << "NUMPE: "        << params.comm_size << endl;
-    os << "Rank: "         << params.comm_rank << endl;  
-    os << "NTHREAD: "      << params.numThreads << endl;
-    os << "nx: "           << params.nx << endl;
-    os << "ny: "           << params.ny << endl;
-    os << "nz: "           << params.nz << endl;
+    os << "runningTime: " << params.runningTime << endl;
+    os << "comm_size: "   << params.comm_size << endl;
+    os << "comm_rank: "   << params.comm_rank << endl;
+    os << "numThreads: "  << params.numThreads << endl;
+    os << "nx: "          << params.nx << endl;
+    os << "ny: "          << params.ny << endl;
+    os << "nz: "          << params.nz << endl;
+    return os;
+}
+
+std::ostream &
+operator<<(std::ostream &os, const Geometry &geom) {
+    using namespace std;
+    os << "Size: "       << geom.size << endl;
+    os << "Rank: "       << geom.rank << endl;
+    os << "numThreads: " << geom.numThreads << endl;
+    os << "nx: "         << geom.nx << endl;
+    os << "ny: "         << geom.ny << endl;
+    os << "nz: "         << geom.nz << endl;
+    os << "npx: "        << geom.npx << endl;
+    os << "npy: "        << geom.npy << endl;
+    os << "npz: "        << geom.npz << endl;
+    os << "ipx: "        << geom.ipx << endl;
+    os << "ipy: "        << geom.ipy << endl;
+    os << "ipz: "        << geom.ipz << endl;
     return os;
 }

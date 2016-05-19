@@ -84,7 +84,7 @@ HPCG_Init(
     //
     params.runningTime = iparams[3];
     //
-    params.comm_rank = 0; // Zero for now, since called by top-level task.
+    params.comm_rank = spmdMeta.rank;
     params.comm_size = spmdMeta.nRanks;
     //
     params.numThreads = 1;
