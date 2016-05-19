@@ -153,7 +153,7 @@ public:
      * Returns current (latest) launch domain or the one at specified index.
      */
     LegionRuntime::HighLevel::Domain
-    lDom(size_t index = -1) const
+    launchDomain(size_t index = -1) const
     {
         if (index == -1) {
             const PVecItem &psi = mPVec.back();

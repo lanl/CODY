@@ -115,8 +115,8 @@ spmdMainTask(
  */
 void
 mainTask(
-    const Task *task,
-    const std::vector<PhysicalRegion> &regions,
+    const Task *,
+    const std::vector<PhysicalRegion> &,
     Context ctx, HighLevelRuntime *runtime
 ) {
     // ask the mapper how many shards we can have
@@ -130,13 +130,13 @@ mainTask(
     hpcgParams.partition(nShards, ctx, runtime);
     // Legion array holding problem geometries.
     LogicalArray<Geometry> geometries;
-    hpcgParams.allocate(nShards, ctx, runtime);
-    hpcgParams.partition(nShards, ctx, runtime);
+    geometries.allocate(nShards, ctx, runtime);
+    geometries.partition(nShards, ctx, runtime);
+    //
     cout << "*** Launching Initialization Tasks..." << endl;;
-    const auto launchDomain = Domain::from_rect<1>(Rect<1>(0, nShards - 1));
     IndexLauncher launcher(
         SPMD_INIT_TID,
-        launchDomain,
+        hpcgParams.launchDomain(),
         TaskArgument(nullptr, 0),
         ArgumentMap()
     );
@@ -149,6 +149,16 @@ mainTask(
             hpcgParams.logicalRegion
         )
     ).add_field(hpcgParams.fid);
+    //
+    launcher.add_region_requirement(
+        RegionRequirement(
+            geometries.logicalPartition(),
+            0,
+            WRITE_DISCARD,
+            EXCLUSIVE,
+            geometries.logicalRegion
+        )
+    ).add_field(geometries.fid);
     auto futureMap = runtime->execute_index_space(ctx, launcher);
     futureMap.wait_all_results();
     cout << "*** Waiting for Initialization Tasks" << endl;
