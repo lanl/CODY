@@ -57,7 +57,7 @@ private:
 };
 
 template<typename T>
-struct LegionArray {
+struct LogicalArray {
     // Number of elements stored in the vector (the entire extent).
     int64_t length;
     // Field ID.
@@ -116,7 +116,7 @@ public:
         // at this point we don't have a logical partition, so create a default
         // one of size 1. TODO maybe we can just check if we are partitioned or
         // not and return the correct handle.
-        //partition(1, ctx, lrt);
+        partition(1, ctx, lrt);
     }
 
     /**
@@ -137,13 +137,13 @@ public:
     }
 
     /**
-     * Returns whether or not two LegionArrays are the same (as far as the
+     * Returns whether or not two LogicalArrays are the same (as far as the
      * Legion RT is concerned).
      */
     static bool
     same(
-        const LegionArray &a,
-        const LegionArray &b
+        const LogicalArray &a,
+        const LogicalArray &b
     ) {
         return a.mIndexSpaceID == b.mIndexSpaceID &&
                a.mFieldSpaceID == b.mFieldSpaceID &&
@@ -168,7 +168,7 @@ public:
      * Returns current (latest) logical partition or the one at specified index.
      */
     LegionRuntime::HighLevel::LogicalPartition
-    getLogicalPartition(size_t index = -1) const
+    logicalPartition(size_t index = -1) const
     {
         if (index == -1) {
             const PVecItem &psi = mPVec.back();

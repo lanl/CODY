@@ -46,7 +46,7 @@ using namespace LegionRuntime::Accessor;
 ////////////////////////////////////////////////////////////////////////////////
 enum {
     MAIN_TID,
-    SPMD_MAIN_TID
+    SPMD_INIT_TID
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -97,7 +97,7 @@ registerTasks(void) {
     }
     //
     {
-    TaskVariantRegistrar tvr(SPMD_MAIN_TID, "spmdMainTask");
+    TaskVariantRegistrar tvr(SPMD_INIT_TID, "spmdMainTask");
     tvr.add_constraint(ProcessorConstraint(Processor::LOC_PROC));
     Runtime::preregister_task_variant<spmdMainTask>(tvr, "spmdMainTask");
     }

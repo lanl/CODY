@@ -55,7 +55,7 @@
 #include "GenerateGeometry.hpp"
 
 #include "LegionStuff.hpp"
-#include "LegionArray.hpp"
+#include "LogicalArray.hpp"
 #include "CGMapper.h"
 
 using namespace std;
@@ -125,27 +125,32 @@ mainTask(
     ////////////////////////////////////////////////////////////////////////////
     cout << "*** Starting Initialization..." << endl;;
     // Legion array holding HPCG parameters that impact run.
-    LegionArray<HPCG_Params> hpcgParams;
+    LogicalArray<HPCG_Params> hpcgParams;
     hpcgParams.allocate(nShards, ctx, runtime);
     // Legion array holding problem geometries.
-    LegionArray<Geometry> geometries;
+    LogicalArray<Geometry> geometries;
     hpcgParams.allocate(nShards, ctx, runtime);
-    ////////////////////////////////////////////////////////////////////////////
+    //
     cout << "*** Launching Initialization Tasks..." << endl;;
-    std::deque<Future> futures;
-    SPMDContext spmdArgs;
-    for(int shard = 0; shard < nShards; ++shard) {
-        spmdArgs.rank = shard;
-        TaskLauncher launcher(
-            SPMD_MAIN_TID,
-            TaskArgument(&spmdArgs, sizeof(spmdArgs)),
-            Predicate::TRUE_PRED,
-            0 /*default mapper*/,
-            CGMapper::SHARD_TAG(shard)
-        );
-        Future f = runtime->execute_task(ctx, launcher);
-        futures.push_back(f);
-    }
+    const auto launchDomain = Domain::from_rect<1>(Rect<1>(0, nShards - 1));
+    IndexLauncher launcher(
+        SPMD_INIT_TID,
+        launchDomain,
+        TaskArgument(nullptr, 0),
+        ArgumentMap()
+    );
+    launcher.add_region_requirement(
+        RegionRequirement(
+            hpcgParams.logicalPartition(),
+            0,
+            WRITE_DISCARD,
+            EXCLUSIVE,
+            hpcgParams.logicalRegion
+        )
+    );
+    // TODO add fields...
+    auto futureMap = runtime->execute_index_space(ctx, launcher);
+    futureMap.wait_all_results();
     cout << "*** Waiting for Initialization Tasks" << endl;
 
     cout << "*** Cleaning Up..." << endl;
