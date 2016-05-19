@@ -113,10 +113,9 @@ public:
         mIndexSpaceID = logicalRegion.get_index_space().get_id();
         mFieldSpaceID = logicalRegion.get_field_space().get_id();
         mRTreeID      = logicalRegion.get_tree_id();
-        // at this point we don't have a logical partition, so create a default
-        // one of size 1. TODO maybe we can just check if we are partitioned or
-        // not and return the correct handle.
-        partition(1, ctx, lrt);
+        // at this point we don't have a logical partition...  TODO maybe we can
+        // just check if we are partitioned or not and return the correct
+        // handle..?
     }
 
     /**

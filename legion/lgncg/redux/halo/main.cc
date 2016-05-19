@@ -127,10 +127,11 @@ mainTask(
     // Legion array holding HPCG parameters that impact run.
     LogicalArray<HPCG_Params> hpcgParams;
     hpcgParams.allocate(nShards, ctx, runtime);
+    hpcgParams.partition(nShards, ctx, runtime);
     // Legion array holding problem geometries.
     LogicalArray<Geometry> geometries;
     hpcgParams.allocate(nShards, ctx, runtime);
-    //
+    hpcgParams.partition(nShards, ctx, runtime);
     cout << "*** Launching Initialization Tasks..." << endl;;
     const auto launchDomain = Domain::from_rect<1>(Rect<1>(0, nShards - 1));
     IndexLauncher launcher(
@@ -147,8 +148,7 @@ mainTask(
             EXCLUSIVE,
             hpcgParams.logicalRegion
         )
-    );
-    // TODO add fields...
+    ).add_field(hpcgParams.fid);
     auto futureMap = runtime->execute_index_space(ctx, launcher);
     futureMap.wait_all_results();
     cout << "*** Waiting for Initialization Tasks" << endl;
