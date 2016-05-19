@@ -44,10 +44,6 @@
  *
  */
 
-#include <iostream>
-#include <cstdlib>
-#include <deque>
-
 #include "hpcg.hpp"
 #include "mytimer.hpp"
 #include "Geometry.hpp"
@@ -55,8 +51,13 @@
 #include "GenerateGeometry.hpp"
 
 #include "LegionStuff.hpp"
-#include "LogicalArray.hpp"
+#include "LegionArrays.hpp"
 #include "CGMapper.h"
+
+#include <iostream>
+#include <cstdlib>
+#include <deque>
+#include <iomanip>
 
 using namespace std;
 
@@ -72,7 +73,14 @@ spmdInitTask(
     Context ctx, HighLevelRuntime *runtime
 ) {
     const int taskID = getTaskID(task);
+    //
+    PhysicalArray<HPCG_Params> paHPCGParams(regions[0], ctx, runtime);
+    const size_t paramLen = paHPCGParams.length();
+    HPCG_Params *params = paHPCGParams.data();
+    assert(params && paramLen);
+    params->comm_rank = taskID;
     return;
+#if 0
     //
     HPCG_Params params;
     //HPCG_Init(params, spmdMeta);
@@ -105,6 +113,7 @@ spmdInitTask(
     std::vector< double > times(10,0.0);
 
     double setup_time = mytimer();
+#endif
 }
 
 /**
@@ -168,6 +177,7 @@ mainTask(
     const double initEnd = mytimer();
     const double initTime = initEnd - initStart;
     cout << "*** Initialization Time (s): " << initTime << endl;
+    hpcgParams.dump("PARAMS", 1, ctx, runtime);
     //
     cout << "*** Cleaning Up..." << endl;
     hpcgParams.deallocate(ctx, runtime);

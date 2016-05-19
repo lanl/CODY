@@ -30,7 +30,12 @@
 #include "LegionStuff.hpp"
 
 #include <vector>
+#include <iomanip>
 
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 /**
  * Partition vector item.
  */
@@ -56,6 +61,10 @@ private:
     PVecItem(void) { ; }
 };
 
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 template<typename T>
 struct LogicalArray {
     // Number of elements stored in the vector (the entire extent).
@@ -243,4 +252,96 @@ public:
         // add to the vector of partitions
         mPVec.push_back(PVecItem(subgridBnds, lDom, lp));
     }
+
+    /**
+     * convenience routine that dumps the contents of this vector.
+     */
+    void
+    dump(
+        const std::string &prefix,
+        int64_t nle,
+        LegionRuntime::HighLevel::Context &ctx,
+        LegionRuntime::HighLevel::HighLevelRuntime *lrt
+    ) const {
+        using namespace LegionRuntime::HighLevel;
+        using namespace LegionRuntime::Accessor;
+        using LegionRuntime::Arrays::Rect;
+
+        RegionRequirement req(
+            logicalRegion, READ_ONLY, EXCLUSIVE, logicalRegion
+        );
+        req.add_field(fid);
+        InlineLauncher dumpl(req);
+        PhysicalRegion reg = lrt->map_region(ctx, dumpl);
+        reg.wait_until_valid();
+        auto acc = reg.get_field_accessor(fid).template typeify<T>();
+        typedef GenericPointInRectIterator<1> GPRI1D;
+        typedef DomainPoint DomPt;
+        std:: cout << "*** " << prefix << " ***" << std::endl;
+        int i = 0;
+        for (GPRI1D pi(bounds); pi; pi++, ++i) {
+            T val = acc.read(DomPt::from_point<1>(pi.p));
+            if (i % nle == 0) std::cout << std::endl << std::flush;
+            std::cout << std::setfill(' ')
+                      << std::setw(6) << val << " " << std::flush;
+        }
+        std::cout << std::endl << std::flush;
+        // XXX Do we need to explicitly unmap the region here?
+    }
 };
+
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+template<typename TYPE>
+class PhysicalArray {
+    //
+    size_t mLength = 0;
+    //
+    TYPE *mData = nullptr;
+    //
+    PhysicalArray(void) = default;
+public:
+    //
+    PhysicalArray(
+        const PhysicalRegion &physicalRegion,
+        Context ctx,
+        HighLevelRuntime *runtime
+    ) {
+        typedef RegionAccessor<AccessorType::Generic, TYPE>  GRA;
+        GRA tAcc = physicalRegion.get_field_accessor(0).template typeify<TYPE>();
+        //
+        Domain tDom = runtime->get_index_space_domain(
+            ctx, physicalRegion.get_logical_region().get_index_space()
+        );
+        Rect<1> subrect;
+        ByteOffset inOffsets[1];
+        auto subGridBounds = tDom.get_rect<1>();
+        mLength = subGridBounds.volume();
+        //
+        mData = tAcc.template raw_rect_ptr<1>(
+            subGridBounds, subrect, inOffsets
+        );
+        // Sanity.
+        if (!mData || (subrect != subGridBounds) ||
+            !offsetsAreDense<1, TYPE>(subGridBounds, inOffsets)) {
+            // Signifies that something went south.
+            mData = nullptr;
+        }
+        // It's all good...
+    }
+
+    /**
+     *
+     */
+    TYPE *
+    data(void) { return mData; }
+    
+    /**
+     *
+     */
+    size_t
+    length(void) { return mLength; }
+};
+

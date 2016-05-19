@@ -43,4 +43,8 @@ typedef HPCG_Params_STRUCT HPCG_Params;
 extern int HPCG_Init(HPCG_Params &params, const SPMDMeta &spmdMeta);
 extern int HPCG_Finalize(void);
 
+////////////////////////////////////////////////////////////////////////////////
+std::ostream &
+operator<<(std::ostream &os, const HPCG_Params &params);
+
 #endif // HPCG_HPP

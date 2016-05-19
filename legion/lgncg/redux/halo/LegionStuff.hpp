@@ -31,11 +31,10 @@
 
 #pragma once
 
-#include <vector>
-
 #include "CGMapper.h"
-
 #include "legion.h"
+
+#include <vector>
 
 using namespace LegionRuntime::HighLevel;
 using namespace LegionRuntime::HighLevel;
