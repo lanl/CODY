@@ -295,16 +295,17 @@ public:
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 template<typename TYPE>
-class PhysicalArray {
+class PhysicalScalar {
+protected:
     //
     size_t mLength = 0;
     //
     TYPE *mData = nullptr;
     //
-    PhysicalArray(void) = default;
+    PhysicalScalar(void) = default;
 public:
     //
-    PhysicalArray(
+    PhysicalScalar(
         const PhysicalRegion &physicalRegion,
         Context ctx,
         HighLevelRuntime *runtime
@@ -337,11 +338,28 @@ public:
      */
     TYPE *
     data(void) { return mData; }
-    
+};
+
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+template<typename TYPE>
+class PhysicalArray : public PhysicalScalar<TYPE> {
+protected:
+    //
+    PhysicalArray(void) = default;
+public:
+    //
+    PhysicalArray(
+        const PhysicalRegion &physicalRegion,
+        Context ctx,
+        HighLevelRuntime *runtime
+    ) : PhysicalScalar<TYPE>(physicalRegion, ctx, runtime) { }
+
     /**
      *
      */
     size_t
-    length(void) { return mLength; }
+    length(void) { return this->mLength; }
 };
-

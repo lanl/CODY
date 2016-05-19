@@ -40,10 +40,6 @@
 // ***************************************************
 //@HEADER
 
-/**
- *
- */
-
 #include "hpcg.hpp"
 #include "mytimer.hpp"
 #include "Geometry.hpp"
@@ -78,10 +74,9 @@ spmdInitTask(
     const int nShards = *(int *)task->args;
     const int taskID = getTaskID(task);
     //
-    PhysicalArray<HPCG_Params> paHPCGParams(regions[ridParams], ctx, runtime);
-    const size_t paramLen = paHPCGParams.length();
-    HPCG_Params *params = paHPCGParams.data();
-    assert(params && paramLen == 1);
+    PhysicalScalar<HPCG_Params> psHPCGParams(regions[ridParams], ctx, runtime);
+    HPCG_Params *params = psHPCGParams.data();
+    assert(params);
     //
     SPMDMeta spmdMeta = {.rank = taskID, .nRanks = nShards};
     HPCG_Init(*params, spmdMeta);
@@ -103,19 +98,17 @@ spmdInitTask(
     // Problem setup Phase /////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////
     // Construct the geometry and linear system
-    PhysicalArray<Geometry> paGeometry(regions[ridGeom], ctx, runtime);
-    const size_t geomLen = paHPCGParams.length();
-    Geometry *geom = paGeometry.data();
-    assert(geom && geomLen == 1);
+    PhysicalScalar<Geometry> psGeometry(regions[ridGeom], ctx, runtime);
+    Geometry *geom = psGeometry.data();
+    assert(geom);
     GenerateGeometry(size, rank, params->numThreads, nx, ny, nz, geom);
-
+    //
     ierr = CheckAspectRatio(0.125, geom->npx, geom->npy, geom->npz,
                             "process grid", rank == 0);
     if (ierr) exit(ierr);
-
     // Use this array for collecting timing information
     std::vector< double > times(10,0.0);
-
+    //
     double setup_time = mytimer();
 }
 
