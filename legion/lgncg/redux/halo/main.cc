@@ -102,6 +102,7 @@ spmdInitTask(
     Geometry *geom = psGeometry.data();
     assert(geom);
     GenerateGeometry(size, rank, params->numThreads, nx, ny, nz, geom);
+    //psHPCGParams.dump("********TEST", ctx, runtime);
     //
     ierr = CheckAspectRatio(0.125, geom->npx, geom->npy, geom->npz,
                             "process grid", rank == 0);
