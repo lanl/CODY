@@ -25,10 +25,95 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+//@HEADER
+// ***************************************************
+//
+// HPCG: High Performance Conjugate Gradient Benchmark
+//
+// Contact:
+// Michael A. Heroux ( maherou@sandia.gov)
+// Jack Dongarra     (dongarra@eecs.utk.edu)
+// Piotr Luszczek    (luszczek@eecs.utk.edu)
+//
+// ***************************************************
+//@HEADER
+
 #pragma once
 
 #include "LegionStuff.hpp"
 #include "LegionArrays.hpp"
 
+#include "Geometry.hpp"
+#include "MGData.hpp"
+
 #include <vector>
 #include <iomanip>
+#include <map>
+
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+template<typename T>
+struct LogicalSparseMatrix {
+    char *title;
+    Geometry *geom;
+    //total number of matrix rows across all processes
+    global_int_t totalNumberOfRows;
+    //total number of matrix nonzeros across all processes
+    global_int_t totalNumberOfNonzeros;
+    //number of rows local to this process
+    local_int_t localNumberOfRows;
+    //number of columns local to this process
+    local_int_t localNumberOfColumns;
+    //number of nonzeros local to this process
+    local_int_t localNumberOfNonzeros;
+    //The number of nonzeros in a row will always be 27 or fewer
+    char *nonzerosInRow;
+    //matrix indices as global values
+    global_int_t **mtxIndG;
+    //matrix indices as local values
+    local_int_t **mtxIndL;
+    //values of matrix entries
+    double **matrixValues;
+    //values of matrix diagonal entries
+    double **matrixDiagonal;
+    //global-to-local mapping
+    std::map<global_int_t, local_int_t> globalToLocalMap;
+    //local-to-global mapping
+    std::vector<global_int_t> localToGlobalMap;
+    //
+    mutable bool isDotProductOptimized;
+    //
+    mutable bool isSpmvOptimized;
+    //
+    mutable bool isMgOptimized;
+    //
+    mutable bool isWaxpbyOptimized;
+    /*!
+      This is for storing optimized data structres created in OptimizeProblem and
+      used inside optimized ComputeSPMV().
+      */
+    // Coarse grid matrix
+    mutable struct SparseMatrix_STRUCT *Ac;
+    // Pointer to the coarse level data for this fine matrix
+    mutable MGData *mgData;
+    // pointer that can be used to store implementation-specific data
+    void *optimizationData;
+    //number of entries that are external to this process
+    local_int_t numberOfExternalValues;
+    //number of neighboring processes that will be send local data
+    int numberOfSendNeighbors;
+    //total number of entries to be sent
+    local_int_t totalToBeSent;
+    //elements to send to neighboring processes
+    local_int_t * elementsToSend;
+    //neighboring processes
+    int *neighbors;
+    //lenghts of messages received from neighboring processes
+    local_int_t *receiveLength;
+    //lenghts of messages sent to neighboring processes
+    local_int_t *sendLength;
+    //send buffer for non-blocking sends
+    double *sendBuffer;
+};
