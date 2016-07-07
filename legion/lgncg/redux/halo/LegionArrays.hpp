@@ -338,25 +338,6 @@ public:
      */
     TYPE *
     data(void) { return mData; }
-
-#if 0
-    /**
-     * FIXME
-     */
-    void
-    dump(
-        const std::string &prefix,
-        LegionRuntime::HighLevel::Context &ctx,
-        LegionRuntime::HighLevel::HighLevelRuntime *lrt
-    ) const {
-        if (mData) {
-            std::cout << prefix << " " << *mData << std::endl;
-        }
-        else {
-            std::cout << prefix << "WARNING: NO DATA" << std::endl;
-        }
-    }
-#endif
 };
 
 ////////////////////////////////////////////////////////////////////////////////

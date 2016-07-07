@@ -102,13 +102,12 @@ spmdInitTask(
     Geometry *geom = psGeometry.data();
     assert(geom);
     GenerateGeometry(size, rank, params->numThreads, nx, ny, nz, geom);
-    //psHPCGParams.dump("********TEST", ctx, runtime);
     //
     ierr = CheckAspectRatio(0.125, geom->npx, geom->npy, geom->npz,
                             "process grid", rank == 0);
     if (ierr) exit(ierr);
     // Use this array for collecting timing information
-    std::vector< double > times(10,0.0);
+    std::vector<double> times(10, 0.0);
     //
     double setup_time = mytimer();
 }
