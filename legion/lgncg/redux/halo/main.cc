@@ -111,16 +111,30 @@ spmdInitTask(
     std::vector<double> times(10, 0.0);
     //
     double setup_time = mytimer();
-    ////////////////////////////////////////////////////////////////////////////
-    // Initialization Phase ////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////
-    bool initPhase = true; // TODO FIXME
-    if (initPhase) {
-        LogicalSparseMatrix<double> A(geom);
-        LogicalArray<double> b, x, xexact;
-        PhysicalRegion bPhysReg = b.mapRegion(ctx, runtime);
-        //GenerateProblem(A, &b, &x, &xexact);
-    }
+}
+
+/**
+ *
+ */
+void
+generateGlobalGeometry(
+    int nShards,
+    Geometry &globalGeom
+) {
+    SPMDMeta meta = {.rank = 0, .nRanks = nShards};
+    HPCG_Params params;
+    HPCG_Init(params, meta);
+    // Number of processes, my process ID
+    int size = params.comm_size, rank = params.comm_rank;
+    //
+    local_int_t nx, ny,nz;
+    nx = (local_int_t)params->nx;
+    ny = (local_int_t)params->ny;
+    nz = (local_int_t)params->nz;
+    // Used to check return codes on function calls
+    int ierr = 0;
+    ierr = CheckAspectRatio(0.125, nx, ny, nz, "local problem", rank == 0);
+    if (ierr) exit(ierr);
 }
 
 /**
@@ -138,6 +152,14 @@ mainTask(
                             ctx, CGMapper::TID_NUM_SHARDS
                         );
     cout << "*** Number of Shards (~ NUMPE): " << nShards << endl;;
+    ////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////
+    // At this point we need to know some run parameters so we can allocate and
+    // partition the logical data structures. We'll use this info to calculate
+    // global values, etc. NOTE: not all members will contain valid data after
+    // generateGlobalGeometry returns (e.g., rank, ipx, ipy, ipz).
+    Geometry globalGeom;
+    generateGlobalGeometry(nShards, globalGeom);
     ////////////////////////////////////////////////////////////////////////////
     cout << "*** Starting Initialization..." << endl;;
     // Legion array holding HPCG parameters that impact run.

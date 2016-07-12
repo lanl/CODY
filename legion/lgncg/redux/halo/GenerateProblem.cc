@@ -37,7 +37,7 @@ using std::endl;
     Reference version of GenerateProblem to generate the sparse matrix, right
     hand side, initial guess, and exact solution.
 
-    @param[in]  A      The known system matrix
+    @param[in]  A        The known system matrix
     @param[inout] b      The newly allocated and generated right hand side
     vector (if b!=0 on entry)
     @param[inout] x      The newly allocated solution vector with entries set to
