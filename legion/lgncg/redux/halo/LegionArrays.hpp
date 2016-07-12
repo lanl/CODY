@@ -65,7 +65,7 @@ private:
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
-template<typename T>
+template<typename TYPE>
 struct LogicalArray {
     // Number of elements stored in the vector (the entire extent).
     int64_t length;
@@ -115,7 +115,7 @@ public:
         // vec field allocator
         FieldAllocator fa = lrt->create_field_allocator(ctx, mFS);
         // all elements are going to be of size T
-        fa.allocate_field(sizeof(T), fid);
+        fa.allocate_field(sizeof(TYPE), fid);
         // now create the logical region
         logicalRegion = lrt->create_logical_region(ctx, mIndexSpace, mFS);
         // stash some info for equality checks
@@ -254,12 +254,10 @@ public:
     }
 
     /**
-     * convenience routine that dumps the contents of this vector.
+     *
      */
-    void
-    dump(
-        const std::string &prefix,
-        int64_t nle,
+    LegionRuntime::HighLevel::PhysicalRegion
+    mapRegion(
         LegionRuntime::HighLevel::Context &ctx,
         LegionRuntime::HighLevel::HighLevelRuntime *lrt
     ) const {
@@ -271,22 +269,23 @@ public:
             logicalRegion, READ_ONLY, EXCLUSIVE, logicalRegion
         );
         req.add_field(fid);
-        InlineLauncher dumpl(req);
-        PhysicalRegion reg = lrt->map_region(ctx, dumpl);
+        InlineLauncher inl(req);
+        PhysicalRegion reg = lrt->map_region(ctx, inl);
         reg.wait_until_valid();
-        auto acc = reg.get_field_accessor(fid).template typeify<T>();
-        typedef GenericPointInRectIterator<1> GPRI1D;
-        typedef DomainPoint DomPt;
-        std:: cout << "*** " << prefix << " ***" << std::endl;
-        int i = 0;
-        for (GPRI1D pi(bounds); pi; pi++, ++i) {
-            T val = acc.read(DomPt::from_point<1>(pi.p));
-            if (i % nle == 0) std::cout << std::endl << std::flush;
-            std::cout << std::setfill(' ')
-                      << std::setw(6) << val << " " << std::flush;
-        }
-        std::cout << std::endl << std::flush;
-        // XXX Do we need to explicitly unmap the region here?
+        //
+        return reg;
+    }
+
+    /**
+     *
+     */
+    void
+    unmapRegion(
+        LegionRuntime::HighLevel::PhysicalRegion &mappedRegion,
+        LegionRuntime::HighLevel::Context &ctx,
+        LegionRuntime::HighLevel::HighLevelRuntime *lrt
+    ) const {
+        lrt->unmap_region(ctx, mappedRegion);
     }
 };
 

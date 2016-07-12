@@ -48,6 +48,7 @@
 
 #include "LegionStuff.hpp"
 #include "LegionArrays.hpp"
+#include "LegionMatrices.hpp"
 #include "CGMapper.h"
 
 #include <iostream>
@@ -110,6 +111,16 @@ spmdInitTask(
     std::vector<double> times(10, 0.0);
     //
     double setup_time = mytimer();
+    ////////////////////////////////////////////////////////////////////////////
+    // Initialization Phase ////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////
+    bool initPhase = true; // TODO FIXME
+    if (initPhase) {
+        LogicalSparseMatrix<double> A(geom);
+        LogicalArray<double> b, x, xexact;
+        PhysicalRegion bPhysReg = b.mapRegion(ctx, runtime);
+        //GenerateProblem(A, &b, &x, &xexact);
+    }
 }
 
 /**
@@ -173,8 +184,6 @@ mainTask(
     const double initEnd = mytimer();
     const double initTime = initEnd - initStart;
     cout << "*** Initialization Time (s): " << initTime << endl;
-    hpcgParams.dump("HPCG_Params", 1, ctx, runtime);
-    geometries.dump("Geometry", 1, ctx, runtime);
     //
     cout << "*** Cleaning Up..." << endl;
     hpcgParams.deallocate(ctx, runtime);

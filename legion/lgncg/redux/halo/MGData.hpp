@@ -48,7 +48,6 @@
 #define MGDATA_HPP
 
 #include <cassert>
-#include "SparseMatrix.hpp"
 #include "Vector.hpp"
 
 struct MGData_STRUCT {

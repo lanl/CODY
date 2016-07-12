@@ -57,7 +57,8 @@
 template<typename T>
 struct LogicalSparseMatrix {
     char *title;
-    Geometry *geom;
+    //
+    Geometry *mGeom;
     //total number of matrix rows across all processes
     global_int_t totalNumberOfRows;
     //total number of matrix nonzeros across all processes
@@ -107,7 +108,7 @@ struct LogicalSparseMatrix {
     //total number of entries to be sent
     local_int_t totalToBeSent;
     //elements to send to neighboring processes
-    local_int_t * elementsToSend;
+    local_int_t *elementsToSend;
     //neighboring processes
     int *neighbors;
     //lenghts of messages received from neighboring processes
@@ -116,4 +117,46 @@ struct LogicalSparseMatrix {
     local_int_t *sendLength;
     //send buffer for non-blocking sends
     double *sendBuffer;
+    /**
+     *
+     */
+    LogicalSparseMatrix(void) = default;
+
+    /**
+     *
+     */
+    LogicalSparseMatrix(Geometry *geom)
+    {
+        title = 0;
+        mGeom = geom;
+        totalNumberOfRows = 0;
+        totalNumberOfNonzeros = 0;
+        localNumberOfRows = 0;
+        localNumberOfColumns = 0;
+        localNumberOfNonzeros = 0;
+        nonzerosInRow = 0;
+        mtxIndG = 0;
+        mtxIndL = 0;
+        matrixValues = 0;
+        matrixDiagonal = 0;
+        // Optimization is ON by default. The code that switches it OFF is in
+        // the functions that are meant to be optimized.
+        isDotProductOptimized = true;
+        isSpmvOptimized = true;
+        isMgOptimized = true;
+        isWaxpbyOptimized = true;
+        //
+        numberOfExternalValues = 0;
+        numberOfSendNeighbors = 0;
+        totalToBeSent = 0;
+        elementsToSend = 0;
+        neighbors = 0;
+        receiveLength = 0;
+        sendLength = 0;
+        sendBuffer = 0;
+        //
+        // Fine-to-coarse grid transfer initially not defined.
+        mgData = 0;
+        Ac = 0;
+    }
 };
