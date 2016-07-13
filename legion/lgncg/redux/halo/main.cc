@@ -116,25 +116,25 @@ spmdInitTask(
 /**
  *
  */
-void
-generateGlobalGeometry(
+static void
+generateInitGeometry(
     int nShards,
     Geometry &globalGeom
 ) {
-    SPMDMeta meta = {.rank = 0, .nRanks = nShards};
+    // We only care about passing nShards for this bit. rank doesn't make sense
+    // in this context.
+    const SPMDMeta meta = {.rank = 0, .nRanks = nShards};
     HPCG_Params params;
     HPCG_Init(params, meta);
     // Number of processes, my process ID
-    int size = params.comm_size, rank = params.comm_rank;
+    const int size = params.comm_size, rank = params.comm_rank;
     //
     local_int_t nx, ny,nz;
-    nx = (local_int_t)params->nx;
-    ny = (local_int_t)params->ny;
-    nz = (local_int_t)params->nz;
-    // Used to check return codes on function calls
-    int ierr = 0;
-    ierr = CheckAspectRatio(0.125, nx, ny, nz, "local problem", rank == 0);
-    if (ierr) exit(ierr);
+    nx = (local_int_t)params.nx;
+    ny = (local_int_t)params.ny;
+    nz = (local_int_t)params.nz;
+    // Generate geometry so we can get things like npx, npy, npz, etc.
+    GenerateGeometry(size, rank, params.numThreads, nx, ny, nz, &globalGeom);
 }
 
 /**
@@ -157,9 +157,16 @@ mainTask(
     // At this point we need to know some run parameters so we can allocate and
     // partition the logical data structures. We'll use this info to calculate
     // global values, etc. NOTE: not all members will contain valid data after
-    // generateGlobalGeometry returns (e.g., rank, ipx, ipy, ipz).
-    Geometry globalGeom;
-    generateGlobalGeometry(nShards, globalGeom);
+    // generateInitGeometry returns (e.g., rank, ipx, ipy, ipz).
+    Geometry initGeom;
+    generateInitGeometry(nShards, initGeom);
+    cout << "*** Geometry Information:" << endl;
+    cout << "    npx=" << initGeom.npx  << endl;
+    cout << "    npy=" << initGeom.npy  << endl;
+    cout << "    npz=" << initGeom.npz  << endl;
+    cout << "    nx="  << initGeom.nx   << endl;
+    cout << "    ny="  << initGeom.ny   << endl;
+    cout << "    nz="  << initGeom.nz   << endl;
     ////////////////////////////////////////////////////////////////////////////
     cout << "*** Starting Initialization..." << endl;;
     // Legion array holding HPCG parameters that impact run.
