@@ -138,6 +138,48 @@ generateInitGeometry(
 }
 
 /**
+ *
+ */
+static global_int_t
+getGlobalXYZ(
+    const Geometry &geom
+) {
+    return geom.npx * geom.nx *
+           geom.npy * geom.ny *
+           geom.npz * geom.nz;
+}
+
+/**
+ *
+ */
+static void
+createLogicalStructures(
+    LogicalArray<HPCG_Params>   &hpcgParams,
+    LogicalArray<Geometry>      &geometries,
+    LogicalSparseMatrix<double> &A,
+    LogicalArray<double>        &x,
+    LogicalArray<double>        &y,
+    const Geometry              &geom,
+    Context ctx, HighLevelRuntime *runtime
+) {
+    cout << "*** Creating Logical Structures..." << endl;;
+    const double initStart = mytimer();
+    // Metadata - one for each SPMD task.
+    hpcgParams.allocate(geom.size, ctx, runtime);
+    hpcgParams.partition(geom.size, ctx, runtime);
+    geometries.allocate(geom.size, ctx, runtime);
+    geometries.partition(geom.size, ctx, runtime);
+    // Application structures
+    global_int_t globalXYZ = getGlobalXYZ(geom);
+    //A TODO
+    x.allocate(globalXYZ, ctx, runtime);
+    y.allocate(globalXYZ, ctx, runtime);
+    const double initEnd = mytimer();
+    const double initTime = initEnd - initStart;
+    cout << "    Done in: " << initTime << " s" << endl;;
+}
+
+/**
  * Main Task ///////////////////////////////////////////////////////////////////
  * First task that gets spawned. Responsible for setup, etc.
  */
@@ -160,24 +202,34 @@ mainTask(
     // generateInitGeometry returns (e.g., rank, ipx, ipy, ipz).
     Geometry initGeom;
     generateInitGeometry(nShards, initGeom);
-    cout << "*** Geometry Information:" << endl;
-    cout << "    npx=" << initGeom.npx  << endl;
-    cout << "    npy=" << initGeom.npy  << endl;
-    cout << "    npz=" << initGeom.npz  << endl;
-    cout << "    nx="  << initGeom.nx   << endl;
-    cout << "    ny="  << initGeom.ny   << endl;
-    cout << "    nz="  << initGeom.nz   << endl;
+    cout << "*** Problem Information:"   << endl;
+    cout << "    size=" << initGeom.size << endl;
+    cout << "    npx="  << initGeom.npx  << endl;
+    cout << "    npy="  << initGeom.npy  << endl;
+    cout << "    npz="  << initGeom.npz  << endl;
+    cout << "    nx="   << initGeom.nx   << endl;
+    cout << "    ny="   << initGeom.ny   << endl;
+    cout << "    nz="   << initGeom.nz   << endl;
     ////////////////////////////////////////////////////////////////////////////
     cout << "*** Starting Initialization..." << endl;;
     // Legion array holding HPCG parameters that impact run.
     LogicalArray<HPCG_Params> hpcgParams;
-    hpcgParams.allocate(nShards, ctx, runtime);
-    hpcgParams.partition(nShards, ctx, runtime);
     // Legion array holding problem geometries.
     LogicalArray<Geometry> geometries;
-    geometries.allocate(nShards, ctx, runtime);
-    geometries.partition(nShards, ctx, runtime);
+    // Application structures.
+    LogicalSparseMatrix<double> A;
+    LogicalArray<double> x, y;
     //
+    createLogicalStructures(
+        hpcgParams,
+        geometries,
+        A,
+        x,
+        y,
+        initGeom,
+        ctx,
+        runtime
+    );
     cout << "*** Launching Initialization Tasks..." << endl;;
     const double initStart = mytimer();
     IndexLauncher launcher(

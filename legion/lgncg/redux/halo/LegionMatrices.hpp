@@ -56,9 +56,8 @@
 ////////////////////////////////////////////////////////////////////////////////
 template<typename T>
 struct LogicalSparseMatrix {
-    char *title;
     //
-    Geometry *mGeom;
+    Geometry *mGeom; // TODO perhaps this doesn't belong here...
     //total number of matrix rows across all processes
     global_int_t totalNumberOfRows;
     //total number of matrix nonzeros across all processes
@@ -127,7 +126,6 @@ struct LogicalSparseMatrix {
      */
     LogicalSparseMatrix(Geometry *geom)
     {
-        title = 0;
         mGeom = geom;
         totalNumberOfRows = 0;
         totalNumberOfNonzeros = 0;
