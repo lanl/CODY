@@ -46,6 +46,7 @@ public:
      *
      */
     LogicalArray(void) : LogicalItem<TYPE>() { }
+
     /**
      *
      */
@@ -148,10 +149,14 @@ public:
 template<typename TYPE>
 class PhysicalArray : public PhysicalItem<TYPE> {
 protected:
-    //
+    /**
+     *
+     */
     PhysicalArray(void) = default;
 public:
-    //
+    /**
+     *
+     */
     PhysicalArray(
         const PhysicalRegion &physicalRegion,
         Context ctx,

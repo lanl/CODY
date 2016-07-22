@@ -177,10 +177,14 @@ protected:
     size_t mLength = 0;
     //
     TYPE *mData = nullptr;
-    //
+    /**
+     *
+     */
     PhysicalItem(void) = default;
 public:
-    //
+    /**
+     *
+     */
     PhysicalItem(
         const PhysicalRegion &physicalRegion,
         Context ctx,
