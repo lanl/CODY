@@ -61,63 +61,37 @@ using namespace std;
 LegionRuntime::Logger::Category Logger("LGNCG");
 
 /**
- * SPMD Main Task //////////////////////////////////////////////////////////////
+ * Generate Problem Task ///////////////////////////////////////////////////////
  */
 void
-spmdInitTask(
+genProblemTask(
     const Task *task,
     const std::vector<PhysicalRegion> &regions,
     Context ctx, HighLevelRuntime *runtime
 ) {
-    static const int ridParams = 0;
-    static const int ridGeom   = 1;
+    static const uint8_t ridA = 0;
+    static const uint8_t ridX = 1;
+    static const uint8_t ridY = 2;
     //
-    const int nShards = *(int *)task->args;
+    const auto nShards = runtime->get_tunable_value(
+                            ctx, CGMapper::TID_NUM_SHARDS
+                        );
     const int taskID = getTaskID(task);
-
-    // XXX SKG LogicalRegion TEST
-    PhysicalItem<LogicalRegion> testPR(regions[2], ctx, runtime);
-    LogicalRegion *TEST = testPR.data();
-    assert(TEST);
-
-    LogicalArray<double> foo;
-    foo.allocate(1+taskID, ctx, runtime);
-    auto pr = foo.mapRegion(WRITE_ONLY, EXCLUSIVE, ctx, runtime);
-
-    (*TEST) = foo.logicalRegion;
-
-    RegionAccessor<AccessorType::Generic, double> pracc =
-    pr.get_field_accessor(foo.fid).typeify<double>();
-
-    for (GenericPointInRectIterator<1> pir(foo.bounds); pir; pir++) {
-        cout << "<--"<< (taskID + 1) << endl;
-        pracc.write(DomainPoint::from_point<1>(pir.p), (double)(taskID + 1));
-    }
-
-    runtime->unmap_region(ctx, pr);
-
-    cout << "SUCCESS!!!!" << endl;
-
-    return;
-    // END XXX SKG LogicalRegion TEST
-
     //
-    PhysicalItem<HPCG_Params> psHPCGParams(regions[ridParams], ctx, runtime);
-    HPCG_Params *params = psHPCGParams.data();
-    assert(params);
+    HPCG_Params params;
     //
     SPMDMeta spmdMeta = {.rank = taskID, .nRanks = nShards};
-    HPCG_Init(*params, spmdMeta);
+    HPCG_Init(params, spmdMeta);
     // Check if QuickPath option is enabled.  If the running time is set to
     // zero, we minimize all paths through the program
-    bool quickPath = (params->runningTime == 0);
+    bool quickPath = (params.runningTime == 0);
     // Number of processes, my process ID
-    int size = params->comm_size, rank = params->comm_rank;
+    int size = params.comm_size, rank = params.comm_rank;
     //
     local_int_t nx, ny,nz;
-    nx = (local_int_t)params->nx;
-    ny = (local_int_t)params->ny;
-    nz = (local_int_t)params->nz;
+    nx = (local_int_t)params.nx;
+    ny = (local_int_t)params.ny;
+    nz = (local_int_t)params.nz;
     // Used to check return codes on function calls
     int ierr = 0;
     ierr = CheckAspectRatio(0.125, nx, ny, nz, "local problem", rank == 0);
@@ -126,12 +100,10 @@ spmdInitTask(
     // Problem setup Phase /////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////
     // Construct the geometry and linear system
-    PhysicalItem<Geometry> psGeometry(regions[ridGeom], ctx, runtime);
-    Geometry *geom = psGeometry.data();
-    assert(geom);
-    GenerateGeometry(size, rank, params->numThreads, nx, ny, nz, geom);
+    Geometry geom;
+    GenerateGeometry(size, rank, params.numThreads, nx, ny, nz, &geom);
     //
-    ierr = CheckAspectRatio(0.125, geom->npx, geom->npy, geom->npz,
+    ierr = CheckAspectRatio(0.125, geom.npx, geom.npy, geom.npz,
                             "process grid", rank == 0);
     if (ierr) exit(ierr);
     // Use this array for collecting timing information
@@ -167,22 +139,8 @@ generateInitGeometry(
 /**
  *
  */
-static global_int_t
-getGlobalXYZ(
-    const Geometry &geom
-) {
-    return geom.npx * geom.nx *
-           geom.npy * geom.ny *
-           geom.npz * geom.nz;
-}
-
-/**
- *
- */
 static void
 createLogicalStructures(
-    LogicalArray<HPCG_Params>   &hpcgParams,
-    LogicalArray<Geometry>      &geometries,
     LogicalSparseMatrix<double> &A,
     LogicalArray<double>        &x,
     LogicalArray<double>        &y,
@@ -191,17 +149,16 @@ createLogicalStructures(
 ) {
     cout << "*** Creating Logical Structures..." << endl;;
     const double initStart = mytimer();
-    // Metadata - one for each SPMD task.
-    hpcgParams.allocate(geom.size, ctx, runtime);
-    hpcgParams.partition(geom.size, ctx, runtime);
-    geometries.allocate(geom.size, ctx, runtime);
-    geometries.partition(geom.size, ctx, runtime);
     // Application structures
     // First calculate global XYZ for the problem.
     global_int_t globalXYZ = getGlobalXYZ(geom);
-    //A TODO
+    //
+    A.allocate(geom, ctx, runtime);
+    A.partition(geom.size, ctx, runtime);
     x.allocate(globalXYZ, ctx, runtime);
+    x.partition(geom.size, ctx, runtime);
     y.allocate(globalXYZ, ctx, runtime);
+    y.partition(geom.size, ctx, runtime);
     const double initEnd = mytimer();
     const double initTime = initEnd - initStart;
     cout << "    Done in: " << initTime << " s" << endl;;
@@ -212,8 +169,6 @@ createLogicalStructures(
  */
 static void
 destroyLogicalStructures(
-    LogicalArray<HPCG_Params>   &hpcgParams,
-    LogicalArray<Geometry>      &geometries,
     LogicalSparseMatrix<double> &A,
     LogicalArray<double>        &x,
     LogicalArray<double>        &y,
@@ -221,9 +176,7 @@ destroyLogicalStructures(
 ) {
     cout << "*** Destroying Logical Structures..." << endl;;
     const double initStart = mytimer();
-    hpcgParams.deallocate(ctx, runtime);
-    geometries.deallocate(ctx, runtime);
-    // A TODO
+    A.deallocate(ctx, runtime);
     x.deallocate(ctx, runtime);
     y.deallocate(ctx, runtime);
     const double initEnd = mytimer();
@@ -242,7 +195,7 @@ mainTask(
     Context ctx, HighLevelRuntime *runtime
 ) {
     // ask the mapper how many shards we can have
-    const int nShards = runtime->get_tunable_value(
+    const auto nShards = runtime->get_tunable_value(
                             ctx, CGMapper::TID_NUM_SHARDS
                         );
     cout << "*** Number of Shards (~ NUMPE): " << nShards << endl;;
@@ -264,17 +217,11 @@ mainTask(
     cout << "    nz="   << initGeom.nz   << endl;
     ////////////////////////////////////////////////////////////////////////////
     cout << "*** Starting Initialization..." << endl;;
-    // Legion array holding HPCG parameters that impact run.
-    LogicalArray<HPCG_Params> hpcgParams;
-    // Legion array holding problem geometries.
-    LogicalArray<Geometry> geometries;
     // Application structures.
     LogicalSparseMatrix<double> A;
     LogicalArray<double> x, y;
     //
     createLogicalStructures(
-        hpcgParams,
-        geometries,
         A,
         x,
         y,
@@ -282,15 +229,11 @@ mainTask(
         ctx,
         runtime
     );
-    // XXX SKG LogicalRegion TEST
-    LogicalArray<LogicalRegion> testLR;
-    testLR.allocate(initGeom.size, ctx, runtime);
-    testLR.partition(initGeom.size, ctx, runtime);
-    // END XXX SKG LogicalRegion TEST
     cout << "*** Launching Initialization Tasks..." << endl;;
+#if 0
     const double initStart = mytimer();
     IndexLauncher launcher(
-        SPMD_INIT_TID,
+        GEN_PROB_TID,
         hpcgParams.launchDomain(),
         TaskArgument(&nShards, sizeof(nShards)),
         ArgumentMap()
@@ -315,17 +258,6 @@ mainTask(
             geometries.logicalRegion
         )
     ).add_field(geometries.fid);
-    // XXX SKG LogicalRegion TEST
-    launcher.add_region_requirement(
-        RegionRequirement(
-            testLR.logicalPartition(),
-            0,
-            WRITE_DISCARD,
-            EXCLUSIVE,
-            testLR.logicalRegion
-        )
-    ).add_field(testLR.fid);
-    // END XXX SKG LogicalRegion TEST
     //
     auto futureMap = runtime->execute_index_space(ctx, launcher);
     cout << "*** Waiting for Initialization Tasks" << endl;
@@ -333,48 +265,16 @@ mainTask(
     const double initEnd = mytimer();
     const double initTime = initEnd - initStart;
     cout << "*** Initialization Time (s): " << initTime << endl;
-
-    // XXX SKG LogicalRegion TEST
-    auto prs = testLR.mapRegion(READ_ONLY, EXCLUSIVE, ctx, runtime);
-    RegionAccessor<AccessorType::Generic, LogicalRegion> pracc =
-        prs.get_field_accessor(testLR.fid).typeify<LogicalRegion>();
-
-    for (GenericPointInRectIterator<1> pir(testLR.bounds); pir; pir++) {
-        auto lr = pracc.read(DomainPoint::from_point<1>(pir.p));
-        RegionRequirement req(
-            lr, READ_ONLY, EXCLUSIVE, lr
-        );
-        req.add_field(0);
-        InlineLauncher inl(req);
-        PhysicalRegion reg = runtime->map_region(ctx, inl);
-        reg.wait_until_valid();
-        Domain tDom = runtime->get_index_space_domain(
-            ctx, reg.get_logical_region().get_index_space()
-        );
-        RegionAccessor<AccessorType::Generic, double> blacc =
-            reg.get_field_accessor(0).typeify<double>();
-        for (GenericPointInRectIterator<1> piri(tDom.get_rect<1>()); piri; piri++) {
-            auto blah = blacc.read(DomainPoint::from_point<1>(piri.p));
-            cout << "-->" << blah;
-        }
-        runtime->unmap_region(ctx, reg);
-        cout << endl;
-    }
-    // END XXX SKG LogicalRegion TEST
+#endif
     //
     cout << "*** Cleaning Up..." << endl;
     destroyLogicalStructures(
-        hpcgParams,
-        geometries,
         A,
         x,
         y,
         ctx,
         runtime
     );
-    // XXX SKG LogicalRegion TEST
-    testLR.deallocate(ctx, runtime);
-    // END XXX SKG LogicalRegion TEST
 }
 
 /**

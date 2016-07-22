@@ -41,6 +41,7 @@
 #pragma once
 
 #include "LegionStuff.hpp"
+#include "LegionItems.hpp"
 #include "LegionArrays.hpp"
 
 #include "Geometry.hpp"
@@ -57,7 +58,7 @@
 template<typename T>
 struct LogicalSparseMatrix {
     //
-    Geometry *mGeom; // TODO perhaps this doesn't belong here...
+    LogicalArray<Geometry> mGeom;
     //total number of matrix rows across all processes
     global_int_t totalNumberOfRows;
     //total number of matrix nonzeros across all processes
@@ -116,17 +117,12 @@ struct LogicalSparseMatrix {
     local_int_t *sendLength;
     //send buffer for non-blocking sends
     double *sendBuffer;
-    /**
-     *
-     */
-    LogicalSparseMatrix(void) = default;
 
     /**
      *
      */
-    LogicalSparseMatrix(Geometry *geom)
+    LogicalSparseMatrix(void)
     {
-        mGeom = geom;
         totalNumberOfRows = 0;
         totalNumberOfNonzeros = 0;
         localNumberOfRows = 0;
@@ -156,5 +152,47 @@ struct LogicalSparseMatrix {
         // Fine-to-coarse grid transfer initially not defined.
         mgData = 0;
         Ac = 0;
+    }
+
+    /**
+     *
+     */
+    void
+    allocate(
+        const Geometry &geom,
+        LegionRuntime::HighLevel::Context &ctx,
+        LegionRuntime::HighLevel::HighLevelRuntime *lrt
+    ) {
+        (void)geom;
+        (void)ctx;
+        (void)lrt;
+        // TODO
+    }
+
+    /**
+     *
+     */
+    void
+    partition(
+        int64_t nParts,
+        LegionRuntime::HighLevel::Context &ctx,
+        LegionRuntime::HighLevel::HighLevelRuntime *lrt
+    ) {
+        (void) nParts;
+        (void)ctx;
+        (void)lrt;
+    }
+
+    /**
+     * Cleans up and returns all allocated resources.
+     */
+    void
+    deallocate(
+        LegionRuntime::HighLevel::Context &ctx,
+        LegionRuntime::HighLevel::HighLevelRuntime *lrt
+    ) {
+        (void)ctx;
+        (void)lrt;
+        // TODO
     }
 };

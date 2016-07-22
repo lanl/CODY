@@ -86,6 +86,18 @@ inline int ComputeRankOfMatrixRow(const Geometry & geom, global_int_t index) {
   return rank;
 }
 
+/**
+ *
+ */
+inline global_int_t
+getGlobalXYZ(
+    const Geometry &geom
+) {
+    return geom.npx * geom.nx *
+           geom.npy * geom.ny *
+           geom.npz * geom.nz;
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 std::ostream &
 operator<<(std::ostream &os, const Geometry &geom);

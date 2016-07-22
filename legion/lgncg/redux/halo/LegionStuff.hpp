@@ -45,7 +45,7 @@ using namespace LegionRuntime::Accessor;
 ////////////////////////////////////////////////////////////////////////////////
 enum {
     MAIN_TID = 0,
-    SPMD_INIT_TID
+    GEN_PROB_TID
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -78,7 +78,7 @@ mainTask(
 );
 
 void
-spmdInitTask(
+genProblemTask(
     const Task *task,
     const std::vector<PhysicalRegion> &regions,
     Context ctx, HighLevelRuntime *runtime
@@ -97,15 +97,14 @@ registerTasks(void) {
     Runtime::set_top_level_task_id(MAIN_TID);
     }
     //
-    HighLevelRuntime::register_legion_task<spmdInitTask>(
-        SPMD_INIT_TID /* task id */,
+    HighLevelRuntime::register_legion_task<genProblemTask>(
+        GEN_PROB_TID /* task id */,
         Processor::LOC_PROC /* proc kind  */,
         true /* single */,
         true /* index */,
         AUTO_GENERATE_ID,
-        // TODO FIXME??? true?
         TaskConfigOptions(false /* leaf task */),
-        "spmdInitTask"
+        "genProblemTask"
     );
 }
 
