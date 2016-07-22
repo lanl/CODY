@@ -30,45 +30,24 @@
 #include "LegionItems.hpp"
 #include "LegionStuff.hpp"
 
-#include <vector>
-#include <iomanip>
-
-////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-/**
- * Partition vector item.
- */
-struct PVecItem {
-    // a list of sub-grid bounds. provides a task ID to sub-grid bounds mapping
-    std::vector< Rect<1> > subgridBnds;
-    // launch domain
-    LegionRuntime::HighLevel::Domain lDom;
-    // logical partition
-    LegionRuntime::HighLevel::LogicalPartition lPart;
-
-    /**
-     * constructor
-     */
-    PVecItem(
-        const std::vector< Rect<1> > &sgb,
-        const LegionRuntime::HighLevel::Domain &lDom,
-        const LegionRuntime::HighLevel::LogicalPartition &lp
-    ) : subgridBnds(sgb), lDom(lDom), lPart(lp) { ; }
-
-private:
-    //
-    PVecItem(void) { ; }
-};
-
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 template<typename TYPE>
 struct LogicalArray : public LogicalItem<TYPE> {
-    std::vector<PVecItem> mPVec; // TODO RM
+protected:
+    // a list of sub-grid bounds. provides a task ID to sub-grid bounds mapping
+    std::vector< Rect<1> > mSubGridBounds;
+    // launch domain
+    LegionRuntime::HighLevel::Domain mLaunchDomain;
+    // logical partition
+    LegionRuntime::HighLevel::LogicalPartition mLogicalPartition;
+public:
+    /**
+     *
+     */
+    LogicalArray(void) : LogicalItem<TYPE>() { }
     /**
      *
      */
@@ -95,42 +74,22 @@ struct LogicalArray : public LogicalItem<TYPE> {
     }
 
     /**
-     * Returns current (latest) launch domain or the one at specified index.
+     * Returns current launch domain.
      */
     LegionRuntime::HighLevel::Domain
-    launchDomain(size_t index = -1) const
-    {
-        if (index == -1) {
-            const PVecItem &psi = mPVec.back();
-            return psi.lDom;
-        }
-        const PVecItem &psi = mPVec[index];
-        return psi.lDom;
-    }
+    launchDomain(void) const { return mLaunchDomain; }
 
     /**
-     * Returns current (latest) logical partition or the one at specified index.
+     * Returns current logical partition.
      */
     LegionRuntime::HighLevel::LogicalPartition
-    logicalPartition(size_t index = -1) const
-    {
-        if (index == -1) {
-            const PVecItem &psi = mPVec.back();
-            return psi.lPart;
-        }
-        const PVecItem &psi = mPVec[index];
-        return psi.lPart;
-    }
+    logicalPartition(void) const { return mLogicalPartition; }
 
     /**
      * returns current sub-grid bounds.
      */
     std::vector< LegionRuntime::Arrays::Rect<1> >
-    sgb(size_t index = 0) const
-    {
-        const PVecItem &psi = mPVec[index];
-        return psi.subgridBnds;
-    }
+    subGridBounds(void) const { return mSubGridBounds; }
 
     /**
      *
@@ -161,11 +120,10 @@ struct LogicalArray : public LogicalItem<TYPE> {
         DomainColoring disjointColoring;
         // a list of sub-grid bounds.
         // provides a task ID to sub-grid bounds mapping.
-        std::vector< Rect<1> > subgridBnds;
         for (int64_t color = 0; color < nParts; ++color) {
             Rect<1> subRect((Point<1>(x0)), (Point<1>(x1)));
             // cache the subgrid bounds
-            subgridBnds.push_back(subRect);
+            mSubGridBounds.push_back(subRect);
 #if 0 // nice debug
             printf("vec disjoint partition: (%d) to (%d)\n",
                     subRect.lo.x[0], subRect.hi.x[0]);
@@ -181,12 +139,12 @@ struct LogicalArray : public LogicalItem<TYPE> {
         );
         // logical partitions
         using LegionRuntime::HighLevel::LogicalPartition;
-        auto lp = lrt->get_logical_partition(ctx, this->logicalRegion, iPart);
+        mLogicalPartition = lrt->get_logical_partition(
+                                ctx, this->logicalRegion, iPart
+                            );
         // launch domain -- one task per color
         // launch domain
-        LegionRuntime::HighLevel::Domain lDom = colorDomain;
-        // add to the vector of partitions
-        mPVec.push_back(PVecItem(subgridBnds, lDom, lp));
+        mLaunchDomain = colorDomain;
     }
 };
 
