@@ -37,8 +37,6 @@
 template<typename TYPE>
 struct LogicalArray : public LogicalItem<TYPE> {
 protected:
-    // a list of sub-grid bounds. provides a task ID to sub-grid bounds mapping
-    std::vector< Rect<1> > mSubGridBounds;
     // launch domain
     LegionRuntime::HighLevel::Domain mLaunchDomain;
     // logical partition
@@ -86,12 +84,6 @@ public:
     logicalPartition(void) const { return mLogicalPartition; }
 
     /**
-     * returns current sub-grid bounds.
-     */
-    std::vector< LegionRuntime::Arrays::Rect<1> >
-    subGridBounds(void) const { return mSubGridBounds; }
-
-    /**
      *
      */
     void
@@ -120,10 +112,11 @@ public:
         DomainColoring disjointColoring;
         // a list of sub-grid bounds.
         // provides a task ID to sub-grid bounds mapping.
+        std::vector< Rect<1> > subGridBounds;
         for (int64_t color = 0; color < nParts; ++color) {
             Rect<1> subRect((Point<1>(x0)), (Point<1>(x1)));
             // cache the subgrid bounds
-            mSubGridBounds.push_back(subRect);
+            subGridBounds.push_back(subRect);
 #if 0 // nice debug
             printf("vec disjoint partition: (%d) to (%d)\n",
                     subRect.lo.x[0], subRect.hi.x[0]);

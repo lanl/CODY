@@ -41,6 +41,10 @@ struct LogicalItem {
     LegionRuntime::Arrays::Rect<1> bounds;
     // Logical region that represents array.
     LegionRuntime::HighLevel::LogicalRegion logicalRegion;
+    /**
+     *
+     */
+    LogicalItem(void) = default;
 protected:
     // Number of elements stored in the vector (the entire extent).
     int64_t mLength;
