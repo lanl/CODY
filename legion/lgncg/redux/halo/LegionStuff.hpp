@@ -103,7 +103,8 @@ registerTasks(void) {
         true /* single */,
         true /* index */,
         AUTO_GENERATE_ID,
-        TaskConfigOptions(true /* leaf task */),
+        // TODO FIXME??? true?
+        TaskConfigOptions(false /* leaf task */),
         "spmdInitTask"
     );
 }

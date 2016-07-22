@@ -56,9 +56,9 @@ GenerateProblem(
 ) {
     // Make local copies of geometry information.  Use global_int_t since the
     // RHS products in the calculations below may result in global range values.
-    global_int_t nx = A.geom->nx;
-    global_int_t ny = A.geom->ny;
-    global_int_t nz = A.geom->nz;
+    global_int_t nx  = A.geom->nx;
+    global_int_t ny  = A.geom->ny;
+    global_int_t nz  = A.geom->nz;
     global_int_t npx = A.geom->npx;
     global_int_t npy = A.geom->npy;
     global_int_t npz = A.geom->npz;

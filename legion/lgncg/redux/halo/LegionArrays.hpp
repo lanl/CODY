@@ -264,9 +264,9 @@ public:
         using namespace LegionRuntime::HighLevel;
         using namespace LegionRuntime::Accessor;
         using LegionRuntime::Arrays::Rect;
-
+        // TODO Expose write privileges in API
         RegionRequirement req(
-            logicalRegion, READ_ONLY, EXCLUSIVE, logicalRegion
+            logicalRegion, READ_WRITE, EXCLUSIVE, logicalRegion
         );
         req.add_field(fid);
         InlineLauncher inl(req);

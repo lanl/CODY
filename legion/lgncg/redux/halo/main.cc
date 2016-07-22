@@ -74,6 +74,33 @@ spmdInitTask(
     //
     const int nShards = *(int *)task->args;
     const int taskID = getTaskID(task);
+
+    // XXX SKG LogicalRegion TEST
+    PhysicalScalar<LogicalRegion> testPR(regions[2], ctx, runtime);
+    LogicalRegion *TEST = testPR.data();
+    assert(TEST);
+
+    LogicalArray<double> foo;
+    foo.allocate(1+taskID, ctx, runtime);
+    auto pr = foo.mapRegion(ctx, runtime);
+
+    (*TEST) = foo.logicalRegion;
+
+    RegionAccessor<AccessorType::Generic, double> pracc =
+    pr.get_field_accessor(foo.fid).typeify<double>();
+
+    for (GenericPointInRectIterator<1> pir(foo.bounds); pir; pir++) {
+        cout << "<--"<< (taskID + 1) << endl;
+        pracc.write(DomainPoint::from_point<1>(pir.p), (double)(taskID + 1));
+    }
+
+    runtime->unmap_region(ctx, pr);
+
+    cout << "SUCCESS!!!!" << endl;
+
+    return;
+    // END XXX SKG LogicalRegion TEST
+
     //
     PhysicalScalar<HPCG_Params> psHPCGParams(regions[ridParams], ctx, runtime);
     HPCG_Params *params = psHPCGParams.data();
@@ -170,6 +197,7 @@ createLogicalStructures(
     geometries.allocate(geom.size, ctx, runtime);
     geometries.partition(geom.size, ctx, runtime);
     // Application structures
+    // First calculate global XYZ for the problem.
     global_int_t globalXYZ = getGlobalXYZ(geom);
     //A TODO
     x.allocate(globalXYZ, ctx, runtime);
@@ -230,6 +258,11 @@ mainTask(
         ctx,
         runtime
     );
+    // XXX SKG LogicalRegion TEST
+    LogicalArray<LogicalRegion> testLR;
+    testLR.allocate(initGeom.size, ctx, runtime);
+    testLR.partition(initGeom.size, ctx, runtime);
+    // END XXX SKG LogicalRegion TEST
     cout << "*** Launching Initialization Tasks..." << endl;;
     const double initStart = mytimer();
     IndexLauncher launcher(
@@ -258,6 +291,17 @@ mainTask(
             geometries.logicalRegion
         )
     ).add_field(geometries.fid);
+    // XXX SKG LogicalRegion TEST
+    launcher.add_region_requirement(
+        RegionRequirement(
+            testLR.logicalPartition(),
+            0,
+            WRITE_DISCARD,
+            EXCLUSIVE,
+            testLR.logicalRegion
+        )
+    ).add_field(testLR.fid);
+    // END XXX SKG LogicalRegion TEST
     //
     auto futureMap = runtime->execute_index_space(ctx, launcher);
     cout << "*** Waiting for Initialization Tasks" << endl;
@@ -265,10 +309,43 @@ mainTask(
     const double initEnd = mytimer();
     const double initTime = initEnd - initStart;
     cout << "*** Initialization Time (s): " << initTime << endl;
+
+    // XXX SKG LogicalRegion TEST
+    auto prs = testLR.mapRegion(ctx, runtime);
+    RegionAccessor<AccessorType::Generic, LogicalRegion> pracc =
+        prs.get_field_accessor(testLR.fid).typeify<LogicalRegion>();
+
+    for (GenericPointInRectIterator<1> pir(testLR.bounds); pir; pir++) {
+        auto lr = pracc.read(DomainPoint::from_point<1>(pir.p));
+        RegionRequirement req(
+            lr, READ_ONLY, EXCLUSIVE, lr
+        );
+        req.add_field(0);
+        InlineLauncher inl(req);
+        PhysicalRegion reg = runtime->map_region(ctx, inl);
+        reg.wait_until_valid();
+        Domain tDom = runtime->get_index_space_domain(
+            ctx, reg.get_logical_region().get_index_space()
+        );
+        RegionAccessor<AccessorType::Generic, double> blacc =
+            reg.get_field_accessor(0).typeify<double>();
+        for (GenericPointInRectIterator<1> piri(tDom.get_rect<1>()); piri; piri++) {
+            auto blah = blacc.read(DomainPoint::from_point<1>(piri.p));
+            cout << "-->" << blah;
+        }
+        runtime->unmap_region(ctx, reg);
+        cout << endl;
+    }
+    // END XXX SKG LogicalRegion TEST
     //
     cout << "*** Cleaning Up..." << endl;
     hpcgParams.deallocate(ctx, runtime);
     geometries.deallocate(ctx, runtime);
+    // A TODO
+    x.deallocate(ctx, runtime);
+    y.deallocate(ctx, runtime);
+    // TODO RM
+    testLR.deallocate(ctx, runtime);
 }
 
 /**
