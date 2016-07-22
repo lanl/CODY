@@ -208,6 +208,30 @@ createLogicalStructures(
 }
 
 /**
+ *
+ */
+static void
+destroyLogicalStructures(
+    LogicalArray<HPCG_Params>   &hpcgParams,
+    LogicalArray<Geometry>      &geometries,
+    LogicalSparseMatrix<double> &A,
+    LogicalArray<double>        &x,
+    LogicalArray<double>        &y,
+    Context ctx, HighLevelRuntime *runtime
+) {
+    cout << "*** Destroying Logical Structures..." << endl;;
+    const double initStart = mytimer();
+    hpcgParams.deallocate(ctx, runtime);
+    geometries.deallocate(ctx, runtime);
+    // A TODO
+    x.deallocate(ctx, runtime);
+    y.deallocate(ctx, runtime);
+    const double initEnd = mytimer();
+    const double initTime = initEnd - initStart;
+    cout << "    Done in: " << initTime << " s" << endl;;
+}
+
+/**
  * Main Task ///////////////////////////////////////////////////////////////////
  * First task that gets spawned. Responsible for setup, etc.
  */
@@ -339,13 +363,18 @@ mainTask(
     // END XXX SKG LogicalRegion TEST
     //
     cout << "*** Cleaning Up..." << endl;
-    hpcgParams.deallocate(ctx, runtime);
-    geometries.deallocate(ctx, runtime);
-    // A TODO
-    x.deallocate(ctx, runtime);
-    y.deallocate(ctx, runtime);
-    // TODO RM
+    destroyLogicalStructures(
+        hpcgParams,
+        geometries,
+        A,
+        x,
+        y,
+        ctx,
+        runtime
+    );
+    // XXX SKG LogicalRegion TEST
     testLR.deallocate(ctx, runtime);
+    // END XXX SKG LogicalRegion TEST
 }
 
 /**
