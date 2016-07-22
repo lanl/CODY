@@ -82,7 +82,7 @@ spmdInitTask(
 
     LogicalArray<double> foo;
     foo.allocate(1+taskID, ctx, runtime);
-    auto pr = foo.mapRegion(ctx, runtime);
+    auto pr = foo.mapRegion(WRITE_ONLY, EXCLUSIVE, ctx, runtime);
 
     (*TEST) = foo.logicalRegion;
 
@@ -335,7 +335,7 @@ mainTask(
     cout << "*** Initialization Time (s): " << initTime << endl;
 
     // XXX SKG LogicalRegion TEST
-    auto prs = testLR.mapRegion(ctx, runtime);
+    auto prs = testLR.mapRegion(READ_ONLY, EXCLUSIVE, ctx, runtime);
     RegionAccessor<AccessorType::Generic, LogicalRegion> pracc =
         prs.get_field_accessor(testLR.fid).typeify<LogicalRegion>();
 

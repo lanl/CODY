@@ -258,15 +258,16 @@ public:
      */
     LegionRuntime::HighLevel::PhysicalRegion
     mapRegion(
+        LegionRuntime::HighLevel::PrivilegeMode privMode,
+        LegionRuntime::HighLevel::CoherenceProperty cohProp,
         LegionRuntime::HighLevel::Context &ctx,
         LegionRuntime::HighLevel::HighLevelRuntime *lrt
     ) const {
         using namespace LegionRuntime::HighLevel;
         using namespace LegionRuntime::Accessor;
         using LegionRuntime::Arrays::Rect;
-        // TODO Expose write privileges in API
         RegionRequirement req(
-            logicalRegion, READ_WRITE, EXCLUSIVE, logicalRegion
+            logicalRegion, privMode, cohProp, logicalRegion
         );
         req.add_field(fid);
         InlineLauncher inl(req);
