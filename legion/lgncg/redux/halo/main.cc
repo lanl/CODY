@@ -76,7 +76,7 @@ spmdInitTask(
     const int taskID = getTaskID(task);
 
     // XXX SKG LogicalRegion TEST
-    PhysicalScalar<LogicalRegion> testPR(regions[2], ctx, runtime);
+    PhysicalItem<LogicalRegion> testPR(regions[2], ctx, runtime);
     LogicalRegion *TEST = testPR.data();
     assert(TEST);
 
@@ -102,7 +102,7 @@ spmdInitTask(
     // END XXX SKG LogicalRegion TEST
 
     //
-    PhysicalScalar<HPCG_Params> psHPCGParams(regions[ridParams], ctx, runtime);
+    PhysicalItem<HPCG_Params> psHPCGParams(regions[ridParams], ctx, runtime);
     HPCG_Params *params = psHPCGParams.data();
     assert(params);
     //
@@ -126,7 +126,7 @@ spmdInitTask(
     // Problem setup Phase /////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////
     // Construct the geometry and linear system
-    PhysicalScalar<Geometry> psGeometry(regions[ridGeom], ctx, runtime);
+    PhysicalItem<Geometry> psGeometry(regions[ridGeom], ctx, runtime);
     Geometry *geom = psGeometry.data();
     assert(geom);
     GenerateGeometry(size, rank, params->numThreads, nx, ny, nz, geom);

@@ -68,7 +68,18 @@ private:
 ////////////////////////////////////////////////////////////////////////////////
 template<typename TYPE>
 struct LogicalArray : public LogicalItem<TYPE> {
-    std::vector<PVecItem> mPVec;
+    std::vector<PVecItem> mPVec; // TODO RM
+    /**
+     *
+     */
+    void
+    allocate(
+        int64_t nElems,
+        LegionRuntime::HighLevel::Context &ctx,
+        LegionRuntime::HighLevel::HighLevelRuntime *lrt
+    ) {
+        this->mAllocate(nElems, ctx, lrt);
+    }
     /**
      * Returns whether or not two LogicalArrays are the same (as far as the
      * Legion RT is concerned).
@@ -184,57 +195,7 @@ struct LogicalArray : public LogicalItem<TYPE> {
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 template<typename TYPE>
-class PhysicalScalar {
-protected:
-    //
-    size_t mLength = 0;
-    //
-    TYPE *mData = nullptr;
-    //
-    PhysicalScalar(void) = default;
-public:
-    //
-    PhysicalScalar(
-        const PhysicalRegion &physicalRegion,
-        Context ctx,
-        HighLevelRuntime *runtime
-    ) {
-        typedef RegionAccessor<AccessorType::Generic, TYPE>  GRA;
-        GRA tAcc = physicalRegion.get_field_accessor(0).template typeify<TYPE>();
-        //
-        Domain tDom = runtime->get_index_space_domain(
-            ctx, physicalRegion.get_logical_region().get_index_space()
-        );
-        Rect<1> subrect;
-        ByteOffset inOffsets[1];
-        auto subGridBounds = tDom.get_rect<1>();
-        mLength = subGridBounds.volume();
-        //
-        mData = tAcc.template raw_rect_ptr<1>(
-            subGridBounds, subrect, inOffsets
-        );
-        // Sanity.
-        if (!mData || (subrect != subGridBounds) ||
-            !offsetsAreDense<1, TYPE>(subGridBounds, inOffsets)) {
-            // Signifies that something went south.
-            mData = nullptr;
-        }
-        // It's all good...
-    }
-
-    /**
-     *
-     */
-    TYPE *
-    data(void) { return mData; }
-};
-
-////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-template<typename TYPE>
-class PhysicalArray : public PhysicalScalar<TYPE> {
+class PhysicalArray : public PhysicalItem<TYPE> {
 protected:
     //
     PhysicalArray(void) = default;
@@ -244,7 +205,7 @@ public:
         const PhysicalRegion &physicalRegion,
         Context ctx,
         HighLevelRuntime *runtime
-    ) : PhysicalScalar<TYPE>(physicalRegion, ctx, runtime) { }
+    ) : PhysicalItem<TYPE>(physicalRegion, ctx, runtime) { }
 
     /**
      *

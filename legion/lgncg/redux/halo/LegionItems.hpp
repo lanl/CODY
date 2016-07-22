@@ -55,18 +55,16 @@ protected:
     LegionRuntime::HighLevel::FieldSpaceID mFieldSpaceID;
     //
     LegionRuntime::HighLevel::RegionTreeID mRTreeID;
-
-public:
     /**
      *
      */
     void
-    allocate(
-        int64_t nElems,
+    mAllocate(
+        int64_t len,
         LegionRuntime::HighLevel::Context &ctx,
         LegionRuntime::HighLevel::HighLevelRuntime *lrt
     ) {
-        mLength = nElems;
+        mLength = len;
         // calculate the size of the logicalRegion vec (inclusive)
         auto n = mLength - 1;
         // vec rect
@@ -87,9 +85,17 @@ public:
         mIndexSpaceID = logicalRegion.get_index_space().get_id();
         mFieldSpaceID = logicalRegion.get_field_space().get_id();
         mRTreeID      = logicalRegion.get_tree_id();
-        // at this point we don't have a logical partition...  TODO maybe we can
-        // just check if we are partitioned or not and return the correct
-        // handle..?
+    }
+public:
+    /**
+     *
+     */
+    void
+    allocate(
+        LegionRuntime::HighLevel::Context &ctx,
+        LegionRuntime::HighLevel::HighLevelRuntime *lrt
+    ) {
+        mAllocate(1, ctx, lrt);
     }
 
     /**
@@ -176,7 +182,7 @@ public:
         Context ctx,
         HighLevelRuntime *runtime
     ) {
-        typedef RegionAccessor<AccessorType::Generic, TYPE>  GRA;
+        using GRA = RegionAccessor<AccessorType::Generic, TYPE>;
         GRA tAcc = physicalRegion.get_field_accessor(0).template typeify<TYPE>();
         //
         Domain tDom = runtime->get_index_space_domain(
