@@ -56,25 +56,35 @@
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
+struct SparseMatrixLocalData {
+    //total number of matrix rows across all processes
+    global_int_t totalNumberOfRows = 0;
+    //total number of matrix nonzeros across all processes
+    global_int_t totalNumberOfNonzeros = 0;
+    //number of rows local to this process
+    local_int_t localNumberOfRows = 0;
+    //number of columns local to this process
+    local_int_t localNumberOfColumns = 0;
+    //number of nonzeros local to this process
+    local_int_t localNumberOfNonzeros = 0;
+};
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 template<typename TYPE>
 struct LogicalSparseMatrix {
 public:
     // launch domain
     LegionRuntime::HighLevel::Domain launchDomain;
+public:
     //
-    LogicalArray<Geometry> geometry;
-    //total number of matrix rows across all processes
-    global_int_t totalNumberOfRows;
-    //total number of matrix nonzeros across all processes
-    global_int_t totalNumberOfNonzeros;
-    //number of rows local to this process
-    local_int_t localNumberOfRows;
-    //number of columns local to this process
-    local_int_t localNumberOfColumns;
-    //number of nonzeros local to this process
-    local_int_t localNumberOfNonzeros;
-    //The number of nonzeros in a row will always be 27 or fewer
-    char *nonzerosInRow;
+    LogicalArray<Geometry> geometries;
+    //
+    LogicalArray<SparseMatrixLocalData> localData;
+    // Handles to logical regions containing the number of nonzeros in a row
+    // will always be 27 or fewer
+    LogicalArray<LogicalRegion> lrNonzerosInRow;
     //matrix indices as global values
     global_int_t **mtxIndG;
     //matrix indices as local values
@@ -87,14 +97,6 @@ public:
     std::map<global_int_t, local_int_t> globalToLocalMap;
     //local-to-global mapping
     std::vector<global_int_t> localToGlobalMap;
-    //
-    mutable bool isDotProductOptimized;
-    //
-    mutable bool isSpmvOptimized;
-    //
-    mutable bool isMgOptimized;
-    //
-    mutable bool isWaxpbyOptimized;
     /*!
       This is for storing optimized data structres created in OptimizeProblem and
       used inside optimized ComputeSPMV().
@@ -125,38 +127,7 @@ public:
     /**
      *
      */
-    LogicalSparseMatrix(void)
-    {
-        totalNumberOfRows = 0;
-        totalNumberOfNonzeros = 0;
-        localNumberOfRows = 0;
-        localNumberOfColumns = 0;
-        localNumberOfNonzeros = 0;
-        nonzerosInRow = 0;
-        mtxIndG = 0;
-        mtxIndL = 0;
-        matrixValues = 0;
-        matrixDiagonal = 0;
-        // Optimization is ON by default. The code that switches it OFF is in
-        // the functions that are meant to be optimized.
-        isDotProductOptimized = true;
-        isSpmvOptimized = true;
-        isMgOptimized = true;
-        isWaxpbyOptimized = true;
-        //
-        numberOfExternalValues = 0;
-        numberOfSendNeighbors = 0;
-        totalToBeSent = 0;
-        elementsToSend = 0;
-        neighbors = 0;
-        receiveLength = 0;
-        sendLength = 0;
-        sendBuffer = 0;
-        //
-        // Fine-to-coarse grid transfer initially not defined.
-        mgData = 0;
-        Ac = 0;
-    }
+    LogicalSparseMatrix(void) = default;
 
     /**
      *
@@ -167,7 +138,10 @@ public:
         LegionRuntime::HighLevel::Context &ctx,
         LegionRuntime::HighLevel::HighLevelRuntime *lrt
     ) {
-        geometry.allocate(geom.size, ctx, lrt);
+        const auto size = geom.size;
+             geometries.allocate(size, ctx, lrt);
+              localData.allocate(size, ctx, lrt);
+        lrNonzerosInRow.allocate(size, ctx, lrt);
     }
 
     /**
@@ -179,9 +153,11 @@ public:
         LegionRuntime::HighLevel::Context &ctx,
         LegionRuntime::HighLevel::HighLevelRuntime *lrt
     ) {
-        geometry.partition(nParts, ctx, lrt);
+             geometries.partition(nParts, ctx, lrt);
+              localData.partition(nParts, ctx, lrt);
+        lrNonzerosInRow.partition(nParts, ctx, lrt);
         // just pick a structure that has a representative launch domain.
-        launchDomain = geometry.launchDomain;
+        launchDomain = geometries.launchDomain;
     }
 
     /**
@@ -192,7 +168,9 @@ public:
         LegionRuntime::HighLevel::Context &ctx,
         LegionRuntime::HighLevel::HighLevelRuntime *lrt
     ) {
-        geometry.deallocate(ctx, lrt);
+             geometries.deallocate(ctx, lrt);
+              localData.deallocate(ctx, lrt);
+        lrNonzerosInRow.deallocate(ctx, lrt);
     }
 };
 

@@ -70,7 +70,8 @@ genProblemTask(
     Context ctx, HighLevelRuntime *runtime
 ) {
     // Enumerate how regions were packed for this task.
-    static const uint8_t ridGeometry = 0;
+    static const uint8_t ridGeometry  = 0;
+    static const uint8_t ridLocalInfo = 1;
     //
     const auto nShards = runtime->get_tunable_value(
                             ctx, CGMapper::TID_NUM_SHARDS
@@ -99,8 +100,9 @@ genProblemTask(
     // Problem setup Phase /////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////
     // Construct the geometry and linear system
-    PhysicalItem<Geometry> prGeom(regions[ridGeometry], ctx, runtime);
-    Geometry *geom = prGeom.data();
+    PhysicalItem<Geometry> piGeom(regions[ridGeometry], ctx, runtime);
+    Geometry *geom = piGeom.data();
+    assert(geom);
     GenerateGeometry(size, rank, params.numThreads, nx, ny, nz, geom);
     //
     ierr = CheckAspectRatio(0.125, geom->npx, geom->npy, geom->npz,
@@ -110,6 +112,12 @@ genProblemTask(
     std::vector<double> times(10, 0.0);
     //
     double setup_time = mytimer();
+    //
+    PhysicalItem<SparseMatrixLocalData> piSMLocalInfo(
+        regions[ridLocalInfo], ctx, runtime
+    );
+    SparseMatrixLocalData *localInfo = piSMLocalInfo.data();
+    assert(localInfo);
 }
 
 /**
@@ -144,6 +152,7 @@ createLogicalStructures(
     LogicalSparseMatrix<double> &A,
     LogicalArray<double>        &x,
     LogicalArray<double>        &y,
+    LogicalArray<double>        &xexact,
     const Geometry              &geom,
     Context ctx, HighLevelRuntime *runtime
 ) {
@@ -159,6 +168,8 @@ createLogicalStructures(
     x.partition(geom.size, ctx, runtime);
     y.allocate(globalXYZ, ctx, runtime);
     y.partition(geom.size, ctx, runtime);
+    xexact.allocate(globalXYZ, ctx, runtime);
+    xexact.partition(geom.size, ctx, runtime);
     const double initEnd = mytimer();
     const double initTime = initEnd - initStart;
     cout << "    Done in: " << initTime << " s" << endl;;
@@ -172,6 +183,7 @@ destroyLogicalStructures(
     LogicalSparseMatrix<double> &A,
     LogicalArray<double>        &x,
     LogicalArray<double>        &y,
+    LogicalArray<double>        &xexact,
     Context ctx, HighLevelRuntime *runtime
 ) {
     cout << "*** Destroying Logical Structures..." << endl;;
@@ -179,6 +191,7 @@ destroyLogicalStructures(
     A.deallocate(ctx, runtime);
     x.deallocate(ctx, runtime);
     y.deallocate(ctx, runtime);
+    xexact.deallocate(ctx, runtime);
     const double initEnd = mytimer();
     const double initTime = initEnd - initStart;
     cout << "    Done in: " << initTime << " s" << endl;;
@@ -219,16 +232,18 @@ mainTask(
     cout << "*** Starting Initialization..." << endl;;
     // Application structures.
     LogicalSparseMatrix<double> A;
-    LogicalArray<double> x, y;
+    LogicalArray<double> x, y, xexact;
     //
     createLogicalStructures(
         A,
         x,
         y,
+        xexact,
         initGeom,
         ctx,
         runtime
     );
+    //
     cout << "*** Launching Initialization Tasks..." << endl;;
     const double initStart = mytimer();
     IndexLauncher launcher(
@@ -240,7 +255,7 @@ mainTask(
     //
     intent<WRITE_DISCARD, EXCLUSIVE>(
         launcher,
-        {A.geometry}
+        {A.geometries, A.localData, A.lrNonzerosInRow}
     );
     //
     auto futureMap = runtime->execute_index_space(ctx, launcher);
@@ -255,6 +270,7 @@ mainTask(
         A,
         x,
         y,
+        xexact,
         ctx,
         runtime
     );
