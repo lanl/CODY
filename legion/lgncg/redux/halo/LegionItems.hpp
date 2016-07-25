@@ -54,7 +54,7 @@ protected:
     LegionRuntime::HighLevel::FieldSpace mFS;
     // The following are used for vector equality tests. That is, equality in
     // the "are these vectors the same from legion's perspective."
-    id_t mIndexSpaceID;
+    LegionRuntime::HighLevel::IndexSpaceID mIndexSpaceID;
     //
     LegionRuntime::HighLevel::FieldSpaceID mFieldSpaceID;
     //

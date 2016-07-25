@@ -57,6 +57,10 @@
 ////////////////////////////////////////////////////////////////////////////////
 template<typename T>
 struct LogicalSparseMatrix {
+private:
+    // launch domain
+    LegionRuntime::HighLevel::Domain mLaunchDomain;
+public:
     //
     LogicalArray<Geometry> mGeom;
     //total number of matrix rows across all processes
@@ -163,10 +167,7 @@ struct LogicalSparseMatrix {
         LegionRuntime::HighLevel::Context &ctx,
         LegionRuntime::HighLevel::HighLevelRuntime *lrt
     ) {
-        (void)geom;
-        (void)ctx;
-        (void)lrt;
-        // TODO
+        mGeom.allocate(geom.size, ctx, lrt);
     }
 
     /**
@@ -178,9 +179,9 @@ struct LogicalSparseMatrix {
         LegionRuntime::HighLevel::Context &ctx,
         LegionRuntime::HighLevel::HighLevelRuntime *lrt
     ) {
-        (void) nParts;
-        (void)ctx;
-        (void)lrt;
+        mGeom.partition(nParts, ctx, lrt);
+        // just pick a structure that has a representative launch domain.
+        mLaunchDomain = mGeom.launchDomain();
     }
 
     /**
@@ -191,8 +192,12 @@ struct LogicalSparseMatrix {
         LegionRuntime::HighLevel::Context &ctx,
         LegionRuntime::HighLevel::HighLevelRuntime *lrt
     ) {
-        (void)ctx;
-        (void)lrt;
-        // TODO
+        mGeom.deallocate(ctx, lrt);
     }
+
+    /**
+     * Returns current launch domain.
+     */
+    LegionRuntime::HighLevel::Domain
+    launchDomain(void) const { return mLaunchDomain; }
 };

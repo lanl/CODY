@@ -230,18 +230,18 @@ mainTask(
         runtime
     );
     cout << "*** Launching Initialization Tasks..." << endl;;
-#if 0
     const double initStart = mytimer();
     IndexLauncher launcher(
         GEN_PROB_TID,
-        hpcgParams.launchDomain(),
-        TaskArgument(&nShards, sizeof(nShards)),
+        A.launchDomain(),
+        TaskArgument(nullptr, 0),
         ArgumentMap()
     );
     //
+#if 0
     launcher.add_region_requirement(
         RegionRequirement(
-            hpcgParams.logicalPartition(),
+            A.logicalPartition(),
             0,
             WRITE_DISCARD,
             EXCLUSIVE,
