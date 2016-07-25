@@ -48,6 +48,7 @@
 #include "MGData.hpp"
 
 #include <vector>
+#include <deque>
 #include <iomanip>
 #include <map>
 
@@ -55,14 +56,13 @@
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
-template<typename T>
+template<typename TYPE>
 struct LogicalSparseMatrix {
-private:
-    // launch domain
-    LegionRuntime::HighLevel::Domain mLaunchDomain;
 public:
+    // launch domain
+    LegionRuntime::HighLevel::Domain launchDomain;
     //
-    LogicalArray<Geometry> mGeom;
+    LogicalArray<Geometry> geometry;
     //total number of matrix rows across all processes
     global_int_t totalNumberOfRows;
     //total number of matrix nonzeros across all processes
@@ -80,9 +80,9 @@ public:
     //matrix indices as local values
     local_int_t **mtxIndL;
     //values of matrix entries
-    double **matrixValues;
+    TYPE **matrixValues;
     //values of matrix diagonal entries
-    double **matrixDiagonal;
+    TYPE **matrixDiagonal;
     //global-to-local mapping
     std::map<global_int_t, local_int_t> globalToLocalMap;
     //local-to-global mapping
@@ -120,7 +120,7 @@ public:
     //lenghts of messages sent to neighboring processes
     local_int_t *sendLength;
     //send buffer for non-blocking sends
-    double *sendBuffer;
+    TYPE *sendBuffer;
 
     /**
      *
@@ -167,7 +167,7 @@ public:
         LegionRuntime::HighLevel::Context &ctx,
         LegionRuntime::HighLevel::HighLevelRuntime *lrt
     ) {
-        mGeom.allocate(geom.size, ctx, lrt);
+        geometry.allocate(geom.size, ctx, lrt);
     }
 
     /**
@@ -179,9 +179,9 @@ public:
         LegionRuntime::HighLevel::Context &ctx,
         LegionRuntime::HighLevel::HighLevelRuntime *lrt
     ) {
-        mGeom.partition(nParts, ctx, lrt);
+        geometry.partition(nParts, ctx, lrt);
         // just pick a structure that has a representative launch domain.
-        mLaunchDomain = mGeom.launchDomain();
+        launchDomain = geometry.launchDomain;
     }
 
     /**
@@ -192,12 +192,31 @@ public:
         LegionRuntime::HighLevel::Context &ctx,
         LegionRuntime::HighLevel::HighLevelRuntime *lrt
     ) {
-        mGeom.deallocate(ctx, lrt);
+        geometry.deallocate(ctx, lrt);
     }
-
-    /**
-     * Returns current launch domain.
-     */
-    LegionRuntime::HighLevel::Domain
-    launchDomain(void) const { return mLaunchDomain; }
 };
+
+/**
+ *
+ */
+template<
+    LegionRuntime::HighLevel::PrivilegeMode PRIV_MODE,
+    LegionRuntime::HighLevel::CoherenceProperty COH_PROP
+>
+static void
+intent(
+    LegionRuntime::HighLevel::IndexLauncher &launcher,
+    const std::deque<LogicalItemBase> &targetArrays
+) {
+    for (auto &a : targetArrays) {
+        launcher.add_region_requirement(
+            RegionRequirement(
+                a.logicalPartition,
+                0,
+                PRIV_MODE,
+                COH_PROP,
+                a.logicalRegion
+            )
+        ).add_field(a.fid);
+    }
+}

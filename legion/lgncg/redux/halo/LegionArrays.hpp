@@ -35,11 +35,6 @@
 ////////////////////////////////////////////////////////////////////////////////
 template<typename TYPE>
 struct LogicalArray : public LogicalItem<TYPE> {
-protected:
-    // launch domain
-    LegionRuntime::HighLevel::Domain mLaunchDomain;
-    // logical partition
-    LegionRuntime::HighLevel::LogicalPartition mLogicalPartition;
 public:
     /**
      *
@@ -70,18 +65,6 @@ public:
                a.mFieldSpaceID == b.mFieldSpaceID &&
                a.mRTreeID      == b.mRTreeID;
     }
-
-    /**
-     * Returns current launch domain.
-     */
-    LegionRuntime::HighLevel::Domain
-    launchDomain(void) const { return mLaunchDomain; }
-
-    /**
-     * Returns current logical partition.
-     */
-    LegionRuntime::HighLevel::LogicalPartition
-    logicalPartition(void) const { return mLogicalPartition; }
 
     /**
      *
@@ -132,12 +115,12 @@ public:
         );
         // logical partitions
         using LegionRuntime::HighLevel::LogicalPartition;
-        mLogicalPartition = lrt->get_logical_partition(
-                                ctx, this->logicalRegion, iPart
-                            );
+        this->logicalPartition = lrt->get_logical_partition(
+                                     ctx, this->logicalRegion, iPart
+                                 );
         // launch domain -- one task per color
         // launch domain
-        mLaunchDomain = colorDomain;
+        this->launchDomain = colorDomain;
     }
 };
 

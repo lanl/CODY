@@ -33,18 +33,29 @@
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
-template<typename TYPE>
-struct LogicalItem {
+struct LogicalItemBase {
     // Field ID.
     LegionRuntime::HighLevel::FieldID fid = 0;
-    // The vector rectangle bounds.
-    LegionRuntime::Arrays::Rect<1> bounds;
     // Logical region that represents array.
     LegionRuntime::HighLevel::LogicalRegion logicalRegion;
+    // launch domain
+    LegionRuntime::HighLevel::Domain launchDomain;
+    // logical partition
+    LegionRuntime::HighLevel::LogicalPartition logicalPartition;
+    // The vector rectangle bounds.
+    LegionRuntime::Arrays::Rect<1> bounds;
+};
+
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+template<typename TYPE>
+struct LogicalItem : public LogicalItemBase {
     /**
      *
      */
-    LogicalItem(void) = default;
+    LogicalItem(void) : LogicalItemBase() { }
 protected:
     // Number of elements stored in the vector (the entire extent).
     int64_t mLength;

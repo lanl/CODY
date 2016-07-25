@@ -233,31 +233,15 @@ mainTask(
     const double initStart = mytimer();
     IndexLauncher launcher(
         GEN_PROB_TID,
-        A.launchDomain(),
+        A.launchDomain,
         TaskArgument(nullptr, 0),
         ArgumentMap()
     );
     //
-#if 0
-    launcher.add_region_requirement(
-        RegionRequirement(
-            A.logicalPartition(),
-            0,
-            WRITE_DISCARD,
-            EXCLUSIVE,
-            hpcgParams.logicalRegion
-        )
-    ).add_field(hpcgParams.fid);
-    //
-    launcher.add_region_requirement(
-        RegionRequirement(
-            geometries.logicalPartition(),
-            0,
-            WRITE_DISCARD,
-            EXCLUSIVE,
-            geometries.logicalRegion
-        )
-    ).add_field(geometries.fid);
+    intent<WRITE_DISCARD, EXCLUSIVE>(
+        launcher,
+        {A.geometry}
+    );
     //
     auto futureMap = runtime->execute_index_space(ctx, launcher);
     cout << "*** Waiting for Initialization Tasks" << endl;
@@ -265,7 +249,6 @@ mainTask(
     const double initEnd = mytimer();
     const double initTime = initEnd - initStart;
     cout << "*** Initialization Time (s): " << initTime << endl;
-#endif
     //
     cout << "*** Cleaning Up..." << endl;
     destroyLogicalStructures(
