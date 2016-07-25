@@ -69,9 +69,8 @@ genProblemTask(
     const std::vector<PhysicalRegion> &regions,
     Context ctx, HighLevelRuntime *runtime
 ) {
-    static const uint8_t ridA = 0;
-    static const uint8_t ridX = 1;
-    static const uint8_t ridY = 2;
+    // Enumerate how regions were packed for this task.
+    static const uint8_t ridGeometry = 0;
     //
     const auto nShards = runtime->get_tunable_value(
                             ctx, CGMapper::TID_NUM_SHARDS
@@ -100,10 +99,11 @@ genProblemTask(
     // Problem setup Phase /////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////
     // Construct the geometry and linear system
-    Geometry geom;
-    GenerateGeometry(size, rank, params.numThreads, nx, ny, nz, &geom);
+    PhysicalItem<Geometry> prGeom(regions[ridGeometry], ctx, runtime);
+    Geometry *geom = prGeom.data();
+    GenerateGeometry(size, rank, params.numThreads, nx, ny, nz, geom);
     //
-    ierr = CheckAspectRatio(0.125, geom.npx, geom.npy, geom.npz,
+    ierr = CheckAspectRatio(0.125, geom->npx, geom->npy, geom->npz,
                             "process grid", rank == 0);
     if (ierr) exit(ierr);
     // Use this array for collecting timing information
