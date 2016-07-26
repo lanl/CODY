@@ -185,8 +185,8 @@ protected:
     static constexpr int cNItemsToUnpack = 3;
 public:
     //
-    Item<Geometry> piGeometry;
-    Geometry *geometry = nullptr;
+    Item<Geometry> piGeom;
+    Geometry *geom = nullptr;
     //
     Item<SparseMatrixLocalData> piLocalData;
     SparseMatrixLocalData *localData = nullptr;
@@ -211,9 +211,9 @@ public:
     ) {
         int curRID = baseRegionID;
         //
-        piGeometry = Item<Geometry>(regions[curRID++], ctx, runtime);
-        geometry = piGeometry.data();
-        assert(geometry);
+        piGeom = Item<Geometry>(regions[curRID++], ctx, runtime);
+        geom = piGeom.data();
+        assert(geom);
         //
         piLocalData = Item<SparseMatrixLocalData>(
             regions[curRID++], ctx, runtime

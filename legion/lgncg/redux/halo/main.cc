@@ -45,6 +45,7 @@
 #include "Geometry.hpp"
 #include "CheckAspectRatio.hpp"
 #include "GenerateGeometry.hpp"
+#include "GenerateProblem.hpp"
 
 #include "LegionStuff.hpp"
 #include "LegionArrays.hpp"
@@ -101,7 +102,7 @@ genProblemTask(
     SparseMatrix<fpType> A(regions, rid, ctx, runtime);
     rid += SparseMatrix<fpType>::nRegionEntries();
     //
-    Geometry *geom = A.geometry;
+    Geometry *geom = A.geom;
     GenerateGeometry(size, rank, params.numThreads, nx, ny, nz, geom);
     //
     ierr = CheckAspectRatio(0.125, geom->npx, geom->npy, geom->npz,
@@ -111,6 +112,8 @@ genProblemTask(
     std::vector<double> times(10, 0.0);
     //
     double setup_time = mytimer();
+    //
+    GenerateProblem(A, 0, 0, 0);
 }
 
 /**
