@@ -48,20 +48,13 @@
 
 #pragma once
 
+#include "hpcg.hpp"
 #include "LegionMatrices.hpp"
+
+#include <cassert>
 
 // TODO RM
 #define HPCG_NO_MPI
-#ifndef HPCG_NO_MPI
-#include <mpi.h>
-#endif
-
-#if defined(HPCG_DEBUG) || defined(HPCG_DETAILED_DEBUG)
-#include <fstream>
-using std::endl;
-#include "hpcg.hpp"
-#endif
-#include <cassert>
 
 /*!
     Reference version of GenerateProblem to generate the sparse matrix, right
@@ -77,14 +70,16 @@ using std::endl;
 
     @see GenerateGeometry
 */
-template <typename TYPE>
 void
 GenerateProblem(
-    SparseMatrix<TYPE> &A,
-    Vector *b,
-    Vector *x,
-    Vector *xexact
+    SparseMatrix &A,
+    void *b,
+    void *x,
+    void *xexact
 ) {
+    (void)b;
+    (void)x;
+    (void)xexact;
     // Make local copies of geometry information.  Use global_int_t since the
     // RHS products in the calculations below may result in global range values.
     global_int_t nx  = A.geom->nx;
@@ -115,9 +110,9 @@ GenerateProblem(
     // If this assert fails, it most likely means that the global_int_t is set
     // to int and should be set to long long
     assert(totalNumberOfRows>0);
-#if 0
     // Allocate arrays that are of length localNumberOfRows
-    char *nonzerosInRow     = new char[localNumberOfRows];
+    //char *nonzerosInRow     = A.nonzerosInRow;
+#if 0
     global_int_t **mtxIndG  = new global_int_t*[localNumberOfRows];
     local_int_t  **mtxIndL  = new local_int_t*[localNumberOfRows];
     double **matrixValues   = new double*[localNumberOfRows];

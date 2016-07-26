@@ -44,12 +44,11 @@
 #include "LegionItems.hpp"
 #include "LegionArrays.hpp"
 
+#include "hpcg.hpp"
 #include "Geometry.hpp"
 #include "MGData.hpp"
 
 #include <vector>
-#include <deque>
-#include <iomanip>
 #include <map>
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -72,7 +71,6 @@ struct SparseMatrixLocalData {
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
-template<typename TYPE>
 struct LogicalSparseMatrix {
 public:
     // launch domain
@@ -83,15 +81,15 @@ public:
     //
     LogicalArray<SparseMatrixLocalData> localData;
     // The number of nonzeros in a row will always be 27 or fewer
-    LogicalArray<char> nonzerosInRow;
-    //matrix indices as global values
-    global_int_t **mtxIndG;
+    LogicalArray<LogicalRegion> lrNonzerosInRow;
+    // Logical regions that point to regions of matrix indices as global values
+    LogicalArray<LogicalRegion> lrMTXIndG;
     //matrix indices as local values
     local_int_t **mtxIndL;
     //values of matrix entries
-    TYPE **matrixValues;
+    floatType **matrixValues;
     //values of matrix diagonal entries
-    TYPE **matrixDiagonal;
+    floatType **matrixDiagonal;
     //global-to-local mapping
     std::map<global_int_t, local_int_t> globalToLocalMap;
     //local-to-global mapping
@@ -121,7 +119,7 @@ public:
     //lenghts of messages sent to neighboring processes
     local_int_t *sendLength;
     //send buffer for non-blocking sends
-    TYPE *sendBuffer;
+    floatType *sendBuffer;
 
     /**
      *
@@ -138,11 +136,11 @@ public:
         LegionRuntime::HighLevel::HighLevelRuntime *lrt
     ) {
         const auto size = geom.size;
-        const auto globalXYZ = getGlobalXYZ(geom);
         //
-             geometries.allocate(size,      ctx, lrt);
-              localData.allocate(size,      ctx, lrt);
-          nonzerosInRow.allocate(globalXYZ, ctx, lrt);
+             geometries.allocate(size, ctx, lrt);
+              localData.allocate(size, ctx, lrt);
+        lrNonzerosInRow.allocate(size, ctx, lrt);
+              lrMTXIndG.allocate(size, ctx, lrt);
     }
 
     /**
@@ -156,7 +154,8 @@ public:
     ) {
              geometries.partition(nParts, ctx, lrt);
               localData.partition(nParts, ctx, lrt);
-          nonzerosInRow.partition(nParts, ctx, lrt);
+        lrNonzerosInRow.partition(nParts, ctx, lrt);
+              lrMTXIndG.partition(nParts, ctx, lrt);
         // just pick a structure that has a representative launch domain.
         launchDomain = geometries.launchDomain;
     }
@@ -171,7 +170,8 @@ public:
     ) {
              geometries.deallocate(ctx, lrt);
               localData.deallocate(ctx, lrt);
-          nonzerosInRow.deallocate(ctx, lrt);
+        lrNonzerosInRow.deallocate(ctx, lrt);
+              lrMTXIndG.deallocate(ctx, lrt);
     }
 };
 
@@ -179,10 +179,9 @@ public:
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
-template<typename TYPE>
 class SparseMatrix {
 protected:
-    static constexpr int cNItemsToUnpack = 3;
+    static constexpr int cNItemsToUnpack = 4;
 public:
     //
     Item<Geometry> piGeom;
@@ -192,9 +191,12 @@ public:
     SparseMatrixLocalData *localData = nullptr;
     // Handles to logical regions containing the number of nonzeros in a row
     // will always be 27 or fewer
-    Array<char> paNonZerosInRow;
+    Item<LogicalRegion> piNonZerosInRow;
     char *nonzerosInRow = nullptr;
-
+    //
+    Item<LogicalRegion> pilrMTXIndG;
+    // Interpreted as 2D array (flattened from 1D index space)
+    global_int_t *mtxIndG = nullptr;
     /**
      *
      */
@@ -209,7 +211,7 @@ public:
         Context ctx,
         HighLevelRuntime *runtime
     ) {
-        int curRID = baseRegionID;
+        size_t curRID = baseRegionID;
         //
         piGeom = Item<Geometry>(regions[curRID++], ctx, runtime);
         geom = piGeom.data();
@@ -221,9 +223,9 @@ public:
         localData = piLocalData.data();
         assert(localData);
         //
-        paNonZerosInRow = Array<char>(regions[curRID++], ctx, runtime);
-        nonzerosInRow = paNonZerosInRow.data();
-        assert(nonzerosInRow);
+        piNonZerosInRow = Item<LogicalRegion>(regions[curRID++], ctx, runtime);
+        //
+        pilrMTXIndG = Item<LogicalRegion>(regions[curRID++], ctx, runtime);
     }
 
     /**

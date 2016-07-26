@@ -46,7 +46,7 @@ extern int HPCG_Finalize(void);
 /**
  * Floating point type used for calculations.
  */
-typedef double fpType;
+using floatType = double;
 
 ////////////////////////////////////////////////////////////////////////////////
 std::ostream &

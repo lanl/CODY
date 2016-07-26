@@ -99,8 +99,8 @@ genProblemTask(
     // Construct the geometry and linear system
     int rid = 0;
     //
-    SparseMatrix<fpType> A(regions, rid, ctx, runtime);
-    rid += SparseMatrix<fpType>::nRegionEntries();
+    SparseMatrix A(regions, rid, ctx, runtime);
+    rid += SparseMatrix::nRegionEntries();
     //
     Geometry *geom = A.geom;
     GenerateGeometry(size, rank, params.numThreads, nx, ny, nz, geom);
@@ -143,14 +143,13 @@ generateInitGeometry(
 /**
  *
  */
-template<typename TYPE>
 static void
 createLogicalStructures(
-    LogicalSparseMatrix<TYPE> &A,
-    LogicalArray<TYPE>        &x,
-    LogicalArray<TYPE>        &y,
-    LogicalArray<TYPE>        &xexact,
-    const Geometry            &geom,
+    LogicalSparseMatrix     &A,
+    LogicalArray<floatType> &x,
+    LogicalArray<floatType> &y,
+    LogicalArray<floatType> &xexact,
+    const Geometry          &geom,
     Context ctx, HighLevelRuntime *runtime
 ) {
     cout << "*** Creating Logical Structures..." << endl;;
@@ -175,13 +174,12 @@ createLogicalStructures(
 /**
  *
  */
-template<typename TYPE>
 static void
 destroyLogicalStructures(
-    LogicalSparseMatrix<TYPE> &A,
-    LogicalArray<TYPE>        &x,
-    LogicalArray<TYPE>        &y,
-    LogicalArray<TYPE>        &xexact,
+    LogicalSparseMatrix &A,
+    LogicalArray<floatType> &x,
+    LogicalArray<floatType> &y,
+    LogicalArray<floatType> &xexact,
     Context ctx, HighLevelRuntime *runtime
 ) {
     cout << "*** Destroying Logical Structures..." << endl;;
@@ -229,10 +227,10 @@ mainTask(
     ////////////////////////////////////////////////////////////////////////////
     cout << "*** Starting Initialization..." << endl;;
     // Application structures.
-    LogicalSparseMatrix<fpType> A;
-    LogicalArray<fpType> x, y, xexact;
+    LogicalSparseMatrix A;
+    LogicalArray<floatType> x, y, xexact;
     //
-    createLogicalStructures<fpType>(
+    createLogicalStructures(
         A,
         x,
         y,
@@ -253,7 +251,7 @@ mainTask(
     //
     intent<WRITE_DISCARD, EXCLUSIVE>(
         launcher,
-        {A.geometries, A.localData, A.nonzerosInRow}
+        {A.geometries, A.localData, A.lrNonzerosInRow, A.lrMTXIndG}
     );
     //
     auto futureMap = runtime->execute_index_space(ctx, launcher);
@@ -264,7 +262,7 @@ mainTask(
     cout << "*** Initialization Time (s): " << initTime << endl;
     //
     cout << "*** Cleaning Up..." << endl;
-    destroyLogicalStructures<fpType>(
+    destroyLogicalStructures(
         A,
         x,
         y,

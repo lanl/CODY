@@ -152,6 +152,40 @@ public:
     length(void) { return this->mLength; }
 };
 
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+template<typename TYPE>
+class Array2D : public Array<TYPE> {
+protected:
+    //
+    size_t mNRows = 0;
+    //
+    size_t mNCols = 0;
+public:
+    /**
+     *
+     */
+    Array2D(void) = default;
+
+    /**
+     *
+     */
+    Array2D(
+        size_t nRows,
+        size_t nCols,
+        const PhysicalRegion &physicalRegion,
+        Context ctx,
+        HighLevelRuntime *runtime
+    ) : Array<TYPE>(physicalRegion, ctx, runtime)
+      , mNRows(nRows)
+      , mNCols(nCols)
+    {
+        assert(nRows * nCols == this->mLength);
+    }
+};
+
 /**
  *
  */
