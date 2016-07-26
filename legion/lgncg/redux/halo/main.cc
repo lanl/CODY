@@ -69,13 +69,9 @@ genProblemTask(
     const std::vector<PhysicalRegion> &regions,
     Context ctx, HighLevelRuntime *runtime
 ) {
-    // Enumerate how regions were packed for this task.
-    static const uint8_t ridGeometry  = 0;
-    static const uint8_t ridLocalInfo = 1;
-    //
     const auto nShards = runtime->get_tunable_value(
                             ctx, CGMapper::TID_NUM_SHARDS
-                        );
+                         );
     const int taskID = getTaskID(task);
     //
     HPCG_Params params;
@@ -100,9 +96,12 @@ genProblemTask(
     // Problem setup Phase /////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////
     // Construct the geometry and linear system
-    PhysicalItem<Geometry> piGeom(regions[ridGeometry], ctx, runtime);
-    Geometry *geom = piGeom.data();
-    assert(geom);
+    int rid = 0;
+    //
+    SparseMatrix<fpType> A(regions, rid, ctx, runtime);
+    rid += SparseMatrix<fpType>::nRegionEntries();
+    //
+    Geometry *geom = A.geometry;
     GenerateGeometry(size, rank, params.numThreads, nx, ny, nz, geom);
     //
     ierr = CheckAspectRatio(0.125, geom->npx, geom->npy, geom->npz,
@@ -112,12 +111,6 @@ genProblemTask(
     std::vector<double> times(10, 0.0);
     //
     double setup_time = mytimer();
-    //
-    PhysicalItem<SparseMatrixLocalData> piSMLocalInfo(
-        regions[ridLocalInfo], ctx, runtime
-    );
-    SparseMatrixLocalData *localInfo = piSMLocalInfo.data();
-    assert(localInfo);
 }
 
 /**
@@ -147,13 +140,14 @@ generateInitGeometry(
 /**
  *
  */
+template<typename TYPE>
 static void
 createLogicalStructures(
-    LogicalSparseMatrix<double> &A,
-    LogicalArray<double>        &x,
-    LogicalArray<double>        &y,
-    LogicalArray<double>        &xexact,
-    const Geometry              &geom,
+    LogicalSparseMatrix<TYPE> &A,
+    LogicalArray<TYPE>        &x,
+    LogicalArray<TYPE>        &y,
+    LogicalArray<TYPE>        &xexact,
+    const Geometry            &geom,
     Context ctx, HighLevelRuntime *runtime
 ) {
     cout << "*** Creating Logical Structures..." << endl;;
@@ -178,12 +172,13 @@ createLogicalStructures(
 /**
  *
  */
+template<typename TYPE>
 static void
 destroyLogicalStructures(
-    LogicalSparseMatrix<double> &A,
-    LogicalArray<double>        &x,
-    LogicalArray<double>        &y,
-    LogicalArray<double>        &xexact,
+    LogicalSparseMatrix<TYPE> &A,
+    LogicalArray<TYPE>        &x,
+    LogicalArray<TYPE>        &y,
+    LogicalArray<TYPE>        &xexact,
     Context ctx, HighLevelRuntime *runtime
 ) {
     cout << "*** Destroying Logical Structures..." << endl;;
@@ -231,10 +226,10 @@ mainTask(
     ////////////////////////////////////////////////////////////////////////////
     cout << "*** Starting Initialization..." << endl;;
     // Application structures.
-    LogicalSparseMatrix<double> A;
-    LogicalArray<double> x, y, xexact;
+    LogicalSparseMatrix<fpType> A;
+    LogicalArray<fpType> x, y, xexact;
     //
-    createLogicalStructures(
+    createLogicalStructures<fpType>(
         A,
         x,
         y,
@@ -255,7 +250,7 @@ mainTask(
     //
     intent<WRITE_DISCARD, EXCLUSIVE>(
         launcher,
-        {A.geometries, A.localData, A.lrNonzerosInRow}
+        {A.geometries, A.localData, A.nonzerosInRow}
     );
     //
     auto futureMap = runtime->execute_index_space(ctx, launcher);
@@ -266,7 +261,7 @@ mainTask(
     cout << "*** Initialization Time (s): " << initTime << endl;
     //
     cout << "*** Cleaning Up..." << endl;
-    destroyLogicalStructures(
+    destroyLogicalStructures<fpType>(
         A,
         x,
         y,

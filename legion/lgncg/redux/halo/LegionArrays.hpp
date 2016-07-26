@@ -129,21 +129,21 @@ public:
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 template<typename TYPE>
-class PhysicalArray : public PhysicalItem<TYPE> {
-protected:
-    /**
-     *
-     */
-    PhysicalArray(void) = default;
+class Array : public Item<TYPE> {
 public:
     /**
      *
      */
-    PhysicalArray(
+    Array(void) = default;
+
+    /**
+     *
+     */
+    Array(
         const PhysicalRegion &physicalRegion,
         Context ctx,
         HighLevelRuntime *runtime
-    ) : PhysicalItem<TYPE>(physicalRegion, ctx, runtime) { }
+    ) : Item<TYPE>(physicalRegion, ctx, runtime) { }
 
     /**
      *
@@ -151,3 +151,28 @@ public:
     size_t
     length(void) { return this->mLength; }
 };
+
+/**
+ *
+ */
+template<
+    LegionRuntime::HighLevel::PrivilegeMode PRIV_MODE,
+    LegionRuntime::HighLevel::CoherenceProperty COH_PROP
+>
+static void
+intent(
+    LegionRuntime::HighLevel::IndexLauncher &launcher,
+    const std::deque<LogicalItemBase> &targetArrays
+) {
+    for (auto &a : targetArrays) {
+        launcher.add_region_requirement(
+            RegionRequirement(
+                a.logicalPartition,
+                0,
+                PRIV_MODE,
+                COH_PROP,
+                a.logicalRegion
+            )
+        ).add_field(a.fid);
+    }
+}

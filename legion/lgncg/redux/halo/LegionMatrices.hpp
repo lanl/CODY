@@ -82,9 +82,8 @@ public:
     LogicalArray<Geometry> geometries;
     //
     LogicalArray<SparseMatrixLocalData> localData;
-    // Handles to logical regions containing the number of nonzeros in a row
-    // will always be 27 or fewer
-    LogicalArray<LogicalRegion> lrNonzerosInRow;
+    // The number of nonzeros in a row will always be 27 or fewer
+    LogicalArray<char> nonzerosInRow;
     //matrix indices as global values
     global_int_t **mtxIndG;
     //matrix indices as local values
@@ -139,9 +138,11 @@ public:
         LegionRuntime::HighLevel::HighLevelRuntime *lrt
     ) {
         const auto size = geom.size;
-             geometries.allocate(size, ctx, lrt);
-              localData.allocate(size, ctx, lrt);
-        lrNonzerosInRow.allocate(size, ctx, lrt);
+        const auto globalXYZ = getGlobalXYZ(geom);
+        //
+             geometries.allocate(size,      ctx, lrt);
+              localData.allocate(size,      ctx, lrt);
+          nonzerosInRow.allocate(globalXYZ, ctx, lrt);
     }
 
     /**
@@ -155,7 +156,7 @@ public:
     ) {
              geometries.partition(nParts, ctx, lrt);
               localData.partition(nParts, ctx, lrt);
-        lrNonzerosInRow.partition(nParts, ctx, lrt);
+          nonzerosInRow.partition(nParts, ctx, lrt);
         // just pick a structure that has a representative launch domain.
         launchDomain = geometries.launchDomain;
     }
@@ -170,31 +171,64 @@ public:
     ) {
              geometries.deallocate(ctx, lrt);
               localData.deallocate(ctx, lrt);
-        lrNonzerosInRow.deallocate(ctx, lrt);
+          nonzerosInRow.deallocate(ctx, lrt);
     }
 };
 
-/**
- *
- */
-template<
-    LegionRuntime::HighLevel::PrivilegeMode PRIV_MODE,
-    LegionRuntime::HighLevel::CoherenceProperty COH_PROP
->
-static void
-intent(
-    LegionRuntime::HighLevel::IndexLauncher &launcher,
-    const std::deque<LogicalItemBase> &targetArrays
-) {
-    for (auto &a : targetArrays) {
-        launcher.add_region_requirement(
-            RegionRequirement(
-                a.logicalPartition,
-                0,
-                PRIV_MODE,
-                COH_PROP,
-                a.logicalRegion
-            )
-        ).add_field(a.fid);
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+template<typename TYPE>
+class SparseMatrix {
+protected:
+    static constexpr int cNItemsToUnpack = 3;
+public:
+    //
+    Item<Geometry> piGeometry;
+    Geometry *geometry = nullptr;
+    //
+    Item<SparseMatrixLocalData> piLocalData;
+    SparseMatrixLocalData *localData = nullptr;
+    // Handles to logical regions containing the number of nonzeros in a row
+    // will always be 27 or fewer
+    Array<char> paNonZerosInRow;
+    char *nonzerosInRow = nullptr;
+
+    /**
+     *
+     */
+    SparseMatrix(void) = default;
+
+    /**
+     *
+     */
+    SparseMatrix(
+        const std::vector<PhysicalRegion> &regions,
+        size_t baseRegionID,
+        Context ctx,
+        HighLevelRuntime *runtime
+    ) {
+        int curRID = baseRegionID;
+        //
+        piGeometry = Item<Geometry>(regions[curRID++], ctx, runtime);
+        geometry = piGeometry.data();
+        assert(geometry);
+        //
+        piLocalData = Item<SparseMatrixLocalData>(
+            regions[curRID++], ctx, runtime
+        );
+        localData = piLocalData.data();
+        assert(localData);
+        //
+        paNonZerosInRow = Array<char>(regions[curRID++], ctx, runtime);
+        nonzerosInRow = paNonZerosInRow.data();
+        assert(nonzerosInRow);
     }
-}
+
+    /**
+     *
+     */
+    static int
+    nRegionEntries(void) { return cNItemsToUnpack; }
+};

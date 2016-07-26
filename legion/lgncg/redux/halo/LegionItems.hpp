@@ -182,21 +182,22 @@ public:
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 template<typename TYPE>
-class PhysicalItem {
+class Item {
 protected:
     //
     size_t mLength = 0;
     //
     TYPE *mData = nullptr;
-    /**
-     *
-     */
-    PhysicalItem(void) = default;
 public:
     /**
      *
      */
-    PhysicalItem(
+    Item(void) = default;
+
+    /**
+     *
+     */
+    Item(
         const PhysicalRegion &physicalRegion,
         Context ctx,
         HighLevelRuntime *runtime
