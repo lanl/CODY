@@ -61,6 +61,8 @@ using namespace std;
 
 LegionRuntime::Logger::Category Logger("LGNCG");
 
+using namespace LegionRuntime::HighLevel;
+
 /**
  * Generate Problem Task ///////////////////////////////////////////////////////
  */
@@ -97,7 +99,7 @@ genProblemTask(
     // Problem setup Phase /////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////
     // Construct the geometry and linear system
-    int rid = 0;
+    size_t rid = 0;
     //
     SparseMatrix A(regions, rid, ctx, runtime);
     rid += SparseMatrix::nRegionEntries();
@@ -113,7 +115,7 @@ genProblemTask(
     //
     double setup_time = mytimer();
     //
-    GenerateProblem(A, 0, 0, 0);
+    GenerateProblem(A, 0, 0, 0, ctx, runtime);
 }
 
 /**

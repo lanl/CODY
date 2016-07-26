@@ -28,6 +28,7 @@
 #include "Vector.hpp"
 #include "MGData.hpp"
 
+#if 0
 struct SparseMatrix_STRUCT {
   char  * title; //!< name of the sparse matrix
   Geometry * geom; //!< geometry associated with this matrix
@@ -67,6 +68,7 @@ struct SparseMatrix_STRUCT {
 #endif
 };
 typedef struct SparseMatrix_STRUCT SparseMatrix;
+#endif
 
 /*!
   Initializes the known system matrix data structure members to 0.

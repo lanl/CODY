@@ -183,20 +183,22 @@ class SparseMatrix {
 protected:
     static constexpr int cNItemsToUnpack = 4;
 public:
+    struct Items {
+        Item<Geometry> geom;
+        Item<SparseMatrixLocalData> localData;
+        Item<LogicalRegion> nonzerosInRow;
+        Item<LogicalRegion> mtxIndG;
+    };
+    Items items;
     //
-    Item<Geometry> piGeom;
     Geometry *geom = nullptr;
     //
-    Item<SparseMatrixLocalData> piLocalData;
     SparseMatrixLocalData *localData = nullptr;
-    // Handles to logical regions containing the number of nonzeros in a row
-    // will always be 27 or fewer
-    Item<LogicalRegion> piNonZerosInRow;
-    char *nonzerosInRow = nullptr;
     //
-    Item<LogicalRegion> pilrMTXIndG;
+    char *nonzerosInRow = nullptr;
     // Interpreted as 2D array (flattened from 1D index space)
     global_int_t *mtxIndG = nullptr;
+
     /**
      *
      */
@@ -208,24 +210,24 @@ public:
     SparseMatrix(
         const std::vector<PhysicalRegion> &regions,
         size_t baseRegionID,
-        Context ctx,
-        HighLevelRuntime *runtime
+        LegionRuntime::HighLevel::Context ctx,
+        LegionRuntime::HighLevel::Runtime *runtime
     ) {
         size_t curRID = baseRegionID;
         //
-        piGeom = Item<Geometry>(regions[curRID++], ctx, runtime);
-        geom = piGeom.data();
+        items.geom = Item<Geometry>(regions[curRID++], ctx, runtime);
+        geom = items.geom.data();
         assert(geom);
         //
-        piLocalData = Item<SparseMatrixLocalData>(
+        items.localData = Item<SparseMatrixLocalData>(
             regions[curRID++], ctx, runtime
         );
-        localData = piLocalData.data();
+        localData = items.localData.data();
         assert(localData);
         //
-        piNonZerosInRow = Item<LogicalRegion>(regions[curRID++], ctx, runtime);
+        items.nonzerosInRow = Item<LogicalRegion>(regions[curRID++], ctx, runtime);
         //
-        pilrMTXIndG = Item<LogicalRegion>(regions[curRID++], ctx, runtime);
+        items.mtxIndG = Item<LogicalRegion>(regions[curRID++], ctx, runtime);
     }
 
     /**

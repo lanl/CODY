@@ -75,11 +75,10 @@ GenerateProblem(
     SparseMatrix &A,
     void *b,
     void *x,
-    void *xexact
+    void *xexact,
+    LegionRuntime::HighLevel::Context ctx,
+    LegionRuntime::HighLevel::Runtime *runtime
 ) {
-    (void)b;
-    (void)x;
-    (void)xexact;
     // Make local copies of geometry information.  Use global_int_t since the
     // RHS products in the calculations below may result in global range values.
     global_int_t nx  = A.geom->nx;
@@ -111,8 +110,8 @@ GenerateProblem(
     // to int and should be set to long long
     assert(totalNumberOfRows>0);
     // Allocate arrays that are of length localNumberOfRows
-    //char *nonzerosInRow     = A.nonzerosInRow;
 #if 0
+    char *nonzerosInRow = new char[localNumberOfRows];
     global_int_t **mtxIndG  = new global_int_t*[localNumberOfRows];
     local_int_t  **mtxIndL  = new local_int_t*[localNumberOfRows];
     double **matrixValues   = new double*[localNumberOfRows];
