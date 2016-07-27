@@ -120,11 +120,6 @@ CGMapper::CGMapper(
   }
 }
 
-CGMapper::~CGMapper(void)
-{
-}
-
-
 void CGMapper::select_task_options(Task *task)
 {
   log_cgmap.print() << "select_task_options: id=" << task->task_id << " tag=" << task->tag;
@@ -210,8 +205,8 @@ void CGMapper::notify_mapping_result(const Mappable *mappable)
   runtime->retrieve_name(task->task_id, name);
   log_cgmap.print() << "task " << task->task_id << "(" << name << ") mapped on " << task->target_proc;
   for(unsigned idx = 0; idx < task->regions.size(); idx++) {
-    const RegionRequirement& rr = task->regions[idx];
 #if 0
+    const RegionRequirement& rr = task->regions[idx];
     log_cgmap.print() << " region #" << idx << ": " << rr.region << " (" << rr.privilege << "," << rr.prop
 		      << ") mapped on " << task->regions[idx].selected_memory
 		      << ", fields=" << task->regions[idx].instance_fields;

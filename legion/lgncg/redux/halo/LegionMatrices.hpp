@@ -182,14 +182,15 @@ public:
 class SparseMatrix {
 protected:
     static constexpr int cNItemsToUnpack = 4;
-public:
-    struct Items {
+    // Physical Item Container
+    struct PIC {
         Item<Geometry> geom;
         Item<SparseMatrixLocalData> localData;
         Item<LogicalRegion> nonzerosInRow;
         Item<LogicalRegion> mtxIndG;
     };
-    Items items;
+public:
+    PIC pic;
     //
     Geometry *geom = nullptr;
     //
@@ -215,19 +216,19 @@ public:
     ) {
         size_t curRID = baseRegionID;
         //
-        items.geom = Item<Geometry>(regions[curRID++], ctx, runtime);
-        geom = items.geom.data();
+        pic.geom = Item<Geometry>(regions[curRID++], ctx, runtime);
+        geom = pic.geom.data();
         assert(geom);
         //
-        items.localData = Item<SparseMatrixLocalData>(
+        pic.localData = Item<SparseMatrixLocalData>(
             regions[curRID++], ctx, runtime
         );
-        localData = items.localData.data();
+        localData = pic.localData.data();
         assert(localData);
         //
-        items.nonzerosInRow = Item<LogicalRegion>(regions[curRID++], ctx, runtime);
+        pic.nonzerosInRow = Item<LogicalRegion>(regions[curRID++], ctx, runtime);
         //
-        items.mtxIndG = Item<LogicalRegion>(regions[curRID++], ctx, runtime);
+        pic.mtxIndG = Item<LogicalRegion>(regions[curRID++], ctx, runtime);
     }
 
     /**

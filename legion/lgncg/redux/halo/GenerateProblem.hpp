@@ -49,6 +49,8 @@
 #pragma once
 
 #include "hpcg.hpp"
+#include "LegionItems.hpp"
+#include "LegionArrays.hpp"
 #include "LegionMatrices.hpp"
 
 #include <cassert>
@@ -79,6 +81,7 @@ GenerateProblem(
     LegionRuntime::HighLevel::Context ctx,
     LegionRuntime::HighLevel::Runtime *runtime
 ) {
+    using namespace std;
     // Make local copies of geometry information.  Use global_int_t since the
     // RHS products in the calculations below may result in global range values.
     global_int_t nx  = A.geom->nx;
@@ -98,7 +101,7 @@ GenerateProblem(
     // If this assert fails, it most likely means that the local_int_t is set to
     // int and should be set to.  Throw an exception of the number of rows is
     // less than zero (can happen if int overflow)long long
-    assert(localNumberOfRows>0);
+    assert(localNumberOfRows > 0);
     // We are approximating a 27-point finite element/volume/difference 3D
     // stencil
     local_int_t numberOfNonzerosPerRow = 27;

@@ -9,7 +9,7 @@ using namespace LegionRuntime::HighLevel;
 class CGMapper : public DefaultMapper {
 public:
   CGMapper(Machine machine, HighLevelRuntime *rt, Processor local);
-  virtual ~CGMapper(void);
+  virtual ~CGMapper(void) = default;
 
   // supported tunables
   enum {

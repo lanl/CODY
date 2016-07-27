@@ -109,7 +109,7 @@ registerTasks(void) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-static void
+void
 updateMappers(
     Machine machine,
     HighLevelRuntime *runtime,
@@ -125,81 +125,8 @@ inline void
 LegionInit(void)
 {
     registerTasks();
-    Runtime::set_registration_callback(updateMappers);
+    HighLevelRuntime::set_registration_callback(updateMappers);
 }
-
-////////////////////////////////////////////////////////////////////////////////
-class FieldHelperBase {
-protected:
-  // this is shared by all FieldHelper<T>'s
-  static FieldID sNextID;
-};
-
-////////////////////////////////////////////////////////////////////////////////
-template <typename T>
-class FieldHelper : protected FieldHelperBase {
-protected:
-    const char *name;
-    FieldID fid;
-
-public:
-    static const FieldID ASSIGN_STATIC_ID = AUTO_GENERATE_ID - 1;
-    ////////////////////////////////////////////////////////////////////////////
-    FieldHelper(
-        const char *mName,
-        FieldID mFID = ASSIGN_STATIC_ID
-    ) : name(mName),
-        fid(mFID)
-    {
-        if(fid == ASSIGN_STATIC_ID) fid = sNextID++;
-    }
-
-    ////////////////////////////////////////////////////////////////////////////
-    ~FieldHelper(void) = default;
-
-    ////////////////////////////////////////////////////////////////////////////
-    operator
-    FieldID(void) const
-    {
-        assert(fid != AUTO_GENERATE_ID);
-        return fid;
-    }
-
-    ////////////////////////////////////////////////////////////////////////////
-    void
-    allocate(
-        Runtime *runtime,
-        Context ctx,
-        FieldSpace fs
-    ) {
-        FieldAllocator fa = runtime->create_field_allocator(ctx, fs);
-        fid = fa.allocate_field(sizeof(T), fid);
-        runtime->attach_name(fs, fid, name);
-    }
-
-    ////////////////////////////////////////////////////////////////////////////
-    template <typename AT>
-    RegionAccessor<AT, T>
-    accessor(const PhysicalRegion &pr)
-    {
-        assert(fid != AUTO_GENERATE_ID);
-        return pr.get_field_accessor(
-                  fid
-               ).template typeify<T>().template convert<AT>();
-    }
-
-    ////////////////////////////////////////////////////////////////////////////
-    template <typename AT>
-    RegionAccessor<AT, T>
-    foldAccessor(const PhysicalRegion &pr)
-    {
-        assert(fid != AUTO_GENERATE_ID);
-        std::vector<FieldID> fields;
-        pr.get_fields(fields);
-        assert((fields.size() == 1) && (fields[0] == fid));
-        return pr.get_accessor().template typeify<T>().template convert<AT>();
-    }
-};
 
 /**
  * courtesy of some other legion code.
