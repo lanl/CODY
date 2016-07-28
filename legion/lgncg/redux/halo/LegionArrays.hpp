@@ -200,7 +200,6 @@ public:
         uint64_t nItems,
         LegionRuntime::HighLevel::PrivilegeMode privMode,
         LegionRuntime::HighLevel::CoherenceProperty cohProp,
-        LogicalRegion *lrTargetp,
         Context ctx,
         HighLevelRuntime *runtime
     ) {
@@ -210,11 +209,6 @@ public:
         p.region = l.array.mapRegion(privMode, cohProp, ctx, runtime);
         // Instantiate physical array type from physical region.
         p.array = Array<TYPE>(p.region, ctx, runtime);
-        // If we are provided a target logical region to write back into, then
-        // do that.
-        if (lrTargetp) {
-            *lrTargetp = p.region.get_logical_region();
-        }
         // Cache for destructor.
         mCTX = ctx;
         mRuntime = runtime;
@@ -225,6 +219,14 @@ public:
      */
     TYPE *
     data(void) { return p.array.data(); }
+
+    /**
+     *
+     */
+    void
+    bindToLogicalRegion(LogicalRegion &lr) {
+        lr = p.region.get_logical_region();
+    }
 };
 
 ////////////////////////////////////////////////////////////////////////////////

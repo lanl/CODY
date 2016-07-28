@@ -113,20 +113,17 @@ GenerateProblem(
     // to int and should be set to long long
     assert(totalNumberOfRows>0);
     // Allocate arrays that are of length localNumberOfRows
-    ArrayAllocator<char> caa(
-        10,
-        WRITE_DISCARD,
+    ArrayAllocator<char> aaNonzerosInRow (
+        localNumberOfRows,
+        WRITE_ONLY,
         EXCLUSIVE,
-        A.pic.nonzerosInRow.data(),
         ctx,
         runtime
     );
-    char *data = caa.data();
-    for (int i = 0; i < 10; ++i) {
-        data[i] = A.geom->rank + 1;
-    }
+    aaNonzerosInRow.bindToLogicalRegion(*(A.pic.nonzerosInRow.data()));
+
+    char *nonzerosInRow = aaNonzerosInRow.data();
 #if 0
-    char * nonzerosInRow = new char[localNumberOfRows];
     global_int_t **mtxIndG  = new global_int_t*[localNumberOfRows];
     local_int_t  **mtxIndL  = new local_int_t*[localNumberOfRows];
     double **matrixValues   = new double*[localNumberOfRows];

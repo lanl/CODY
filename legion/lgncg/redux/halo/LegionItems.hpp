@@ -58,6 +58,7 @@ struct LogicalItem : public LogicalItemBase {
      *
      */
     LogicalItem(void) : LogicalItemBase() { }
+
 protected:
     // Number of elements stored in the item (the entire extent).
     int64_t mLength;
@@ -105,7 +106,7 @@ protected:
         mRTreeID      = logicalRegion.get_tree_id();
     }
 public:
-
+    //
     PhysicalRegion physicalRegion;
 
     /**
