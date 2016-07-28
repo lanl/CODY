@@ -121,8 +121,41 @@ GenerateProblem(
         runtime
     );
     aaNonzerosInRow.bindToLogicalRegion(*(A.pic.nonzerosInRow.data()));
-
     char *nonzerosInRow = aaNonzerosInRow.data();
+
+
+    int nRow = 4;
+    int nCol = 4;
+    int len = nRow * nCol;
+
+    ArrayAllocator<int> TEST(
+        len,
+        WRITE_ONLY,
+        EXCLUSIVE,
+        ctx,
+        runtime
+    );
+    auto *TESTD = TEST.data();
+
+#if 0
+    for (int i = 0; i < len; ++i) {
+        TESTD[i] = i;
+    }
+#endif
+    Array2D<int> a2d(nRow, nCol, TESTD);
+    for (int i = 0; i < nRow; ++i) {
+        for (int j = 0; j < nCol; ++j) {
+            a2d(i, j) = i+j;
+        }
+    }
+    for (int i = 0; i < nRow; ++i) {
+        for (int j = 0; j < nCol; ++j) {
+            cout << "[" << i << "]" << "[" << j << "] = " << a2d(i, j) << " ";
+        }
+        cout << endl;
+    }
+
+
 #if 0
     global_int_t **mtxIndG  = new global_int_t*[localNumberOfRows];
     local_int_t  **mtxIndL  = new local_int_t*[localNumberOfRows];

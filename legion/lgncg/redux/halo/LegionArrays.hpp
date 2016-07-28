@@ -233,13 +233,18 @@ public:
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
+/**
+ * Interprets 1D array as NxM 2D array.
+ */
 template<typename TYPE>
-class Array2D : public Array<TYPE> {
+class Array2D {
 protected:
     //
     size_t mNRows = 0;
     //
     size_t mNCols = 0;
+    //
+    TYPE *mBasePtr = nullptr;
 public:
     /**
      *
@@ -249,17 +254,41 @@ public:
     /**
      *
      */
+    ~Array2D(void) {
+        mNRows = 0;
+        mNCols = 0;
+        // Don't free memory here because we don't know what allocated that
+        // memory. Assume that it'll get cleaned up another way.
+        mBasePtr = nullptr;
+    }
+
+    /**
+     *
+     */
     Array2D(
         size_t nRows,
         size_t nCols,
-        const PhysicalRegion &physicalRegion,
-        Context ctx,
-        HighLevelRuntime *runtime
-    ) : Array<TYPE>(physicalRegion, ctx, runtime)
-      , mNRows(nRows)
+        TYPE *basePtr
+    ) : mNRows(nRows)
       , mNCols(nCols)
+      , mBasePtr(basePtr) { }
+
+    /**
+     *
+     */
+    const TYPE &
+    operator()(size_t row, size_t col) const
     {
-        assert(nRows * nCols == this->mLength);
+        return mBasePtr[(row*mNCols)+col];
+    }
+
+    /**
+     *
+     */
+    TYPE &
+    operator()(size_t row, size_t col)
+    {
+        return mBasePtr[(row*mNCols)+col];
     }
 };
 
