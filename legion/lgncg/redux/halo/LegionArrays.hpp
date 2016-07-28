@@ -29,6 +29,8 @@
 
 #include "LegionItems.hpp"
 
+#include <deque>
+
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -158,7 +160,12 @@ public:
 ////////////////////////////////////////////////////////////////////////////////
 template<typename TYPE>
 struct ArrayAllocator {
+private:
+    Context mCTX;
+    //
+    HighLevelRuntime *mRuntime = nullptr;
 
+public:
     struct Logical {
         LogicalArray<TYPE> array;
     };
@@ -177,6 +184,14 @@ struct ArrayAllocator {
      *
      */
     ArrayAllocator(void) = default;
+
+    /**
+     *
+     */
+    ~ArrayAllocator(void)
+    {
+        l.array.unmapRegion(mCTX, mRuntime);
+    }
 
     /**
      *
@@ -200,8 +215,14 @@ struct ArrayAllocator {
         if (lrTargetp) {
             *lrTargetp = p.region.get_logical_region();
         }
+        // Cache for destructor.
+        mCTX = ctx;
+        mRuntime = runtime;
     }
 
+    /**
+     *
+     */
     TYPE *
     data(void) { return p.array.data(); }
 };

@@ -113,17 +113,6 @@ GenerateProblem(
     // to int and should be set to long long
     assert(totalNumberOfRows>0);
     // Allocate arrays that are of length localNumberOfRows
-#if 0
-    LogicalArray<char> lca;
-    lca.allocate(10, ctx, runtime);
-    PhysicalRegion pr = lca.mapRegion(WRITE_DISCARD, EXCLUSIVE, ctx, runtime);
-    Array<char> carray(pr, ctx, runtime);
-    char *data = carray.data();
-    assert(data);
-    LogicalRegion *lrp = A.pic.nonzerosInRow.data();
-    assert(lrp);
-#endif
-    cout << "new" << endl;
     ArrayAllocator<char> caa(
         10,
         WRITE_DISCARD,

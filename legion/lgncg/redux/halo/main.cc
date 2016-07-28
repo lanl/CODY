@@ -262,7 +262,6 @@ mainTask(
     auto a = A.lrNonzerosInRow.mapRegion(READ_ONLY, EXCLUSIVE, ctx, runtime);
     Array<LogicalRegion> lra(a, ctx, runtime);
     LogicalRegion *lrs = lra.data();
-    cout << "HI" << endl;
     for (int i = 0; i < nShards; ++i) {
 		RegionRequirement req(
             lrs[i], READ_ONLY, EXCLUSIVE, lrs[i]
