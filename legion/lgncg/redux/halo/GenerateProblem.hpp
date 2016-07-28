@@ -115,8 +115,17 @@ GenerateProblem(
     ////////////////////////////////////////////////////////////////////////////
     // Allocate arrays
     ////////////////////////////////////////////////////////////////////////////
-    cout << "MxN/task/item " << localNumberOfRows * numberOfNonzerosPerRow
-         << endl;
+    if (A.geom->rank == 0) {
+        const size_t mn = localNumberOfRows * numberOfNonzerosPerRow;
+        const size_t pMemInB = (
+            sizeof(char) * localNumberOfRows
+          + sizeof(global_int_t) * mn
+          + sizeof(local_int_t) * mn
+          + sizeof(floatType) * mn
+        ) * A.geom->size;
+        const double pMemInMB = double(pMemInB)/1024/1024;
+        cout << "*** Approx. Generate Problem Memory (MB)=" << pMemInMB << endl;
+    }
     ArrayAllocator<char> aaNonzerosInRow (
         localNumberOfRows,
         WRITE_ONLY,
