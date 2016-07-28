@@ -54,7 +54,6 @@
 
 #include <iostream>
 #include <cstdlib>
-#include <deque>
 #include <iomanip>
 
 using namespace std;
@@ -154,7 +153,7 @@ createLogicalStructures(
     const Geometry          &geom,
     Context ctx, HighLevelRuntime *runtime
 ) {
-    cout << "*** Creating Logical Structures..." << endl;;
+    cout << "*** Creating Logical Structures..." << endl;
     const double initStart = mytimer();
     // Application structures
     // First calculate global XYZ for the problem.
@@ -170,7 +169,7 @@ createLogicalStructures(
     xexact.partition(geom.size, ctx, runtime);
     const double initEnd = mytimer();
     const double initTime = initEnd - initStart;
-    cout << "    Done in: " << initTime << " s" << endl;;
+    cout << "    Done in: " << initTime << " s" << endl;
 }
 
 /**
@@ -184,7 +183,7 @@ destroyLogicalStructures(
     LogicalArray<floatType> &xexact,
     Context ctx, HighLevelRuntime *runtime
 ) {
-    cout << "*** Destroying Logical Structures..." << endl;;
+    cout << "*** Destroying Logical Structures..." << endl;
     const double initStart = mytimer();
     A.deallocate(ctx, runtime);
     x.deallocate(ctx, runtime);
@@ -192,7 +191,7 @@ destroyLogicalStructures(
     xexact.deallocate(ctx, runtime);
     const double initEnd = mytimer();
     const double initTime = initEnd - initStart;
-    cout << "    Done in: " << initTime << " s" << endl;;
+    cout << "    Done in: " << initTime << " s" << endl;
 }
 
 /**
@@ -272,10 +271,10 @@ mainTask(
         InlineLauncher inl(req);
         PhysicalRegion reg = runtime->map_region(ctx, inl);
         reg.wait_until_valid();
-        Array<char> ca(reg, ctx, runtime);
-        char *cp = ca.data();
+        Array<uint8_t> ca(reg, ctx, runtime);
+        uint8_t *cp = ca.data();
         for (int j = 0; j < 10; ++j) {
-            cout << "<-- " << cp[j];
+            printf("<-- %d", cp[j]);
         }
         cout << endl;
         runtime->unmap_region(ctx, reg);

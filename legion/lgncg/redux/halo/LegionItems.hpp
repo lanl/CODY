@@ -59,7 +59,7 @@ struct LogicalItem : public LogicalItemBase {
      */
     LogicalItem(void) : LogicalItemBase() { }
 protected:
-    // Number of elements stored in the vector (the entire extent).
+    // Number of elements stored in the item (the entire extent).
     int64_t mLength;
     // Index space.
     LegionRuntime::HighLevel::IndexSpace mIndexSpace;

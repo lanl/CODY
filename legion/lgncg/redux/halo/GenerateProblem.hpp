@@ -113,6 +113,18 @@ GenerateProblem(
     // to int and should be set to long long
     assert(totalNumberOfRows>0);
     // Allocate arrays that are of length localNumberOfRows
+    LogicalArray<char> lca;
+    lca.allocate(10, ctx, runtime);
+    PhysicalRegion pr = lca.mapRegion(WRITE_DISCARD, EXCLUSIVE, ctx, runtime);
+    Array<char> carray(pr, ctx, runtime);
+    char *data = carray.data();
+    assert(data);
+    LogicalRegion *lrp = A.pic.nonzerosInRow.data();
+    assert(lrp);
+    for (int i = 0; i < 10; ++i) {
+        data[i] = A.geom->rank;
+    }
+    *lrp = pr.get_logical_region();
 #if 0
     char * nonzerosInRow = new char[localNumberOfRows];
     global_int_t **mtxIndG  = new global_int_t*[localNumberOfRows];

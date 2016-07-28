@@ -37,15 +37,17 @@ legion_home = os.getenv("LG_RT_DIR")
 # These are the compilation flags that will be used in case there's no
 # compilation database set (by default, one is not set).
 # CHANGE THIS LIST OF FLAGS. YES, THIS IS THE DROID YOU HAVE BEEN LOOKING FOR.
+# To get c++ includes on OS X:
+# echo | clang -std=c++11 -stdlib=libc++ -v -E -x c++ -
 flags = [
 '-Wall',
-'-DHAVE_CONFIG_H',
 '-std=c++11',
 '-x',
 'c++',
-'-isystem/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/../lib/c++/v1',
-'-I',
-'.',
+'-isystem/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/../include/c++/v1',
+'-isystem/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/../lib/clang/7.3.0/include',
+'-isystem/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include',
+'-I.',
 '-I' + legion_home,
 '-I' + legion_home + '/realm',
 '-I' + legion_home + '/legion',
@@ -106,7 +108,7 @@ def MakeRelativePathsInFlagsAbsolute( flags, working_directory ):
 
 def IsHeaderFile( filename ):
   extension = os.path.splitext( filename )[ 1 ]
-  return extension in [ '.h', '.hxx', '.hpp', '.hh' ]
+  return extension in [ '.h', '.hxx', '.hpp', '.hh', '.inl' ]
 
 
 def GetCompilationInfoForFile( filename ):
