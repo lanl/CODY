@@ -112,7 +112,11 @@ GenerateProblem(
     // If this assert fails, it most likely means that the global_int_t is set
     // to int and should be set to long long
     assert(totalNumberOfRows>0);
-    // Allocate arrays that are of length localNumberOfRows
+    ////////////////////////////////////////////////////////////////////////////
+    // Allocate arrays
+    ////////////////////////////////////////////////////////////////////////////
+    cout << "MxN/task/item " << localNumberOfRows * numberOfNonzerosPerRow
+         << endl;
     ArrayAllocator<char> aaNonzerosInRow (
         localNumberOfRows,
         WRITE_ONLY,
@@ -122,44 +126,42 @@ GenerateProblem(
     );
     aaNonzerosInRow.bindToLogicalRegion(*(A.pic.nonzerosInRow.data()));
     char *nonzerosInRow = aaNonzerosInRow.data();
-
-
-    int nRow = 4;
-    int nCol = 4;
-    int len = nRow * nCol;
-
-    ArrayAllocator<int> TEST(
-        len,
+    assert(nonzerosInRow);
+    // Interpreted as 2D array
+    ArrayAllocator<global_int_t> aaMtxIndG(
+        localNumberOfRows * numberOfNonzerosPerRow,
         WRITE_ONLY,
         EXCLUSIVE,
         ctx,
         runtime
     );
-    auto *TESTD = TEST.data();
+    aaMtxIndG.bindToLogicalRegion(*(A.pic.mtxIndG.data()));
+    global_int_t *mtxIndG = aaMtxIndG.data();
+    assert(mtxIndG);
+    // Interpreted as 2D array
+    ArrayAllocator<local_int_t> aaMtxIndL(
+        localNumberOfRows * numberOfNonzerosPerRow,
+        WRITE_ONLY,
+        EXCLUSIVE,
+        ctx,
+        runtime
+    );
+    aaMtxIndL.bindToLogicalRegion(*(A.pic.mtxIndL.data()));
+    local_int_t *mtxIndL = aaMtxIndL.data();
+    assert(mtxIndL);
+    // Interpreted as 2D array
+    ArrayAllocator<floatType> aaMatrixValues(
+        localNumberOfRows * numberOfNonzerosPerRow,
+        WRITE_ONLY,
+        EXCLUSIVE,
+        ctx,
+        runtime
+    );
+    aaMatrixValues.bindToLogicalRegion(*(A.pic.matrixValues.data()));
+    floatType *matrixValues = aaMatrixValues.data();
+    assert(matrixValues);
 
 #if 0
-    for (int i = 0; i < len; ++i) {
-        TESTD[i] = i;
-    }
-#endif
-    Array2D<int> a2d(nRow, nCol, TESTD);
-    for (int i = 0; i < nRow; ++i) {
-        for (int j = 0; j < nCol; ++j) {
-            a2d(i, j) = i+j;
-        }
-    }
-    for (int i = 0; i < nRow; ++i) {
-        for (int j = 0; j < nCol; ++j) {
-            cout << "[" << i << "]" << "[" << j << "] = " << a2d(i, j) << " ";
-        }
-        cout << endl;
-    }
-
-
-#if 0
-    global_int_t **mtxIndG  = new global_int_t*[localNumberOfRows];
-    local_int_t  **mtxIndL  = new local_int_t*[localNumberOfRows];
-    double **matrixValues   = new double*[localNumberOfRows];
     double **matrixDiagonal = new double*[localNumberOfRows];
     //
     if (b!=0)      InitializeVector(*b,      localNumberOfRows);

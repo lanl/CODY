@@ -83,11 +83,11 @@ public:
     // The number of nonzeros in a row will always be 27 or fewer
     LogicalArray<LogicalRegion> lrNonzerosInRow;
     // Logical regions that point to regions of matrix indices as global values
-    LogicalArray<LogicalRegion> lrMTXIndG;
-    //matrix indices as local values
-    local_int_t **mtxIndL;
-    //values of matrix entries
-    floatType **matrixValues;
+    LogicalArray<LogicalRegion> lrMtxIndG;
+    //Logical regions that point to matrix indices as local values
+    LogicalArray<LogicalRegion> lrMtxIndL;
+    //Logical regions that point to values of matrix entries
+    LogicalArray<LogicalRegion> lrMatrixValues;
     //values of matrix diagonal entries
     floatType **matrixDiagonal;
     //global-to-local mapping
@@ -140,7 +140,9 @@ public:
              geometries.allocate(size, ctx, lrt);
               localData.allocate(size, ctx, lrt);
         lrNonzerosInRow.allocate(size, ctx, lrt);
-              lrMTXIndG.allocate(size, ctx, lrt);
+              lrMtxIndG.allocate(size, ctx, lrt);
+              lrMtxIndL.allocate(size, ctx, lrt);
+         lrMatrixValues.allocate(size, ctx, lrt);
     }
 
     /**
@@ -155,7 +157,9 @@ public:
              geometries.partition(nParts, ctx, lrt);
               localData.partition(nParts, ctx, lrt);
         lrNonzerosInRow.partition(nParts, ctx, lrt);
-              lrMTXIndG.partition(nParts, ctx, lrt);
+              lrMtxIndG.partition(nParts, ctx, lrt);
+              lrMtxIndL.partition(nParts, ctx, lrt);
+         lrMatrixValues.partition(nParts, ctx, lrt);
         // just pick a structure that has a representative launch domain.
         launchDomain = geometries.launchDomain;
     }
@@ -171,7 +175,9 @@ public:
              geometries.deallocate(ctx, lrt);
               localData.deallocate(ctx, lrt);
         lrNonzerosInRow.deallocate(ctx, lrt);
-              lrMTXIndG.deallocate(ctx, lrt);
+              lrMtxIndG.deallocate(ctx, lrt);
+              lrMtxIndL.deallocate(ctx, lrt);
+         lrMatrixValues.deallocate(ctx, lrt);
     }
 };
 
@@ -181,13 +187,15 @@ public:
 ////////////////////////////////////////////////////////////////////////////////
 class SparseMatrix {
 protected:
-    static constexpr int cNItemsToUnpack = 4;
+    static constexpr int cNItemsToUnpack = 6;
     // Physical Item Container
     struct PIC {
         Item<Geometry> geom;
         Item<SparseMatrixLocalData> localData;
         Item<LogicalRegion> nonzerosInRow;
         Item<LogicalRegion> mtxIndG;
+        Item<LogicalRegion> mtxIndL;
+        Item<LogicalRegion> matrixValues;
     };
 public:
     PIC pic;
@@ -199,6 +207,8 @@ public:
     char *nonzerosInRow = nullptr;
     // Interpreted as 2D array (flattened from 1D index space)
     global_int_t *mtxIndG = nullptr;
+    // Interpreted as 2D array (flattened from 1D index space)
+    local_int_t *mtxIndL = nullptr;
 
     /**
      *
@@ -229,6 +239,10 @@ public:
         pic.nonzerosInRow = Item<LogicalRegion>(regions[curRID++], ctx, runtime);
         //
         pic.mtxIndG = Item<LogicalRegion>(regions[curRID++], ctx, runtime);
+        //
+        pic.mtxIndL = Item<LogicalRegion>(regions[curRID++], ctx, runtime);
+        //
+        pic.matrixValues = Item<LogicalRegion>(regions[curRID++], ctx, runtime);
     }
 
     /**

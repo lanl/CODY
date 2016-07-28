@@ -252,32 +252,13 @@ mainTask(
     //
     intent<WRITE_DISCARD, EXCLUSIVE>(
         launcher,
-        {A.geometries, A.localData, A.lrNonzerosInRow, A.lrMTXIndG}
+        {A.geometries, A.localData, A.lrNonzerosInRow,
+         A.lrMtxIndG, A.lrMtxIndL, A.lrMatrixValues}
     );
     //
     auto futureMap = runtime->execute_index_space(ctx, launcher);
     cout << "*** Waiting for Initialization Tasks" << endl;
     futureMap.wait_all_results();
-    //
-    auto a = A.lrNonzerosInRow.mapRegion(READ_ONLY, EXCLUSIVE, ctx, runtime);
-    Array<LogicalRegion> lra(a, ctx, runtime);
-    LogicalRegion *lrs = lra.data();
-    for (int i = 0; i < nShards; ++i) {
-		RegionRequirement req(
-            lrs[i], READ_ONLY, EXCLUSIVE, lrs[i]
-        );
-        req.add_field(0);
-        InlineLauncher inl(req);
-        PhysicalRegion reg = runtime->map_region(ctx, inl);
-        reg.wait_until_valid();
-        Array<uint8_t> ca(reg, ctx, runtime);
-        uint8_t *cp = ca.data();
-        for (int j = 0; j < 10; ++j) {
-            printf("<-- %d", cp[j]);
-        }
-        cout << endl;
-        runtime->unmap_region(ctx, reg);
-    }
     const double initEnd = mytimer();
     const double initTime = initEnd - initStart;
     cout << "*** Initialization Time (s): " << initTime << endl;
