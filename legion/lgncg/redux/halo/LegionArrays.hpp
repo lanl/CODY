@@ -157,6 +157,53 @@ public:
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 template<typename TYPE>
+struct ArrayAllocator {
+
+    struct Logical {
+        LogicalArray<TYPE> array;
+    };
+
+    struct Physical {
+        Array<TYPE> array;
+        PhysicalRegion region;
+    };
+
+    //
+    Logical logical;
+    //
+    Physical physical;
+
+    /**
+     *
+     */
+    ArrayAllocator(void) = default;
+
+    /**
+     *
+     */
+    ArrayAllocator(
+        uint64_t len,
+        LegionRuntime::HighLevel::PrivilegeMode privMode,
+        LegionRuntime::HighLevel::CoherenceProperty cohProp,
+        Context ctx,
+        HighLevelRuntime *runtime
+    ) {
+        logical.array.allocate(len, ctx, runtime);
+        physical.region = logical.array.mapRegion(
+                              privMode, cohProp, ctx, runtime
+                          );
+        physical.array = Array<TYPE>(physical.region, ctx, runtime);
+    }
+
+    TYPE *
+    data(void) { return physical.array.data(); }
+};
+
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+template<typename TYPE>
 class Array2D : public Array<TYPE> {
 protected:
     //

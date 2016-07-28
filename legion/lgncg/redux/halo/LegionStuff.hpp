@@ -37,7 +37,6 @@
 #include <vector>
 
 using namespace LegionRuntime::HighLevel;
-using namespace LegionRuntime::HighLevel;
 using namespace LegionRuntime::Accessor;
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -109,7 +108,7 @@ registerTasks(void) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-void
+inline void
 updateMappers(
     Machine machine,
     HighLevelRuntime *runtime,

@@ -72,7 +72,7 @@
 
     @see GenerateGeometry
 */
-void
+inline void
 GenerateProblem(
     SparseMatrix &A,
     void *b,
@@ -114,7 +114,7 @@ GenerateProblem(
     assert(totalNumberOfRows>0);
     // Allocate arrays that are of length localNumberOfRows
 #if 0
-    char *nonzerosInRow = new char[localNumberOfRows];
+    char * nonzerosInRow = new char[localNumberOfRows];
     global_int_t **mtxIndG  = new global_int_t*[localNumberOfRows];
     local_int_t  **mtxIndL  = new local_int_t*[localNumberOfRows];
     double **matrixValues   = new double*[localNumberOfRows];

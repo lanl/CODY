@@ -48,8 +48,4 @@ extern int HPCG_Finalize(void);
  */
 using floatType = double;
 
-////////////////////////////////////////////////////////////////////////////////
-std::ostream &
-operator<<(std::ostream &os, const HPCG_Params &params);
-
 #endif // HPCG_HPP

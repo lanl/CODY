@@ -31,7 +31,7 @@ OUTFILE		?= halo-exchange
 # List all the application source files here
 GEN_SRC		?= \
 main.cc init.cc mytimer.cc IOOps.cc \
-LegionStuff.cc CGMapper.cc \
+CGMapper.cc \
 ReadHpcgDat.cc CheckAspectRatio.cc \
 MixedBaseCounter.cc ComputeOptimalShapeXYZ.cc GenerateGeometry.cc
 

@@ -72,6 +72,7 @@ protected:
     LegionRuntime::HighLevel::FieldSpaceID mFieldSpaceID;
     //
     LegionRuntime::HighLevel::RegionTreeID mRTreeID;
+
     /**
      *
      */
@@ -104,6 +105,9 @@ protected:
         mRTreeID      = logicalRegion.get_tree_id();
     }
 public:
+
+    PhysicalRegion physicalRegion;
+
     /**
      *
      */
@@ -151,7 +155,7 @@ public:
         LegionRuntime::HighLevel::CoherenceProperty cohProp,
         LegionRuntime::HighLevel::Context &ctx,
         LegionRuntime::HighLevel::HighLevelRuntime *lrt
-    ) const {
+    ) {
         using namespace LegionRuntime::HighLevel;
         using namespace LegionRuntime::Accessor;
         using LegionRuntime::Arrays::Rect;
@@ -160,10 +164,10 @@ public:
         );
         req.add_field(fid);
         InlineLauncher inl(req);
-        PhysicalRegion reg = lrt->map_region(ctx, inl);
-        reg.wait_until_valid();
+        physicalRegion = lrt->map_region(ctx, inl);
+        physicalRegion.wait_until_valid();
         //
-        return reg;
+        return physicalRegion;
     }
 
     /**
@@ -171,11 +175,10 @@ public:
      */
     void
     unmapRegion(
-        LegionRuntime::HighLevel::PhysicalRegion &mappedRegion,
         LegionRuntime::HighLevel::Context &ctx,
         LegionRuntime::HighLevel::HighLevelRuntime *lrt
-    ) const {
-        lrt->unmap_region(ctx, mappedRegion);
+    ) {
+        lrt->unmap_region(ctx, physicalRegion);
     }
 };
 
@@ -191,6 +194,9 @@ protected:
     //
     TYPE *mData = nullptr;
 public:
+    //
+    LogicalRegion logicalRegion;
+
     /**
      *
      */
@@ -204,6 +210,9 @@ public:
         Context ctx,
         HighLevelRuntime *runtime
     ) {
+        // cache logical region
+        logicalRegion = physicalRegion.get_logical_region();
+        //
         using GRA = RegionAccessor<AccessorType::Generic, TYPE>;
         GRA tAcc = physicalRegion.get_field_accessor(0).template typeify<TYPE>();
         //

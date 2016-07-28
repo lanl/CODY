@@ -39,14 +39,13 @@ legion_home = os.getenv("LG_RT_DIR")
 # CHANGE THIS LIST OF FLAGS. YES, THIS IS THE DROID YOU HAVE BEEN LOOKING FOR.
 flags = [
 '-Wall',
-'-Wextra',
-'-DUSE_CLANG_COMPLETER',
 '-DHAVE_CONFIG_H',
 '-std=c++11',
 '-x',
 'c++',
 '-isystem/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/../lib/c++/v1',
-'-I.',
+'-I',
+'.',
 '-I' + legion_home,
 '-I' + legion_home + '/realm',
 '-I' + legion_home + '/legion',
@@ -107,7 +106,7 @@ def MakeRelativePathsInFlagsAbsolute( flags, working_directory ):
 
 def IsHeaderFile( filename ):
   extension = os.path.splitext( filename )[ 1 ]
-  return extension in [ '.h', '.hxx', '.hpp', '.hh', '.inl' ]
+  return extension in [ '.h', '.hxx', '.hpp', '.hh' ]
 
 
 def GetCompilationInfoForFile( filename ):
