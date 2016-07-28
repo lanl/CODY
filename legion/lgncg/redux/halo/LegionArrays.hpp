@@ -169,9 +169,9 @@ struct ArrayAllocator {
     };
 
     //
-    Logical logical;
+    Logical l;
     //
-    Physical physical;
+    Physical p;
 
     /**
      *
@@ -182,21 +182,28 @@ struct ArrayAllocator {
      *
      */
     ArrayAllocator(
-        uint64_t len,
+        uint64_t nItems,
         LegionRuntime::HighLevel::PrivilegeMode privMode,
         LegionRuntime::HighLevel::CoherenceProperty cohProp,
+        LogicalRegion *lrTargetp,
         Context ctx,
         HighLevelRuntime *runtime
     ) {
-        logical.array.allocate(len, ctx, runtime);
-        physical.region = logical.array.mapRegion(
-                              privMode, cohProp, ctx, runtime
-                          );
-        physical.array = Array<TYPE>(physical.region, ctx, runtime);
+        // Allocate logical array.
+        l.array.allocate(nItems, ctx, runtime);
+        // Inline map and stash physical region.
+        p.region = l.array.mapRegion(privMode, cohProp, ctx, runtime);
+        // Instantiate physical array type from physical region.
+        p.array = Array<TYPE>(p.region, ctx, runtime);
+        // If we are provided a target logical region to write back into, then
+        // do that.
+        if (lrTargetp) {
+            *lrTargetp = p.region.get_logical_region();
+        }
     }
 
     TYPE *
-    data(void) { return physical.array.data(); }
+    data(void) { return p.array.data(); }
 };
 
 ////////////////////////////////////////////////////////////////////////////////

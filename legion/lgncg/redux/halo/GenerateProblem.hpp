@@ -113,6 +113,7 @@ GenerateProblem(
     // to int and should be set to long long
     assert(totalNumberOfRows>0);
     // Allocate arrays that are of length localNumberOfRows
+#if 0
     LogicalArray<char> lca;
     lca.allocate(10, ctx, runtime);
     PhysicalRegion pr = lca.mapRegion(WRITE_DISCARD, EXCLUSIVE, ctx, runtime);
@@ -121,10 +122,20 @@ GenerateProblem(
     assert(data);
     LogicalRegion *lrp = A.pic.nonzerosInRow.data();
     assert(lrp);
+#endif
+    cout << "new" << endl;
+    ArrayAllocator<char> caa(
+        10,
+        WRITE_DISCARD,
+        EXCLUSIVE,
+        A.pic.nonzerosInRow.data(),
+        ctx,
+        runtime
+    );
+    char *data = caa.data();
     for (int i = 0; i < 10; ++i) {
-        data[i] = A.geom->rank;
+        data[i] = A.geom->rank + 1;
     }
-    *lrp = pr.get_logical_region();
 #if 0
     char * nonzerosInRow = new char[localNumberOfRows];
     global_int_t **mtxIndG  = new global_int_t*[localNumberOfRows];
