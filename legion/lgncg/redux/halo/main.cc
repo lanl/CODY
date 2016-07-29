@@ -253,7 +253,7 @@ mainTask(
     intent<WRITE_DISCARD, EXCLUSIVE>(
         launcher,
         {A.geometries, A.localData, A.lrNonzerosInRow,
-         A.lrMtxIndG, A.lrMtxIndL, A.lrMatrixValues}
+         A.lrMtxIndG, A.lrMtxIndL, A.lrMatrixValues, A.lrMatrixDiagonal}
     );
     //
     auto futureMap = runtime->execute_index_space(ctx, launcher);

@@ -88,8 +88,8 @@ public:
     LogicalArray<LogicalRegion> lrMtxIndL;
     //Logical regions that point to values of matrix entries
     LogicalArray<LogicalRegion> lrMatrixValues;
-    //values of matrix diagonal entries
-    floatType **matrixDiagonal;
+    //Logical regions that point to values of matrix diagonal entries
+    LogicalArray<LogicalRegion> lrMatrixDiagonal;
     //global-to-local mapping
     std::map<global_int_t, local_int_t> globalToLocalMap;
     //local-to-global mapping
@@ -143,6 +143,7 @@ public:
               lrMtxIndG.allocate(size, ctx, lrt);
               lrMtxIndL.allocate(size, ctx, lrt);
          lrMatrixValues.allocate(size, ctx, lrt);
+       lrMatrixDiagonal.allocate(size, ctx, lrt);
     }
 
     /**
@@ -160,6 +161,7 @@ public:
               lrMtxIndG.partition(nParts, ctx, lrt);
               lrMtxIndL.partition(nParts, ctx, lrt);
          lrMatrixValues.partition(nParts, ctx, lrt);
+       lrMatrixDiagonal.partition(nParts, ctx, lrt);
         // just pick a structure that has a representative launch domain.
         launchDomain = geometries.launchDomain;
     }
@@ -178,6 +180,7 @@ public:
               lrMtxIndG.deallocate(ctx, lrt);
               lrMtxIndL.deallocate(ctx, lrt);
          lrMatrixValues.deallocate(ctx, lrt);
+       lrMatrixDiagonal.deallocate(ctx, lrt);
     }
 };
 
@@ -196,6 +199,7 @@ protected:
         Item<LogicalRegion> mtxIndG;
         Item<LogicalRegion> mtxIndL;
         Item<LogicalRegion> matrixValues;
+        Item<LogicalRegion> matrixDiagonal;
     };
 public:
     PIC pic;
@@ -236,13 +240,19 @@ public:
         localData = pic.localData.data();
         assert(localData);
         //
-        pic.nonzerosInRow = Item<LogicalRegion>(regions[curRID++], ctx, runtime);
+        pic.nonzerosInRow = Item<LogicalRegion>(
+            regions[curRID++], ctx, runtime
+        );
         //
         pic.mtxIndG = Item<LogicalRegion>(regions[curRID++], ctx, runtime);
         //
         pic.mtxIndL = Item<LogicalRegion>(regions[curRID++], ctx, runtime);
         //
         pic.matrixValues = Item<LogicalRegion>(regions[curRID++], ctx, runtime);
+        //
+        pic.matrixDiagonal = Item<LogicalRegion>(
+            regions[curRID++], ctx, runtime
+        );
     }
 
     /**

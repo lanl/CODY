@@ -122,9 +122,11 @@ GenerateProblem(
           + sizeof(global_int_t) * mn
           + sizeof(local_int_t) * mn
           + sizeof(floatType) * mn
+          + sizeof(floatType) * localNumberOfRows
         ) * A.geom->size;
         const double pMemInMB = double(pMemInB)/1024/1024;
-        cout << "*** Approx. Generate Problem Memory (MB)=" << pMemInMB << endl;
+        cout << "*** Approx. Generate Problem Memory Footprint="
+             << pMemInMB << "MB" << endl;
     }
     ArrayAllocator<char> aaNonzerosInRow (
         localNumberOfRows,
@@ -169,9 +171,18 @@ GenerateProblem(
     aaMatrixValues.bindToLogicalRegion(*(A.pic.matrixValues.data()));
     floatType *matrixValues = aaMatrixValues.data();
     assert(matrixValues);
-
+    // Interpreted as 2D array (Nx1)
+    ArrayAllocator<floatType> aaMatrixDiagonal(
+        localNumberOfRows,
+        WRITE_ONLY,
+        EXCLUSIVE,
+        ctx,
+        runtime
+    );
+    aaMatrixDiagonal.bindToLogicalRegion(*(A.pic.matrixDiagonal.data()));
+    floatType *matrixDiagonal = aaMatrixDiagonal.data();
+    assert(matrixDiagonal);
 #if 0
-    double **matrixDiagonal = new double*[localNumberOfRows];
     //
     if (b!=0)      InitializeVector(*b,      localNumberOfRows);
     if (x!=0)      InitializeVector(*x,      localNumberOfRows);
