@@ -102,6 +102,9 @@ genProblemTask(
     //
     SparseMatrix A(regions, rid, ctx, runtime);
     rid += SparseMatrix::nRegionEntries();
+    Array<floatType> b(regions[rid++], ctx, runtime);
+    Array<floatType> x(regions[rid++], ctx, runtime);
+    Array<floatType> xexact(regions[rid++], ctx, runtime);
     //
     Geometry *geom = A.geom;
     GenerateGeometry(size, rank, params.numThreads, nx, ny, nz, geom);
@@ -114,7 +117,7 @@ genProblemTask(
     //
     double setup_time = mytimer();
     //
-    GenerateProblem(A, 0, 0, 0, ctx, runtime);
+    GenerateProblem(A, &b, &x, &xexact, ctx, runtime);
 }
 
 /**
@@ -229,12 +232,12 @@ mainTask(
     cout << "*** Starting Initialization..." << endl;;
     // Application structures.
     LogicalSparseMatrix A;
-    LogicalArray<floatType> x, y, xexact;
+    LogicalArray<floatType> b, x, xexact;
     //
     createLogicalStructures(
         A,
+        b,
         x,
-        y,
         xexact,
         initGeom,
         ctx,
@@ -253,7 +256,8 @@ mainTask(
     intent<WRITE_DISCARD, EXCLUSIVE>(
         launcher,
         {A.geometries, A.localData, A.lrNonzerosInRow,
-         A.lrMtxIndG, A.lrMtxIndL, A.lrMatrixValues, A.lrMatrixDiagonal}
+         A.lrMtxIndG, A.lrMtxIndL, A.lrMatrixValues,
+         A.lrMatrixDiagonal, b, x, xexact}
     );
     //
     auto futureMap = runtime->execute_index_space(ctx, launcher);
@@ -266,8 +270,8 @@ mainTask(
     cout << "*** Cleaning Up..." << endl;
     destroyLogicalStructures(
         A,
+        b,
         x,
-        y,
         xexact,
         ctx,
         runtime

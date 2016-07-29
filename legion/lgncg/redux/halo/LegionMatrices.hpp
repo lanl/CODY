@@ -190,7 +190,7 @@ public:
 ////////////////////////////////////////////////////////////////////////////////
 class SparseMatrix {
 protected:
-    static constexpr int cNItemsToUnpack = 6;
+    static constexpr int cNItemsToUnpack = 7;
     // Physical Item Container
     struct PIC {
         Item<Geometry> geom;
@@ -223,7 +223,7 @@ public:
      *
      */
     SparseMatrix(
-        const std::vector<PhysicalRegion> &regions,
+        const std::vector<LegionRuntime::HighLevel::PhysicalRegion> &regions,
         size_t baseRegionID,
         LegionRuntime::HighLevel::Context ctx,
         LegionRuntime::HighLevel::Runtime *runtime

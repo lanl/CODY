@@ -75,9 +75,9 @@
 inline void
 GenerateProblem(
     SparseMatrix &A,
-    void *b,
-    void *x,
-    void *xexact,
+    Array<floatType> *b,
+    Array<floatType> *x,
+    Array<floatType> *xexact,
     LegionRuntime::HighLevel::Context ctx,
     LegionRuntime::HighLevel::Runtime *runtime
 ) {
@@ -182,15 +182,12 @@ GenerateProblem(
     aaMatrixDiagonal.bindToLogicalRegion(*(A.pic.matrixDiagonal.data()));
     floatType *matrixDiagonal = aaMatrixDiagonal.data();
     assert(matrixDiagonal);
+    //
+    //
+    floatType *bv = 0;
+    floatType *xv = 0;
+    floatType *xexactv = 0;
 #if 0
-    //
-    if (b!=0)      InitializeVector(*b,      localNumberOfRows);
-    if (x!=0)      InitializeVector(*x,      localNumberOfRows);
-    if (xexact!=0) InitializeVector(*xexact, localNumberOfRows);
-    //
-    double *bv = 0;
-    double *xv = 0;
-    double *xexactv = 0;
     if (b!=0) bv = b->values; // Only compute exact solution if requested
     if (x!=0) xv = x->values; // Only compute exact solution if requested
     // Only compute exact solution if requested
