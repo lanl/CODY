@@ -118,11 +118,11 @@ GenerateProblem(
     if (A.geom->rank == 0) {
         const size_t mn = localNumberOfRows * numberOfNonzerosPerRow;
         const size_t pMemInB = (
-            sizeof(char) * localNumberOfRows
+            sizeof(char)         * localNumberOfRows
           + sizeof(global_int_t) * mn
-          + sizeof(local_int_t) * mn
-          + sizeof(floatType) * mn
-          + sizeof(floatType) * localNumberOfRows
+          + sizeof(local_int_t)  * mn
+          + sizeof(floatType)    * mn
+          + sizeof(floatType)    * localNumberOfRows
         ) * A.geom->size;
         const double pMemInMB = double(pMemInB)/1024/1024;
         cout << "*** Approx. Generate Problem Memory Footprint="
@@ -135,7 +135,6 @@ GenerateProblem(
         ctx,
         runtime
     );
-    aaNonzerosInRow.bindToLogicalRegion(*(A.pic.nonzerosInRow.data()));
     char *nonzerosInRow = aaNonzerosInRow.data();
     assert(nonzerosInRow);
     // Interpreted as 2D array
@@ -146,7 +145,6 @@ GenerateProblem(
         ctx,
         runtime
     );
-    aaMtxIndG.bindToLogicalRegion(*(A.pic.mtxIndG.data()));
     global_int_t *mtxIndG = aaMtxIndG.data();
     assert(mtxIndG);
     // Interpreted as 2D array
@@ -157,7 +155,6 @@ GenerateProblem(
         ctx,
         runtime
     );
-    aaMtxIndL.bindToLogicalRegion(*(A.pic.mtxIndL.data()));
     local_int_t *mtxIndL = aaMtxIndL.data();
     assert(mtxIndL);
     // Interpreted as 2D array
@@ -168,7 +165,6 @@ GenerateProblem(
         ctx,
         runtime
     );
-    aaMatrixValues.bindToLogicalRegion(*(A.pic.matrixValues.data()));
     floatType *matrixValues = aaMatrixValues.data();
     assert(matrixValues);
     // Interpreted as 2D array (Nx1)
@@ -179,35 +175,24 @@ GenerateProblem(
         ctx,
         runtime
     );
-    aaMatrixDiagonal.bindToLogicalRegion(*(A.pic.matrixDiagonal.data()));
     floatType *matrixDiagonal = aaMatrixDiagonal.data();
     assert(matrixDiagonal);
     //
     //
-    floatType *bv = 0;
-    floatType *xv = 0;
+    floatType *bv      = 0;
+    floatType *xv      = 0;
     floatType *xexactv = 0;
-#if 0
-    if (b!=0) bv = b->values; // Only compute exact solution if requested
-    if (x!=0) xv = x->values; // Only compute exact solution if requested
+    if (b != 0) bv = b->data(); // Only compute exact solution if requested
+    if (x != 0) xv = x->data(); // Only compute exact solution if requested
     // Only compute exact solution if requested
-    if (xexact!=0) xexactv = xexact->values;
-    A.localToGlobalMap.resize(localNumberOfRows);
-
-    for (local_int_t i=0; i< localNumberOfRows; ++i) {
-        matrixValues[i] = 0;
-        matrixDiagonal[i] = 0;
-        mtxIndG[i] = 0;
-        mtxIndL[i] = 0;
-    }
-    // Now allocate the arrays pointed to
-    for (local_int_t i=0; i< localNumberOfRows; ++i) {
-        mtxIndL[i] = new local_int_t[numberOfNonzerosPerRow];
-        matrixValues[i] = new double[numberOfNonzerosPerRow];
-        mtxIndG[i] = new global_int_t[numberOfNonzerosPerRow];
-    }
+    if (xexact != 0) xexactv = xexact->data();
+    //local-to-global mapping TODO write back into LR
+    std::vector<global_int_t> localToGlobalMap;
+    localToGlobalMap.resize(localNumberOfRows);
     //
     local_int_t localNumberOfNonzeros = 0;
+#if 0
+    //
     for (local_int_t iz=0; iz<nz; iz++) {
         global_int_t giz = ipz*nz+iz;
         for (local_int_t iy=0; iy<ny; iy++) {
@@ -299,4 +284,15 @@ GenerateProblem(
 
     return;
 #endif
+    A.localData->totalNumberOfRows = totalNumberOfRows;
+    //A.localData->totalNumberOfNonzeros = totalNumberOfNonzeros;
+    A.localData->localNumberOfRows = localNumberOfRows;
+    //A.localData->localNumberOfColumns = localNumberOfColumns;
+    A.localData->localNumberOfNonzeros = localNumberOfNonzeros;
+    //
+    aaNonzerosInRow.bindToLogicalRegion(*(A.pic.nonzerosInRow.data()));
+    aaMtxIndG.bindToLogicalRegion(*(A.pic.mtxIndG.data()));
+    aaMtxIndL.bindToLogicalRegion(*(A.pic.mtxIndL.data()));
+    aaMatrixValues.bindToLogicalRegion(*(A.pic.matrixValues.data()));
+    aaMatrixDiagonal.bindToLogicalRegion(*(A.pic.matrixDiagonal.data()));
 }
