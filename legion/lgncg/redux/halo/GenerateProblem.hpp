@@ -252,13 +252,7 @@ GenerateProblem(
             } // end ix loop
         } // end iy loop
     } // end iz loop
-#ifdef HPCG_DETAILED_DEBUG
-    HPCG_fout     << "Process " << A.geom->rank << " of " << A.geom->size <<"
-        has " << localNumberOfRows    << " rows."     << endl << "Process " <<
-        A.geom->rank << " of " << A.geom->size <<" has " <<
-        localNumberOfNonzeros<< " nonzeros." <<endl;
-#endif
-
+    //
     global_int_t totalNumberOfNonzeros = 0;
 #ifndef HPCG_NO_MPI
     // SKG TODO calculate totalNumberOfNonzeros
@@ -278,9 +272,9 @@ GenerateProblem(
     assert(totalNumberOfNonzeros>0);
     //
     A.localData->totalNumberOfRows = totalNumberOfRows;
-    //A.localData->totalNumberOfNonzeros = totalNumberOfNonzeros;
+    A.localData->totalNumberOfNonzeros = totalNumberOfNonzeros;
     A.localData->localNumberOfRows = localNumberOfRows;
-    //A.localData->localNumberOfColumns = localNumberOfColumns;
+    A.localData->localNumberOfColumns = localNumberOfRows;
     A.localData->localNumberOfNonzeros = localNumberOfNonzeros;
     //
      aaNonzerosInRow.bindToLogicalRegion(*(A.pic.nonzerosInRow.data()));
