@@ -128,6 +128,7 @@ GenerateProblem(
         cout << "*** Approx. Generate Problem Memory Footprint="
              << pMemInMB << "MB" << endl;
     }
+    //
     ArrayAllocator<char> aaNonzerosInRow (
         localNumberOfRows,
         WRITE_ONLY,
@@ -157,7 +158,6 @@ GenerateProblem(
     );
     local_int_t *mtxIndL = aaMtxIndL.data();
     assert(mtxIndL);
-    // Interpreted as 2D array
     ArrayAllocator<floatType> aaMatrixValues(
         localNumberOfRows * numberOfNonzerosPerRow,
         WRITE_ONLY,
@@ -165,9 +165,18 @@ GenerateProblem(
         ctx,
         runtime
     );
-    floatType *matrixValues = aaMatrixValues.data();
-    assert(matrixValues);
-    // Interpreted as 2D array (Nx1)
+    floatType *matrixValues1D = aaMatrixValues.data();
+    assert(matrixValues1D);
+    // Interpreted as 2D array
+    Array2D<floatType> matrixValues(
+        localNumberOfRows, numberOfNonzerosPerRow, matrixValues1D
+    );
+    // TODO RM
+    global_int_t **mtxIndGLA  = new global_int_t*[localNumberOfRows];
+    for (local_int_t i=0; i< localNumberOfRows; ++i) {
+        mtxIndGLA[i] = new global_int_t[numberOfNonzerosPerRow];
+    }
+    // Interpreted as 1D array
     ArrayAllocator<floatType> aaMatrixDiagonal(
         localNumberOfRows,
         WRITE_ONLY,
@@ -178,7 +187,6 @@ GenerateProblem(
     floatType *matrixDiagonal = aaMatrixDiagonal.data();
     assert(matrixDiagonal);
     //
-    //
     floatType *bv      = 0;
     floatType *xv      = 0;
     floatType *xexactv = 0;
@@ -188,11 +196,12 @@ GenerateProblem(
     if (xexact != 0) xexactv = xexact->data();
     //local-to-global mapping TODO write back into LR
     std::vector<global_int_t> localToGlobalMap;
+    //!< global-to-local mapping
+    std::map< global_int_t, local_int_t > globalToLocalMap;
     localToGlobalMap.resize(localNumberOfRows);
     //
     local_int_t localNumberOfNonzeros = 0;
-#if 0
-    //
+
     for (local_int_t iz=0; iz<nz; iz++) {
         global_int_t giz = ipz*nz+iz;
         for (local_int_t iy=0; iy<ny; iy++) {
@@ -201,28 +210,26 @@ GenerateProblem(
                 global_int_t gix = ipx*nx+ix;
                 local_int_t currentLocalRow = iz*nx*ny+iy*nx+ix;
                 global_int_t currentGlobalRow = giz*gnx*gny+giy*gnx+gix;
-                A.globalToLocalMap[currentGlobalRow] = currentLocalRow;
-                A.localToGlobalMap[currentLocalRow] = currentGlobalRow;
+                globalToLocalMap[currentGlobalRow] = currentLocalRow;
+                localToGlobalMap[currentLocalRow] = currentGlobalRow;
                 char numberOfNonzerosInRow = 0;
-                // Pointer to current value in current row
-                double *currentValuePointer = matrixValues[currentLocalRow];
                 // Pointer to current index in current row
-                global_int_t * currentIndexPointerG = mtxIndG[currentLocalRow];
+                global_int_t *currentIndexPointerG = mtxIndGLA[currentLocalRow];
+                local_int_t currentNonZeroElemIndex = 0;
                 for (int sz=-1; sz<=1; sz++) {
                     if (giz+sz>-1 && giz+sz<gnz) {
                         for (int sy=-1; sy<=1; sy++) {
                             if (giy+sy>-1 && giy+sy<gny) {
                                 for (int sx=-1; sx<=1; sx++) {
                                     if (gix+sx>-1 && gix+sx<gnx) {
-                                        global_int_t curcol =
-                                            currentGlobalRow+sz*gnx*gny+sy*gnx+sx;
+                                        global_int_t curcol = currentGlobalRow+sz*gnx*gny+sy*gnx+sx;
                                         if (curcol==currentGlobalRow) {
-                                            matrixDiagonal[currentLocalRow] =
-                                                currentValuePointer;
-                                            *currentValuePointer++ = 26.0;
+                                            matrixDiagonal[currentLocalRow] = 26.0;
+                                            matrixValues(currentLocalRow, currentNonZeroElemIndex) = 26.0;
                                         } else {
-                                            *currentValuePointer++ = -1.0;
+                                            matrixValues(currentLocalRow, currentNonZeroElemIndex) = -1.0;
                                         }
+                                        currentNonZeroElemIndex++;
                                         *currentIndexPointerG++ = curcol;
                                         numberOfNonzerosInRow++;
                                     } // end x bounds test
@@ -269,30 +276,28 @@ GenerateProblem(
     // exception of the number of nonzeros is less than zero (can happen if int
     // overflow)
     assert(totalNumberOfNonzeros>0);
-
-    A.title = 0;
-    A.totalNumberOfRows = totalNumberOfRows;
-    A.totalNumberOfNonzeros = totalNumberOfNonzeros;
-    A.localNumberOfRows = localNumberOfRows;
-    A.localNumberOfColumns = localNumberOfRows;
-    A.localNumberOfNonzeros = localNumberOfNonzeros;
-    A.nonzerosInRow = nonzerosInRow;
-    A.mtxIndG = mtxIndG;
-    A.mtxIndL = mtxIndL;
-    A.matrixValues = matrixValues;
-    A.matrixDiagonal = matrixDiagonal;
-
-    return;
-#endif
+    //
     A.localData->totalNumberOfRows = totalNumberOfRows;
     //A.localData->totalNumberOfNonzeros = totalNumberOfNonzeros;
     A.localData->localNumberOfRows = localNumberOfRows;
     //A.localData->localNumberOfColumns = localNumberOfColumns;
     A.localData->localNumberOfNonzeros = localNumberOfNonzeros;
     //
-    aaNonzerosInRow.bindToLogicalRegion(*(A.pic.nonzerosInRow.data()));
-    aaMtxIndG.bindToLogicalRegion(*(A.pic.mtxIndG.data()));
-    aaMtxIndL.bindToLogicalRegion(*(A.pic.mtxIndL.data()));
-    aaMatrixValues.bindToLogicalRegion(*(A.pic.matrixValues.data()));
+     aaNonzerosInRow.bindToLogicalRegion(*(A.pic.nonzerosInRow.data()));
+           aaMtxIndG.bindToLogicalRegion(*(A.pic.mtxIndG.data()));
+           aaMtxIndL.bindToLogicalRegion(*(A.pic.mtxIndL.data()));
+      aaMatrixValues.bindToLogicalRegion(*(A.pic.matrixValues.data()));
     aaMatrixDiagonal.bindToLogicalRegion(*(A.pic.matrixDiagonal.data()));
+
+    char fname[128];
+    memset(fname, '\0', sizeof(fname));
+    sprintf(fname, "%s-%d.txt", "new-mat-values", A.geom->rank);
+    FILE *f = fopen(fname, "wr+");
+    assert(f);
+    for (int r = 0; r < localNumberOfRows; ++r) {
+        for (int c = 0; c < numberOfNonzerosPerRow; ++c) {
+            fprintf(f, "[%d,%d]=%lf\n", r, c, matrixValues(r, c));
+        }
+    }
+    fclose(f);
 }
