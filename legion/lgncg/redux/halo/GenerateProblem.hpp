@@ -146,8 +146,12 @@ GenerateProblem(
         ctx,
         runtime
     );
-    global_int_t *mtxIndG = aaMtxIndG.data();
-    assert(mtxIndG);
+    global_int_t *mtxIndG1D = aaMtxIndG.data();
+    assert(mtxIndG1D);
+    // Interpreted as 2D array
+    Array2D<global_int_t> mtxIndG(
+        localNumberOfRows, numberOfNonzerosPerRow, mtxIndG1D
+    );
     // Interpreted as 2D array
     ArrayAllocator<local_int_t> aaMtxIndL(
         localNumberOfRows * numberOfNonzerosPerRow,
@@ -171,11 +175,6 @@ GenerateProblem(
     Array2D<floatType> matrixValues(
         localNumberOfRows, numberOfNonzerosPerRow, matrixValues1D
     );
-    // TODO RM
-    global_int_t **mtxIndGLA  = new global_int_t*[localNumberOfRows];
-    for (local_int_t i=0; i< localNumberOfRows; ++i) {
-        mtxIndGLA[i] = new global_int_t[numberOfNonzerosPerRow];
-    }
     // Interpreted as 1D array
     ArrayAllocator<floatType> aaMatrixDiagonal(
         localNumberOfRows,
@@ -201,7 +200,7 @@ GenerateProblem(
     localToGlobalMap.resize(localNumberOfRows);
     //
     local_int_t localNumberOfNonzeros = 0;
-
+    //
     for (local_int_t iz=0; iz<nz; iz++) {
         global_int_t giz = ipz*nz+iz;
         for (local_int_t iy=0; iy<ny; iy++) {
@@ -213,8 +212,8 @@ GenerateProblem(
                 globalToLocalMap[currentGlobalRow] = currentLocalRow;
                 localToGlobalMap[currentLocalRow] = currentGlobalRow;
                 char numberOfNonzerosInRow = 0;
-                // Pointer to current index in current row
-                global_int_t *currentIndexPointerG = mtxIndGLA[currentLocalRow];
+                // Current index in current row
+                global_int_t currentIndexG = 0;
                 local_int_t currentNonZeroElemIndex = 0;
                 for (int sz=-1; sz<=1; sz++) {
                     if (giz+sz>-1 && giz+sz<gnz) {
@@ -224,13 +223,13 @@ GenerateProblem(
                                     if (gix+sx>-1 && gix+sx<gnx) {
                                         global_int_t curcol = currentGlobalRow+sz*gnx*gny+sy*gnx+sx;
                                         if (curcol==currentGlobalRow) {
-                                            matrixDiagonal[currentLocalRow] = 26.0;
+                                            matrixDiagonal[currentLocalRow]                        = 26.0;
                                             matrixValues(currentLocalRow, currentNonZeroElemIndex) = 26.0;
                                         } else {
                                             matrixValues(currentLocalRow, currentNonZeroElemIndex) = -1.0;
                                         }
                                         currentNonZeroElemIndex++;
-                                        *currentIndexPointerG++ = curcol;
+                                        mtxIndG(currentLocalRow, currentIndexG++) = curcol;
                                         numberOfNonzerosInRow++;
                                     } // end x bounds test
                                 } // end sx loop
@@ -288,16 +287,4 @@ GenerateProblem(
            aaMtxIndL.bindToLogicalRegion(*(A.pic.mtxIndL.data()));
       aaMatrixValues.bindToLogicalRegion(*(A.pic.matrixValues.data()));
     aaMatrixDiagonal.bindToLogicalRegion(*(A.pic.matrixDiagonal.data()));
-
-    char fname[128];
-    memset(fname, '\0', sizeof(fname));
-    sprintf(fname, "%s-%d.txt", "new-mat-values", A.geom->rank);
-    FILE *f = fopen(fname, "wr+");
-    assert(f);
-    for (int r = 0; r < localNumberOfRows; ++r) {
-        for (int c = 0; c < numberOfNonzerosPerRow; ++c) {
-            fprintf(f, "[%d,%d]=%lf\n", r, c, matrixValues(r, c));
-        }
-    }
-    fclose(f);
 }
