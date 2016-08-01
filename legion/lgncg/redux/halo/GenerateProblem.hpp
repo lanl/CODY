@@ -195,7 +195,7 @@ GenerateProblem(
     if (xexact != 0) xexactv = xexact->data();
     //local-to-global mapping TODO write back into LR
     std::vector<global_int_t> localToGlobalMap;
-    //!< global-to-local mapping
+    //!< global-to-local mapping TODO write back into LR
     std::map< global_int_t, local_int_t > globalToLocalMap;
     localToGlobalMap.resize(localNumberOfRows);
     //
@@ -240,8 +240,7 @@ GenerateProblem(
                 nonzerosInRow[currentLocalRow] = numberOfNonzerosInRow;
                 localNumberOfNonzeros += numberOfNonzerosInRow;
                 if (b!=0) {
-                    bv[currentLocalRow] =
-                        26.0 - ((double)(numberOfNonzerosInRow-1));
+                    bv[currentLocalRow] = 26.0 - ((double)(numberOfNonzerosInRow-1));
                 }
                 if (x!=0) {
                     xv[currentLocalRow] = 0.0;
