@@ -261,6 +261,7 @@ GenerateProblem(
 
     global_int_t totalNumberOfNonzeros = 0;
 #ifndef HPCG_NO_MPI
+    // SKG TODO calculate totalNumberOfNonzeros
     // Use MPI's reduce function to sum all nonzeros
     // convert to 64 bit for MPI call
     long long lnnz = localNumberOfNonzeros, gnnz = 0;
