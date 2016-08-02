@@ -78,14 +78,13 @@ using std::endl;
     @see ExchangeHalo
 */
 inline void
-SetupHalo_ref(SparseMatrix & A) {
+SetupHalo(SparseMatrix & A) {
 
     // Extract Matrix pieces
-
     local_int_t localNumberOfRows = A.localNumberOfRows;
     char  *nonzerosInRow = A.nonzerosInRow;
-    global_int_t ** mtxIndG = A.mtxIndG;
-    local_int_t ** mtxIndL = A.mtxIndL;
+    global_int_t **mtxIndG = A.mtxIndG;
+    local_int_t **mtxIndL = A.mtxIndL;
 
     // Scan global IDs of the nonzeros in the matrix.  Determine if the column ID matches a row ID.  If not:
     // 1) We call the ComputeRankOfMatrixRow function, which tells us the rank of the processor owning the row ID.
@@ -97,7 +96,7 @@ SetupHalo_ref(SparseMatrix & A) {
     typedef std::set<global_int_t>::iterator set_iter;
     std::map< local_int_t, local_int_t > externalToLocalMap;
 
-  for (local_int_t i=0; i< localNumberOfRows; i++) {
+  for (local_int_t i = 0; i< localNumberOfRows; i++) {
       global_int_t currentGlobalRow = A.localToGlobalMap[i];
       for (int j=0; j<nonzerosInRow[i]; j++) {
           global_int_t curIndex = mtxIndG[i][j];
