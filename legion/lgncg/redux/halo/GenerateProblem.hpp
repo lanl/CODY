@@ -338,4 +338,5 @@ GenerateProblem(
         aaMatrixValues.bindToLogicalRegion(*(A.pic.matrixValues.data()));
       aaMatrixDiagonal.bindToLogicalRegion(*(A.pic.matrixDiagonal.data()));
     aaLocalToGlobalMap.bindToLogicalRegion(*(A.pic.localToGlobalMap.data()));
+    aaGlobalToLocalMap.bindToLogicalRegion(*(A.pic.globalToLocalMap.data()));
 }

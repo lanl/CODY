@@ -85,26 +85,20 @@ public:
     LogicalArray<LogicalRegion> lrNonzerosInRow;
     // Logical regions that point to regions of matrix indices as global values
     LogicalArray<LogicalRegion> lrMtxIndG;
-    //Logical regions that point to matrix indices as local values
+    // Logical regions that point to matrix indices as local values
     LogicalArray<LogicalRegion> lrMtxIndL;
-    //Logical regions that point to values of matrix entries
+    // Logical regions that point to values of matrix entries
     LogicalArray<LogicalRegion> lrMatrixValues;
-    //Logical regions that point to values of matrix diagonal entries
+    // Logical regions that point to values of matrix diagonal entries
     LogicalArray<LogicalRegion> lrMatrixDiagonal;
-    //Logical regions that point to local-to-global mapping arrays
+    // Logical regions that point to local-to-global mapping arrays
     LogicalArray<LogicalRegion> lrLocalToGlobalMap;
-    //global-to-local mapping
-    std::map<global_int_t, local_int_t> globalToLocalMap;
-    /*!
-      This is for storing optimized data structres created in OptimizeProblem and
-      used inside optimized ComputeSPMV().
-      */
+    // Logical regions that point to serialized global-to-local mapping data
+    LogicalArray<LogicalRegion> lrGlobalToLocalMap;
     // Coarse grid matrix
     mutable struct SparseMatrix_STRUCT *Ac;
     // Pointer to the coarse level data for this fine matrix
     mutable MGData *mgData;
-    // pointer that can be used to store implementation-specific data
-    void *optimizationData;
     //number of entries that are external to this process
     local_int_t numberOfExternalValues;
     //number of neighboring processes that will be send local data
@@ -146,6 +140,7 @@ public:
             lrMatrixValues.allocate(size, ctx, lrt);
           lrMatrixDiagonal.allocate(size, ctx, lrt);
         lrLocalToGlobalMap.allocate(size, ctx, lrt);
+        lrGlobalToLocalMap.allocate(size, ctx, lrt);
     }
 
     /**
@@ -165,6 +160,7 @@ public:
             lrMatrixValues.partition(nParts, ctx, lrt);
           lrMatrixDiagonal.partition(nParts, ctx, lrt);
         lrLocalToGlobalMap.partition(nParts, ctx, lrt);
+        lrGlobalToLocalMap.partition(nParts, ctx, lrt);
         // just pick a structure that has a representative launch domain.
         launchDomain = geometries.launchDomain;
     }
@@ -185,6 +181,7 @@ public:
             lrMatrixValues.deallocate(ctx, lrt);
           lrMatrixDiagonal.deallocate(ctx, lrt);
         lrLocalToGlobalMap.deallocate(ctx, lrt);
+        lrGlobalToLocalMap.deallocate(ctx, lrt);
     }
 };
 
@@ -194,7 +191,7 @@ public:
 ////////////////////////////////////////////////////////////////////////////////
 class SparseMatrix {
 protected:
-    static constexpr int cNItemsToUnpack = 8;
+    static constexpr int cNItemsToUnpack = 9;
     // Physical Item Container
     struct PIC {
         Item<Geometry> geom;
@@ -205,6 +202,7 @@ protected:
         Item<LogicalRegion> matrixValues;
         Item<LogicalRegion> matrixDiagonal;
         Item<LogicalRegion> localToGlobalMap;
+        Item<LogicalRegion> globalToLocalMap;
     };
 public:
     PIC pic;
@@ -254,6 +252,10 @@ public:
         );
         //
         pic.localToGlobalMap = Item<LogicalRegion>(
+            regions[curRID++], ctx, runtime
+        );
+        //
+        pic.globalToLocalMap = Item<LogicalRegion>(
             regions[curRID++], ctx, runtime
         );
     }

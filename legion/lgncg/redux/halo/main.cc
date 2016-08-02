@@ -258,7 +258,7 @@ mainTask(
         {A.geometries, A.localData, A.lrNonzerosInRow,
          A.lrMtxIndG, A.lrMtxIndL, A.lrMatrixValues,
          A.lrMatrixDiagonal, A.lrLocalToGlobalMap,
-         b, x, xexact}
+         A.lrGlobalToLocalMap, b, x, xexact}
     );
     //
     auto futureMap = runtime->execute_index_space(ctx, launcher);
