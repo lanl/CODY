@@ -49,18 +49,18 @@
 #pragma once
 
 #include "hpcg.hpp"
+
 #include "LegionItems.hpp"
 #include "LegionArrays.hpp"
 #include "LegionMatrices.hpp"
+
 // For STL serialization into regions.
 #include "cereal/archives/binary.hpp"
-#include "cereal/types/vector.hpp"
+#include "cereal/types/map.hpp"
 
+#include <map>
 #include <sstream>
 #include <cassert>
-
-// TODO RM
-#define HPCG_NO_MPI
 
 /*!
     Reference version of GenerateProblem to generate the sparse matrix, right
@@ -210,9 +210,9 @@ GenerateProblem(
     global_int_t *localToGlobalMap = aaLocalToGlobalMap.data();
     assert(localToGlobalMap);
     //
-    floatType *bv      = 0;
-    floatType *xv      = 0;
-    floatType *xexactv = 0;
+    floatType *bv      = nullptr;
+    floatType *xv      = nullptr;
+    floatType *xexactv = nullptr;
     if (b != 0) {
         bv = b->data(); // Only compute exact solution if requested
         assert(bv);
@@ -282,7 +282,7 @@ GenerateProblem(
     } // end iz loop
     //
     global_int_t totalNumberOfNonzeros = 0;
-#ifndef HPCG_NO_MPI
+#if 0
     // SKG TODO calculate totalNumberOfNonzeros
     // Use MPI's reduce function to sum all nonzeros
     // convert to 64 bit for MPI call
@@ -290,7 +290,7 @@ GenerateProblem(
     MPI_Allreduce(&lnnz, &gnnz, 1, MPI_LONG_LONG_INT, MPI_SUM, MPI_COMM_WORLD);
     totalNumberOfNonzeros = gnnz; // Copy back
 #else
-  totalNumberOfNonzeros = localNumberOfNonzeros;
+    totalNumberOfNonzeros = localNumberOfNonzeros;
 #endif
     // If this assert fails, it most likely means that the global_int_t is set
     // to int and should be set to long long This assert is usually the first to
@@ -298,22 +298,33 @@ GenerateProblem(
     // exception of the number of nonzeros is less than zero (can happen if int
     // overflow)
     assert(totalNumberOfNonzeros>0);
-#if 0
     // Perform serialization of items for storage into logical regions.
-    std::stringstream localToGlobalMapStream;
-    {
-        cereal::BinaryOutputArchive oa(localToGlobalMapStream);
-        oa(localToGlobalMap);
+    std::stringstream *ssGlobalToLocalMap = new std::stringstream;
+    {   // Scoped to guarantee flushing, etc.
+        cereal::BinaryOutputArchive oa(*ssGlobalToLocalMap);
+        oa(globalToLocalMap);
     }
-    std::vector<global_int_t> testOut;
-    {
-        cereal::BinaryInputArchive ia(localToGlobalMapStream);
-        ia(testOut);
-    }
-    for (auto i : testOut) {
-        cout << "OUT: " << i << endl;
-    }
-#endif
+    // Get size of serialized buffer.
+    ssGlobalToLocalMap->seekp(0, ios::end);
+    auto regionSizeInB = ssGlobalToLocalMap->tellp();
+    //
+    string strBuff(ssGlobalToLocalMap->str());
+    // Remove one copy of the data, since it is stored elsewhere now.
+    delete ssGlobalToLocalMap;
+    // Allocate region-based backing store for serialized data.
+    ArrayAllocator<char> aaGlobalToLocalMap(
+        regionSizeInB,
+        WRITE_ONLY,
+        EXCLUSIVE,
+        ctx,
+        runtime
+    );
+    char *globalToLocalMapBytesPtr = aaGlobalToLocalMap.data();
+    assert(globalToLocalMapBytesPtr);
+    // Write back into logical region
+    memmove(globalToLocalMapBytesPtr, strBuff.c_str(), regionSizeInB);
+    // Kill last unneeded intermediate buffer.
+    strBuff.clear();
     //
     A.localData->totalNumberOfRows     = totalNumberOfRows;
     A.localData->totalNumberOfNonzeros = totalNumberOfNonzeros;
