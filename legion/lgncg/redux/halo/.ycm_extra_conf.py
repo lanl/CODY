@@ -48,6 +48,8 @@ flags = [
 '-isystem/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/../lib/clang/7.3.0/include',
 '-isystem/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include',
 '-I.',
+'-Iserialization',
+'-Iserialization/cereal',
 '-I' + legion_home,
 '-I' + legion_home + '/realm',
 '-I' + legion_home + '/legion',

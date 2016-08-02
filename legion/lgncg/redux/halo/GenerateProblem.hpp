@@ -52,7 +52,11 @@
 #include "LegionItems.hpp"
 #include "LegionArrays.hpp"
 #include "LegionMatrices.hpp"
+// For STL serialization into regions.
+#include "cereal/archives/binary.hpp"
+#include "cereal/types/vector.hpp"
 
+#include <sstream>
 #include <cassert>
 
 // TODO RM
@@ -115,15 +119,25 @@ GenerateProblem(
     ////////////////////////////////////////////////////////////////////////////
     // Allocate arrays
     ////////////////////////////////////////////////////////////////////////////
+    // TODO add vector stats
     if (A.geom->rank == 0) {
         const size_t mn = localNumberOfRows * numberOfNonzerosPerRow;
-        const size_t pMemInB = (
-            sizeof(char)         * localNumberOfRows
-          + sizeof(global_int_t) * mn
-          + sizeof(local_int_t)  * mn
-          + sizeof(floatType)    * mn
-          + sizeof(floatType)    * localNumberOfRows
+        const size_t sparseMatMemInB = (
+            sizeof(char)         * localNumberOfRows //nonzerosInRow
+          + sizeof(global_int_t) * mn                //mtxIndG
+          + sizeof(local_int_t)  * mn                //mtxIndL
+          + sizeof(floatType)    * mn                //matrixValues
+          + sizeof(floatType)    * localNumberOfRows //matrixDiagonal
+          + sizeof(global_int_t) * localNumberOfRows //localToGlobalMap
         ) * A.geom->size;
+        //
+        const size_t vectorsMemInB = (
+            (b      ? sizeof(floatType) * localNumberOfRows : 0)
+          + (x      ? sizeof(floatType) * localNumberOfRows : 0)
+          + (xexact ? sizeof(floatType) * localNumberOfRows : 0)
+        ) * A.geom->size;
+        //
+        const size_t pMemInB = sparseMatMemInB + vectorsMemInB;
         const double pMemInMB = double(pMemInB)/1024/1024;
         cout << "*** Approx. Generate Problem Memory Footprint="
              << pMemInMB << "MB" << endl;
@@ -185,19 +199,34 @@ GenerateProblem(
     );
     floatType *matrixDiagonal = aaMatrixDiagonal.data();
     assert(matrixDiagonal);
+    // Local-to-global mapping
+    ArrayAllocator<global_int_t> aaLocalToGlobalMap(
+        localNumberOfRows,
+        WRITE_ONLY,
+        EXCLUSIVE,
+        ctx,
+        runtime
+    );
+    global_int_t *localToGlobalMap = aaLocalToGlobalMap.data();
+    assert(localToGlobalMap);
     //
     floatType *bv      = 0;
     floatType *xv      = 0;
     floatType *xexactv = 0;
-    if (b != 0) bv = b->data(); // Only compute exact solution if requested
-    if (x != 0) xv = x->data(); // Only compute exact solution if requested
-    // Only compute exact solution if requested
-    if (xexact != 0) xexactv = xexact->data();
-    //local-to-global mapping TODO write back into LR
-    std::vector<global_int_t> localToGlobalMap;
+    if (b != 0) {
+        bv = b->data(); // Only compute exact solution if requested
+        assert(bv);
+    }
+    if (x != 0) {
+        xv = x->data(); // Only compute exact solution if requested
+        assert(xv);
+    }
+    if (xexact != 0) {
+        xexactv = xexact->data(); // Only compute exact solution if requested
+        assert(xexactv);
+    }
     //!< global-to-local mapping TODO write back into LR
     std::map< global_int_t, local_int_t > globalToLocalMap;
-    localToGlobalMap.resize(localNumberOfRows);
     //
     local_int_t localNumberOfNonzeros = 0;
     //
@@ -269,16 +298,33 @@ GenerateProblem(
     // exception of the number of nonzeros is less than zero (can happen if int
     // overflow)
     assert(totalNumberOfNonzeros>0);
+#if 0
+    // Perform serialization of items for storage into logical regions.
+    std::stringstream localToGlobalMapStream;
+    {
+        cereal::BinaryOutputArchive oa(localToGlobalMapStream);
+        oa(localToGlobalMap);
+    }
+    std::vector<global_int_t> testOut;
+    {
+        cereal::BinaryInputArchive ia(localToGlobalMapStream);
+        ia(testOut);
+    }
+    for (auto i : testOut) {
+        cout << "OUT: " << i << endl;
+    }
+#endif
     //
-    A.localData->totalNumberOfRows = totalNumberOfRows;
+    A.localData->totalNumberOfRows     = totalNumberOfRows;
     A.localData->totalNumberOfNonzeros = totalNumberOfNonzeros;
-    A.localData->localNumberOfRows = localNumberOfRows;
-    A.localData->localNumberOfColumns = localNumberOfRows;
+    A.localData->localNumberOfRows     = localNumberOfRows;
+    A.localData->localNumberOfColumns  = localNumberOfRows;
     A.localData->localNumberOfNonzeros = localNumberOfNonzeros;
     //
-     aaNonzerosInRow.bindToLogicalRegion(*(A.pic.nonzerosInRow.data()));
-           aaMtxIndG.bindToLogicalRegion(*(A.pic.mtxIndG.data()));
-           aaMtxIndL.bindToLogicalRegion(*(A.pic.mtxIndL.data()));
-      aaMatrixValues.bindToLogicalRegion(*(A.pic.matrixValues.data()));
-    aaMatrixDiagonal.bindToLogicalRegion(*(A.pic.matrixDiagonal.data()));
+       aaNonzerosInRow.bindToLogicalRegion(*(A.pic.nonzerosInRow.data()));
+             aaMtxIndG.bindToLogicalRegion(*(A.pic.mtxIndG.data()));
+             aaMtxIndL.bindToLogicalRegion(*(A.pic.mtxIndL.data()));
+        aaMatrixValues.bindToLogicalRegion(*(A.pic.matrixValues.data()));
+      aaMatrixDiagonal.bindToLogicalRegion(*(A.pic.matrixDiagonal.data()));
+    aaLocalToGlobalMap.bindToLogicalRegion(*(A.pic.localToGlobalMap.data()));
 }

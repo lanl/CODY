@@ -50,6 +50,7 @@
 
 #include <vector>
 #include <map>
+#include <cassert>
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -90,10 +91,10 @@ public:
     LogicalArray<LogicalRegion> lrMatrixValues;
     //Logical regions that point to values of matrix diagonal entries
     LogicalArray<LogicalRegion> lrMatrixDiagonal;
+    //Logical regions that point to local-to-global mapping arrays
+    LogicalArray<LogicalRegion> lrLocalToGlobalMap;
     //global-to-local mapping
     std::map<global_int_t, local_int_t> globalToLocalMap;
-    //local-to-global mapping
-    std::vector<global_int_t> localToGlobalMap;
     /*!
       This is for storing optimized data structres created in OptimizeProblem and
       used inside optimized ComputeSPMV().
@@ -137,13 +138,14 @@ public:
     ) {
         const auto size = geom.size;
         //
-             geometries.allocate(size, ctx, lrt);
-              localData.allocate(size, ctx, lrt);
-        lrNonzerosInRow.allocate(size, ctx, lrt);
-              lrMtxIndG.allocate(size, ctx, lrt);
-              lrMtxIndL.allocate(size, ctx, lrt);
-         lrMatrixValues.allocate(size, ctx, lrt);
-       lrMatrixDiagonal.allocate(size, ctx, lrt);
+                geometries.allocate(size, ctx, lrt);
+                 localData.allocate(size, ctx, lrt);
+           lrNonzerosInRow.allocate(size, ctx, lrt);
+                 lrMtxIndG.allocate(size, ctx, lrt);
+                 lrMtxIndL.allocate(size, ctx, lrt);
+            lrMatrixValues.allocate(size, ctx, lrt);
+          lrMatrixDiagonal.allocate(size, ctx, lrt);
+        lrLocalToGlobalMap.allocate(size, ctx, lrt);
     }
 
     /**
@@ -155,13 +157,14 @@ public:
         LegionRuntime::HighLevel::Context &ctx,
         LegionRuntime::HighLevel::HighLevelRuntime *lrt
     ) {
-             geometries.partition(nParts, ctx, lrt);
-              localData.partition(nParts, ctx, lrt);
-        lrNonzerosInRow.partition(nParts, ctx, lrt);
-              lrMtxIndG.partition(nParts, ctx, lrt);
-              lrMtxIndL.partition(nParts, ctx, lrt);
-         lrMatrixValues.partition(nParts, ctx, lrt);
-       lrMatrixDiagonal.partition(nParts, ctx, lrt);
+                geometries.partition(nParts, ctx, lrt);
+                 localData.partition(nParts, ctx, lrt);
+           lrNonzerosInRow.partition(nParts, ctx, lrt);
+                 lrMtxIndG.partition(nParts, ctx, lrt);
+                 lrMtxIndL.partition(nParts, ctx, lrt);
+            lrMatrixValues.partition(nParts, ctx, lrt);
+          lrMatrixDiagonal.partition(nParts, ctx, lrt);
+        lrLocalToGlobalMap.partition(nParts, ctx, lrt);
         // just pick a structure that has a representative launch domain.
         launchDomain = geometries.launchDomain;
     }
@@ -174,13 +177,14 @@ public:
         LegionRuntime::HighLevel::Context &ctx,
         LegionRuntime::HighLevel::HighLevelRuntime *lrt
     ) {
-             geometries.deallocate(ctx, lrt);
-              localData.deallocate(ctx, lrt);
-        lrNonzerosInRow.deallocate(ctx, lrt);
-              lrMtxIndG.deallocate(ctx, lrt);
-              lrMtxIndL.deallocate(ctx, lrt);
-         lrMatrixValues.deallocate(ctx, lrt);
-       lrMatrixDiagonal.deallocate(ctx, lrt);
+                geometries.deallocate(ctx, lrt);
+                 localData.deallocate(ctx, lrt);
+           lrNonzerosInRow.deallocate(ctx, lrt);
+                 lrMtxIndG.deallocate(ctx, lrt);
+                 lrMtxIndL.deallocate(ctx, lrt);
+            lrMatrixValues.deallocate(ctx, lrt);
+          lrMatrixDiagonal.deallocate(ctx, lrt);
+        lrLocalToGlobalMap.deallocate(ctx, lrt);
     }
 };
 
@@ -190,7 +194,7 @@ public:
 ////////////////////////////////////////////////////////////////////////////////
 class SparseMatrix {
 protected:
-    static constexpr int cNItemsToUnpack = 7;
+    static constexpr int cNItemsToUnpack = 8;
     // Physical Item Container
     struct PIC {
         Item<Geometry> geom;
@@ -200,6 +204,7 @@ protected:
         Item<LogicalRegion> mtxIndL;
         Item<LogicalRegion> matrixValues;
         Item<LogicalRegion> matrixDiagonal;
+        Item<LogicalRegion> localToGlobalMap;
     };
 public:
     PIC pic;
@@ -207,12 +212,6 @@ public:
     Geometry *geom = nullptr;
     //
     SparseMatrixLocalData *localData = nullptr;
-    //
-    char *nonzerosInRow = nullptr;
-    // Interpreted as 2D array (flattened from 1D index space)
-    global_int_t *mtxIndG = nullptr;
-    // Interpreted as 2D array (flattened from 1D index space)
-    local_int_t *mtxIndL = nullptr;
 
     /**
      *
@@ -251,6 +250,10 @@ public:
         pic.matrixValues = Item<LogicalRegion>(regions[curRID++], ctx, runtime);
         //
         pic.matrixDiagonal = Item<LogicalRegion>(
+            regions[curRID++], ctx, runtime
+        );
+        //
+        pic.localToGlobalMap = Item<LogicalRegion>(
             regions[curRID++], ctx, runtime
         );
     }
