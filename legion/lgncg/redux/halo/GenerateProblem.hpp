@@ -144,21 +144,13 @@ GenerateProblem(
     }
     //
     ArrayAllocator<char> aaNonzerosInRow (
-        localNumberOfRows,
-        WRITE_ONLY,
-        EXCLUSIVE,
-        ctx,
-        runtime
+        localNumberOfRows, WO_E, ctx, runtime
     );
     char *nonzerosInRow = aaNonzerosInRow.data();
     assert(nonzerosInRow);
     // Interpreted as 2D array
     ArrayAllocator<global_int_t> aaMtxIndG(
-        localNumberOfRows * numberOfNonzerosPerRow,
-        WRITE_ONLY,
-        EXCLUSIVE,
-        ctx,
-        runtime
+        localNumberOfRows * numberOfNonzerosPerRow, WO_E, ctx, runtime
     );
     global_int_t *mtxIndG1D = aaMtxIndG.data();
     assert(mtxIndG1D);
@@ -168,20 +160,12 @@ GenerateProblem(
     );
     // Interpreted as 2D array
     ArrayAllocator<local_int_t> aaMtxIndL(
-        localNumberOfRows * numberOfNonzerosPerRow,
-        WRITE_ONLY,
-        EXCLUSIVE,
-        ctx,
-        runtime
+        localNumberOfRows * numberOfNonzerosPerRow, WO_E, ctx, runtime
     );
     local_int_t *mtxIndL = aaMtxIndL.data();
     assert(mtxIndL);
     ArrayAllocator<floatType> aaMatrixValues(
-        localNumberOfRows * numberOfNonzerosPerRow,
-        WRITE_ONLY,
-        EXCLUSIVE,
-        ctx,
-        runtime
+        localNumberOfRows * numberOfNonzerosPerRow, WO_E, ctx, runtime
     );
     floatType *matrixValues1D = aaMatrixValues.data();
     assert(matrixValues1D);
@@ -191,21 +175,13 @@ GenerateProblem(
     );
     // Interpreted as 1D array
     ArrayAllocator<floatType> aaMatrixDiagonal(
-        localNumberOfRows,
-        WRITE_ONLY,
-        EXCLUSIVE,
-        ctx,
-        runtime
+        localNumberOfRows, WO_E, ctx, runtime
     );
     floatType *matrixDiagonal = aaMatrixDiagonal.data();
     assert(matrixDiagonal);
     // Local-to-global mapping
     ArrayAllocator<global_int_t> aaLocalToGlobalMap(
-        localNumberOfRows,
-        WRITE_ONLY,
-        EXCLUSIVE,
-        ctx,
-        runtime
+        localNumberOfRows, WO_E, ctx, runtime
     );
     global_int_t *localToGlobalMap = aaLocalToGlobalMap.data();
     assert(localToGlobalMap);
@@ -313,11 +289,7 @@ GenerateProblem(
     delete ssGlobalToLocalMap;
     // Allocate region-based backing store for serialized data.
     ArrayAllocator<char> aaGlobalToLocalMap(
-        regionSizeInB,
-        WRITE_ONLY,
-        EXCLUSIVE,
-        ctx,
-        runtime
+        regionSizeInB, WO_E, ctx, runtime
     );
     char *globalToLocalMapBytesPtr = aaGlobalToLocalMap.data();
     assert(globalToLocalMapBytesPtr);
@@ -325,6 +297,7 @@ GenerateProblem(
     memmove(globalToLocalMapBytesPtr, strBuff.c_str(), regionSizeInB);
     // Kill last unneeded intermediate buffer.
     strBuff.clear();
+    if (!A.geom->rank)
     //
     A.localData->totalNumberOfRows     = totalNumberOfRows;
     A.localData->totalNumberOfNonzeros = totalNumberOfNonzeros;

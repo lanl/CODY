@@ -50,23 +50,12 @@
 
 #include "LegionMatrices.hpp"
 
-// TODO RM
-#define HPCG_NO_MPI
+#include "hpcg.hpp"
+#include "mytimer.hpp"
 
-#ifndef HPCG_NO_MPI
-#include <mpi.h>
 #include <map>
 #include <set>
-#endif
-
-#ifdef HPCG_DETAILED_DEBUG
-#include <fstream>
-using std::endl;
-#include "hpcg.hpp"
 #include <cassert>
-#endif
-
-#include "mytimer.hpp"
 
 /*!
     Reference version of SetupHalo that prepares system matrix data structure
@@ -78,8 +67,9 @@ using std::endl;
     @see ExchangeHalo
 */
 inline void
-SetupHalo(SparseMatrix & A) {
-
+SetupHalo(
+    SparseMatrix &A
+) {
     // Extract Matrix pieces
     local_int_t localNumberOfRows = A.localNumberOfRows;
     char  *nonzerosInRow = A.nonzerosInRow;
@@ -96,21 +86,17 @@ SetupHalo(SparseMatrix & A) {
     typedef std::set<global_int_t>::iterator set_iter;
     std::map< local_int_t, local_int_t > externalToLocalMap;
 
-  for (local_int_t i = 0; i< localNumberOfRows; i++) {
-      global_int_t currentGlobalRow = A.localToGlobalMap[i];
-      for (int j=0; j<nonzerosInRow[i]; j++) {
-          global_int_t curIndex = mtxIndG[i][j];
-          int rankIdOfColumnEntry = ComputeRankOfMatrixRow(*(A.geom), curIndex);
-#ifdef HPCG_DETAILED_DEBUG
-          HPCG_fout << "rank, row , col, globalToLocalMap[col] = " << A.geom->rank << " " << currentGlobalRow << " "
-              << curIndex << " " << A.globalToLocalMap[curIndex] << endl;
-#endif
-          if (A.geom->rank!=rankIdOfColumnEntry) {// If column index is not a row index, then it comes from another processor
-              receiveList[rankIdOfColumnEntry].insert(curIndex);
-              sendList[rankIdOfColumnEntry].insert(currentGlobalRow); // Matrix symmetry means we know the neighbor process wants my value
-          }
-      }
-  }
+    for (local_int_t i = 0; i < localNumberOfRows; i++) {
+        global_int_t currentGlobalRow = A.localToGlobalMap[i];
+        for (int j = 0; j<nonzerosInRow[i]; j++) {
+            global_int_t curIndex = mtxIndG[i][j];
+            int rankIdOfColumnEntry = ComputeRankOfMatrixRow(*(A.geom), curIndex);
+            if (A.geom->rank!=rankIdOfColumnEntry) {// If column index is not a row index, then it comes from another processor
+                receiveList[rankIdOfColumnEntry].insert(curIndex);
+                sendList[rankIdOfColumnEntry].insert(currentGlobalRow); // Matrix symmetry means we know the neighbor process wants my value
+            }
+        }
+    }
 
   // Count number of matrix entries to send and receive
   local_int_t totalToBeSent = 0;
