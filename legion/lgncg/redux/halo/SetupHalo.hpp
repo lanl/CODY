@@ -256,6 +256,7 @@ SetupHalo(
         delete aaSendLength;
     }
     //A.sendBuffer = sendBuffer;
+    // TODO A.refreshMembers(...)
 
 #ifdef HPCG_DETAILED_DEBUG
     HPCG_fout << " For rank " << A.geom->rank
