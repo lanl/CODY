@@ -111,8 +111,8 @@ GenerateProblem(
     local_int_t numberOfNonzerosPerRow = 27;
 
     // Total number of grid points in mesh
-    global_int_t totalNumberOfRows =
-        ((global_int_t)localNumberOfRows)*((global_int_t)A.geom->size);
+    global_int_t totalNumberOfRows = ((global_int_t)localNumberOfRows)
+                                   * ((global_int_t)A.geom->size);
     // If this assert fails, it most likely means that the global_int_t is set
     // to int and should be set to long long
     assert(totalNumberOfRows>0);
@@ -226,9 +226,11 @@ GenerateProblem(
                             if (giy+sy>-1 && giy+sy<gny) {
                                 for (int sx=-1; sx<=1; sx++) {
                                     if (gix+sx>-1 && gix+sx<gnx) {
-                                        global_int_t curcol = currentGlobalRow+sz*gnx*gny+sy*gnx+sx;
+                                        global_int_t curcol = currentGlobalRow
+                                                            + sz*gnx*gny
+                                                            + sy*gnx+sx;
                                         if (curcol==currentGlobalRow) {
-                                            matrixDiagonal[currentLocalRow]                        = 26.0;
+                                            matrixDiagonal[currentLocalRow] = 26.0;
                                             matrixValues(currentLocalRow, currentNonZeroElemIndex) = 26.0;
                                         } else {
                                             matrixValues(currentLocalRow, currentNonZeroElemIndex) = -1.0;
@@ -245,7 +247,8 @@ GenerateProblem(
                 nonzerosInRow[currentLocalRow] = numberOfNonzerosInRow;
                 localNumberOfNonzeros += numberOfNonzerosInRow;
                 if (b!=0) {
-                    bv[currentLocalRow] = 26.0 - ((double)(numberOfNonzerosInRow-1));
+                    bv[currentLocalRow] = 26.0
+                                        - ((double)(numberOfNonzerosInRow-1));
                 }
                 if (x!=0) {
                     xv[currentLocalRow] = 0.0;
@@ -297,7 +300,6 @@ GenerateProblem(
     memmove(globalToLocalMapBytesPtr, strBuff.c_str(), regionSizeInB);
     // Kill last unneeded intermediate buffer.
     strBuff.clear();
-    if (!A.geom->rank)
     //
     A.localData->totalNumberOfRows     = totalNumberOfRows;
     A.localData->totalNumberOfNonzeros = totalNumberOfNonzeros;
@@ -312,4 +314,19 @@ GenerateProblem(
       aaMatrixDiagonal.bindToLogicalRegion(*(A.pic.matrixDiagonal.data()));
     aaLocalToGlobalMap.bindToLogicalRegion(*(A.pic.localToGlobalMap.data()));
     aaGlobalToLocalMap.bindToLogicalRegion(*(A.pic.globalToLocalMap.data()));
+    // For convenience let's refresh members for easier access in subsequent
+    // uses. NOTE: these members are only valid during the life of a task.
+    A.refreshMembers(
+        SparseMatrix(
+            A.geom,
+            A.localData,
+            nonzerosInRow,
+            mtxIndG1D,
+            mtxIndL,
+            matrixValues1D,
+            matrixDiagonal,
+            localToGlobalMap,
+            globalToLocalMap
+        )
+    );
 }

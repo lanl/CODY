@@ -205,16 +205,66 @@ protected:
         Item<LogicalRegion> globalToLocalMap;
     };
 public:
-    PIC pic;
+    //total number of matrix rows across all processes
+    global_int_t totalNumberOfRows = 0;
+    //total number of matrix nonzeros across all processes
+    global_int_t totalNumberOfNonzeros = 0;
+    //number of rows local to this process
+    local_int_t localNumberOfRows = 0;
+    //number of columns local to this process
+    local_int_t localNumberOfColumns = 0;
+    //number of nonzeros local to this process
+    local_int_t localNumberOfNonzeros = 0;
     //
     Geometry *geom = nullptr;
     //
     SparseMatrixLocalData *localData = nullptr;
+    //
+    char *nonzerosInRow = nullptr;
+    //
+    global_int_t *mtxIndG = nullptr;
+    //
+    local_int_t *mtxIndL = nullptr;
+    //
+    floatType *matrixValues = nullptr;
+    //
+    floatType *matrixDiagonal = nullptr;
+    //
+    global_int_t *localToGlobalMap = nullptr;
+    //
+    std::map< global_int_t, local_int_t > globalToLocalMap;
+    //
+    PIC pic;
 
     /**
      *
      */
     SparseMatrix(void) = default;
+
+    /**
+     *
+     */
+    SparseMatrix(
+        Geometry *geom,
+        SparseMatrixLocalData *localData,
+        char *nonzerosInRow,
+        global_int_t *mtxIndG,
+        local_int_t *mtxIndL,
+        floatType *matrixValues,
+        floatType *matrixDiagonal,
+        global_int_t *localToGlobalMap,
+        const std::map< global_int_t, local_int_t > &globalToLocalMap
+    ) {
+        this->geom = geom;
+        this->localData = localData;
+        this->nonzerosInRow = nonzerosInRow;
+        this->mtxIndG = mtxIndG;
+        this->mtxIndL = mtxIndL;
+        this->matrixValues = matrixValues;
+        this->matrixDiagonal = matrixDiagonal;
+        this->localToGlobalMap = localToGlobalMap;
+        this->globalToLocalMap = globalToLocalMap;
+    }
 
     /**
      *
@@ -265,4 +315,26 @@ public:
      */
     static int
     nRegionEntries(void) { return cNItemsToUnpack; }
+
+    /**
+     *
+     */
+    void
+    refreshMembers(const SparseMatrix &sm) {
+        geom                  = sm.geom;
+        localData             = sm.localData;
+        totalNumberOfRows     = localData->totalNumberOfRows;
+        totalNumberOfNonzeros = localData->totalNumberOfNonzeros;
+        localNumberOfRows     = localData->localNumberOfRows;
+        localNumberOfColumns  = localData->localNumberOfColumns;
+        localNumberOfNonzeros = localData->localNumberOfNonzeros;
+        nonzerosInRow         = sm.nonzerosInRow;
+        mtxIndG               = sm.mtxIndG;
+        mtxIndL               = sm.mtxIndL;
+        matrixValues          = sm.matrixValues;
+        matrixDiagonal        = sm.matrixDiagonal;
+        localToGlobalMap      = sm.localToGlobalMap;
+        // TODO consider something else here (memory usage)
+        globalToLocalMap      = sm.globalToLocalMap;
+    }
 };
