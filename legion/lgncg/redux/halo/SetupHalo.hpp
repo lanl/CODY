@@ -147,29 +147,45 @@ SetupHalo(
     // Build the arrays and lists needed by the ExchangeHalo function.
     //double * sendBuffer = new double[totalToBeSent];
     //
-    ArrayAllocator<local_int_t> aaElementsToSend(
-        totalToBeSent, WO_E, ctx, runtime
-    );
-    local_int_t *elementsToSend = aaElementsToSend.data();
-    assert(elementsToSend);
+    ArrayAllocator<local_int_t> *aaElementsToSend = nullptr;
+    local_int_t *elementsToSend = nullptr;
+    if (totalToBeSent != 0) {
+        aaElementsToSend = new ArrayAllocator<local_int_t>(
+            totalToBeSent, WO_E, ctx, runtime
+        );
+        elementsToSend = aaElementsToSend->data();
+        assert(elementsToSend);
+    }
     //
-    ArrayAllocator<int> aaNeighbors(
-        sendList.size(), WO_E, ctx, runtime
-    );
-    int *neighbors = aaNeighbors.data();
-    assert(neighbors);
+    ArrayAllocator<int> *aaNeighbors = nullptr;
+    int *neighbors = nullptr;
+    if (sendList.size() != 0) {
+        aaNeighbors = new ArrayAllocator<int>(
+            sendList.size(), WO_E, ctx, runtime
+        );
+        neighbors = aaNeighbors->data();
+        assert(neighbors);
+    }
     //
-    ArrayAllocator<local_int_t> aaReceiveLength(
-        receiveList.size(), WO_E, ctx, runtime
-    );
-    local_int_t *receiveLength = aaReceiveLength.data();
-    assert(receiveLength);
+    ArrayAllocator<local_int_t> *aaReceiveLength = nullptr;
+    local_int_t *receiveLength = nullptr;
+    if (receiveList.size() != 0) {
+        aaReceiveLength = new ArrayAllocator<local_int_t>(
+            receiveList.size(), WO_E, ctx, runtime
+        );
+        receiveLength = aaReceiveLength->data();
+        assert(receiveLength);
+    }
     //
-    ArrayAllocator<local_int_t> aaSendLength(
-        sendList.size(), WO_E, ctx, runtime
-    );
-    local_int_t *sendLength = aaSendLength.data();
-    assert(sendLength);
+    ArrayAllocator<local_int_t> *aaSendLength = nullptr;
+    local_int_t *sendLength = nullptr;
+    if (sendList.size() != 0) {
+        aaSendLength = new ArrayAllocator<local_int_t>(
+            sendList.size(), WO_E, ctx, runtime
+        );
+        sendLength = aaSendLength->data();
+        assert(sendLength);
+    }
     //
     int neighborCount = 0;
     local_int_t receiveEntryCount = 0;
@@ -223,10 +239,22 @@ SetupHalo(
     AlD->numberOfSendNeighbors  = sendList.size();
     AlD->totalToBeSent          = totalToBeSent;
     //
-    aaElementsToSend.bindToLogicalRegion(*(A.pic.elementsToSend.data()));
-         aaNeighbors.bindToLogicalRegion(*(A.pic.neighbors.data()));
-     aaReceiveLength.bindToLogicalRegion(*(A.pic.receiveLength.data()));
-        aaSendLength.bindToLogicalRegion(*(A.pic.sendLength.data()));
+    if (aaElementsToSend) {
+        aaElementsToSend->bindToLogicalRegion(*(A.pic.elementsToSend.data()));
+        delete aaElementsToSend;
+    }
+    if (aaNeighbors) {
+        aaNeighbors->bindToLogicalRegion(*(A.pic.neighbors.data()));
+        delete aaNeighbors;
+    }
+    if (aaReceiveLength) {
+         aaReceiveLength->bindToLogicalRegion(*(A.pic.receiveLength.data()));
+         delete aaReceiveLength;
+    }
+    if (aaSendLength) {
+        aaSendLength->bindToLogicalRegion(*(A.pic.sendLength.data()));
+        delete aaSendLength;
+    }
     //A.sendBuffer = sendBuffer;
 
 #ifdef HPCG_DETAILED_DEBUG
