@@ -300,12 +300,14 @@ GenerateProblem(
     memmove(globalToLocalMapBytesPtr, strBuff.c_str(), regionSizeInB);
     // Kill last unneeded intermediate buffer.
     strBuff.clear();
-    //
-    A.localData->totalNumberOfRows     = totalNumberOfRows;
-    A.localData->totalNumberOfNonzeros = totalNumberOfNonzeros;
-    A.localData->localNumberOfRows     = localNumberOfRows;
-    A.localData->localNumberOfColumns  = localNumberOfRows;
-    A.localData->localNumberOfNonzeros = localNumberOfNonzeros;
+    // Convenience pointer to A.localData
+    auto *AlD = A.localData;
+    AlD->maxNonzerosPerRow     = numberOfNonzerosPerRow;
+    AlD->totalNumberOfRows     = totalNumberOfRows;
+    AlD->totalNumberOfNonzeros = totalNumberOfNonzeros;
+    AlD->localNumberOfRows     = localNumberOfRows;
+    AlD->localNumberOfColumns  = localNumberOfRows;
+    AlD->localNumberOfNonzeros = localNumberOfNonzeros;
     //
        aaNonzerosInRow.bindToLogicalRegion(*(A.pic.nonzerosInRow.data()));
              aaMtxIndG.bindToLogicalRegion(*(A.pic.mtxIndG.data()));
@@ -326,6 +328,10 @@ GenerateProblem(
             matrixValues1D,
             matrixDiagonal,
             localToGlobalMap,
+            nullptr,
+            nullptr,
+            nullptr,
+            nullptr,
             globalToLocalMap
         )
     );

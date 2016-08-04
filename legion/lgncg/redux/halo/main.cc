@@ -46,6 +46,7 @@
 #include "CheckAspectRatio.hpp"
 #include "GenerateGeometry.hpp"
 #include "GenerateProblem.hpp"
+#include "SetupHalo.hpp"
 
 #include "LegionStuff.hpp"
 #include "LegionArrays.hpp"
@@ -101,7 +102,7 @@ genProblemTask(
     size_t rid = 0;
     //
     SparseMatrix A(regions, rid, ctx, runtime);
-    rid += SparseMatrix::nRegionEntries();
+    rid += A.nRegionEntries();
     Array<floatType> b(regions[rid++], ctx, runtime);
     Array<floatType> x(regions[rid++], ctx, runtime);
     Array<floatType> xexact(regions[rid++], ctx, runtime);
@@ -118,6 +119,8 @@ genProblemTask(
     double setup_time = mytimer();
     //
     GenerateProblem(A, &b, &x, &xexact, ctx, runtime);
+    //
+    SetupHalo(A, ctx, runtime);
 }
 
 /**
@@ -211,7 +214,7 @@ mainTask(
     const auto nShards = runtime->get_tunable_value(
                             ctx, CGMapper::TID_NUM_SHARDS
                         );
-    cout << "*** Number of Shards (~ NUMPE): " << nShards << endl;;
+    cout << "*** Number of Shards (~ NUMPE)=" << nShards << endl;;
     ////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////
     // At this point we need to know some run parameters so we can allocate and
@@ -253,12 +256,14 @@ mainTask(
         ArgumentMap()
     );
     //
-    intent<WRITE_DISCARD, EXCLUSIVE>(
+    intent<WO_E>(
         launcher,
         {A.geometries, A.localData, A.lrNonzerosInRow,
          A.lrMtxIndG, A.lrMtxIndL, A.lrMatrixValues,
          A.lrMatrixDiagonal, A.lrLocalToGlobalMap,
-         A.lrGlobalToLocalMap, b, x, xexact}
+         A.lrGlobalToLocalMap, A.lrElementsToSend,
+         A.lrNeighbors, A.lrReceiveLength, A.lrSendLength,
+         b, x, xexact}
     );
     //
     auto futureMap = runtime->execute_index_space(ctx, launcher);

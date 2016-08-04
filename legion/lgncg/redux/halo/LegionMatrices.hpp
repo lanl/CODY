@@ -57,6 +57,8 @@
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 struct SparseMatrixLocalData {
+    //Max number of non-zero elements in any row
+    local_int_t maxNonzerosPerRow;
     //total number of matrix rows across all processes
     global_int_t totalNumberOfRows = 0;
     //total number of matrix nonzeros across all processes
@@ -67,6 +69,12 @@ struct SparseMatrixLocalData {
     local_int_t localNumberOfColumns = 0;
     //number of nonzeros local to this process
     local_int_t localNumberOfNonzeros = 0;
+    //number of entries that are external to this process
+    local_int_t numberOfExternalValues;
+    //number of neighboring processes that will be send local data
+    int numberOfSendNeighbors;
+    //total number of entries to be sent
+    local_int_t totalToBeSent;
 };
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -95,26 +103,21 @@ public:
     LogicalArray<LogicalRegion> lrLocalToGlobalMap;
     // Logical regions that point to serialized global-to-local mapping data
     LogicalArray<LogicalRegion> lrGlobalToLocalMap;
+    // Logical regions that point to array containing elements to send to
+    // neighboring processes
+    LogicalArray<LogicalRegion> lrElementsToSend;
+    // Logical regions that point to array of neighboring processes
+    LogicalArray<LogicalRegion> lrNeighbors;
+    //Logical regions that point to lengths of messages received from
+    //neighboring processes SKG TODO RM? may not be needed
+    LogicalArray<LogicalRegion> lrReceiveLength;
+    //Logical regions that point to lengths of messages sent to neighboring
+    //processes
+    LogicalArray<LogicalRegion> lrSendLength;
     // Coarse grid matrix
     mutable struct SparseMatrix_STRUCT *Ac;
     // Pointer to the coarse level data for this fine matrix
     mutable MGData *mgData;
-    //number of entries that are external to this process
-    local_int_t numberOfExternalValues;
-    //number of neighboring processes that will be send local data
-    int numberOfSendNeighbors;
-    //total number of entries to be sent
-    local_int_t totalToBeSent;
-    //elements to send to neighboring processes
-    local_int_t *elementsToSend;
-    //neighboring processes
-    int *neighbors;
-    //lenghts of messages received from neighboring processes
-    local_int_t *receiveLength;
-    //lenghts of messages sent to neighboring processes
-    local_int_t *sendLength;
-    //send buffer for non-blocking sends
-    floatType *sendBuffer;
 
     /**
      *
@@ -141,6 +144,10 @@ public:
           lrMatrixDiagonal.allocate(size, ctx, lrt);
         lrLocalToGlobalMap.allocate(size, ctx, lrt);
         lrGlobalToLocalMap.allocate(size, ctx, lrt);
+          lrElementsToSend.allocate(size, ctx, lrt);
+               lrNeighbors.allocate(size, ctx, lrt);
+           lrReceiveLength.allocate(size, ctx, lrt);
+              lrSendLength.allocate(size, ctx, lrt);
     }
 
     /**
@@ -161,6 +168,10 @@ public:
           lrMatrixDiagonal.partition(nParts, ctx, lrt);
         lrLocalToGlobalMap.partition(nParts, ctx, lrt);
         lrGlobalToLocalMap.partition(nParts, ctx, lrt);
+          lrElementsToSend.partition(nParts, ctx, lrt);
+               lrNeighbors.partition(nParts, ctx, lrt);
+           lrReceiveLength.partition(nParts, ctx, lrt);
+              lrSendLength.partition(nParts, ctx, lrt);
         // just pick a structure that has a representative launch domain.
         launchDomain = geometries.launchDomain;
     }
@@ -182,6 +193,10 @@ public:
           lrMatrixDiagonal.deallocate(ctx, lrt);
         lrLocalToGlobalMap.deallocate(ctx, lrt);
         lrGlobalToLocalMap.deallocate(ctx, lrt);
+          lrElementsToSend.deallocate(ctx, lrt);
+               lrNeighbors.deallocate(ctx, lrt);
+           lrReceiveLength.deallocate(ctx, lrt);
+              lrSendLength.deallocate(ctx, lrt);
     }
 };
 
@@ -191,7 +206,7 @@ public:
 ////////////////////////////////////////////////////////////////////////////////
 class SparseMatrix {
 protected:
-    static constexpr int cNItemsToUnpack = 9;
+    int cNItemsToUnpack = 0;
     // Physical Item Container
     struct PIC {
         Item<Geometry> geom;
@@ -203,18 +218,30 @@ protected:
         Item<LogicalRegion> matrixDiagonal;
         Item<LogicalRegion> localToGlobalMap;
         Item<LogicalRegion> globalToLocalMap;
+        Item<LogicalRegion> elementsToSend;
+        Item<LogicalRegion> neighbors;
+        Item<LogicalRegion> receiveLength;
+        Item<LogicalRegion> sendLength;
     };
 public:
-    //total number of matrix rows across all processes
+    //
+    local_int_t maxNonzerosPerRow;
+    //
     global_int_t totalNumberOfRows = 0;
-    //total number of matrix nonzeros across all processes
+    //
     global_int_t totalNumberOfNonzeros = 0;
-    //number of rows local to this process
+    //
     local_int_t localNumberOfRows = 0;
-    //number of columns local to this process
+    //
     local_int_t localNumberOfColumns = 0;
-    //number of nonzeros local to this process
+    //
     local_int_t localNumberOfNonzeros = 0;
+    //
+    local_int_t numberOfExternalValues = 0;
+    //
+    int numberOfSendNeighbors;
+    //
+    local_int_t totalToBeSent;
     //
     Geometry *geom = nullptr;
     //
@@ -231,6 +258,14 @@ public:
     floatType *matrixDiagonal = nullptr;
     //
     global_int_t *localToGlobalMap = nullptr;
+    //
+    local_int_t *elementsToSend = nullptr;
+    //
+    int *neighbors = nullptr;
+    //
+    local_int_t *receiveLength = nullptr;
+    //
+    local_int_t *sendLength = nullptr;
     //
     std::map< global_int_t, local_int_t > globalToLocalMap;
     //
@@ -253,6 +288,10 @@ public:
         floatType *matrixValues,
         floatType *matrixDiagonal,
         global_int_t *localToGlobalMap,
+        local_int_t *elementsToSend,
+        int *neighbors,
+        local_int_t *receiveLength,
+        local_int_t *sendLength,
         const std::map< global_int_t, local_int_t > &globalToLocalMap
     ) {
         this->geom = geom;
@@ -263,6 +302,10 @@ public:
         this->matrixValues = matrixValues;
         this->matrixDiagonal = matrixDiagonal;
         this->localToGlobalMap = localToGlobalMap;
+        this->elementsToSend = elementsToSend;
+        this->neighbors = neighbors;
+        this->receiveLength = receiveLength;
+        this->sendLength = sendLength;
         this->globalToLocalMap = globalToLocalMap;
     }
 
@@ -275,45 +318,69 @@ public:
         LegionRuntime::HighLevel::Context ctx,
         LegionRuntime::HighLevel::Runtime *runtime
     ) {
-        size_t curRID = baseRegionID;
+        size_t crid = baseRegionID;
         //
-        pic.geom = Item<Geometry>(regions[curRID++], ctx, runtime);
+        pic.geom = Item<Geometry>(regions[crid++], ctx, runtime);
         geom = pic.geom.data();
         assert(geom);
         //
         pic.localData = Item<SparseMatrixLocalData>(
-            regions[curRID++], ctx, runtime
+            regions[crid++], ctx, runtime
         );
         localData = pic.localData.data();
         assert(localData);
         //
         pic.nonzerosInRow = Item<LogicalRegion>(
-            regions[curRID++], ctx, runtime
+            regions[crid++], ctx, runtime
         );
         //
-        pic.mtxIndG = Item<LogicalRegion>(regions[curRID++], ctx, runtime);
+        pic.mtxIndG = Item<LogicalRegion>(
+            regions[crid++], ctx, runtime
+        );
         //
-        pic.mtxIndL = Item<LogicalRegion>(regions[curRID++], ctx, runtime);
+        pic.mtxIndL = Item<LogicalRegion>(
+            regions[crid++], ctx, runtime
+        );
         //
-        pic.matrixValues = Item<LogicalRegion>(regions[curRID++], ctx, runtime);
+        pic.matrixValues = Item<LogicalRegion>(
+            regions[crid++], ctx, runtime
+        );
         //
         pic.matrixDiagonal = Item<LogicalRegion>(
-            regions[curRID++], ctx, runtime
+            regions[crid++], ctx, runtime
         );
         //
         pic.localToGlobalMap = Item<LogicalRegion>(
-            regions[curRID++], ctx, runtime
+            regions[crid++], ctx, runtime
         );
         //
         pic.globalToLocalMap = Item<LogicalRegion>(
-            regions[curRID++], ctx, runtime
+            regions[crid++], ctx, runtime
         );
+        //
+        pic.elementsToSend = Item<LogicalRegion>(
+            regions[crid++], ctx, runtime
+        );
+        //
+        pic.neighbors = Item<LogicalRegion>(
+            regions[crid++], ctx, runtime
+        );
+        //
+        pic.receiveLength = Item<LogicalRegion>(
+            regions[crid++], ctx, runtime
+        );
+        //
+        pic.sendLength = Item<LogicalRegion>(
+            regions[crid++], ctx, runtime
+        );
+        //
+        cNItemsToUnpack = crid - baseRegionID;
     }
 
     /**
      *
      */
-    static int
+    int
     nRegionEntries(void) { return cNItemsToUnpack; }
 
     /**
@@ -321,20 +388,30 @@ public:
      */
     void
     refreshMembers(const SparseMatrix &sm) {
-        geom                  = sm.geom;
-        localData             = sm.localData;
-        totalNumberOfRows     = localData->totalNumberOfRows;
-        totalNumberOfNonzeros = localData->totalNumberOfNonzeros;
-        localNumberOfRows     = localData->localNumberOfRows;
-        localNumberOfColumns  = localData->localNumberOfColumns;
-        localNumberOfNonzeros = localData->localNumberOfNonzeros;
-        nonzerosInRow         = sm.nonzerosInRow;
-        mtxIndG               = sm.mtxIndG;
-        mtxIndL               = sm.mtxIndL;
-        matrixValues          = sm.matrixValues;
-        matrixDiagonal        = sm.matrixDiagonal;
-        localToGlobalMap      = sm.localToGlobalMap;
+        geom                   = sm.geom;
+        localData              = sm.localData;
+        //
+        maxNonzerosPerRow      = localData->maxNonzerosPerRow;
+        totalNumberOfRows      = localData->totalNumberOfRows;
+        totalNumberOfNonzeros  = localData->totalNumberOfNonzeros;
+        localNumberOfRows      = localData->localNumberOfRows;
+        localNumberOfColumns   = localData->localNumberOfColumns;
+        localNumberOfNonzeros  = localData->localNumberOfNonzeros;
+        numberOfExternalValues = localData->numberOfExternalValues;
+        numberOfSendNeighbors  = localData->numberOfSendNeighbors;
+        totalToBeSent          = localData->totalToBeSent;
+        //
+        nonzerosInRow          = sm.nonzerosInRow;
+        mtxIndG                = sm.mtxIndG;
+        mtxIndL                = sm.mtxIndL;
+        matrixValues           = sm.matrixValues;
+        matrixDiagonal         = sm.matrixDiagonal;
+        localToGlobalMap       = sm.localToGlobalMap;
+        elementsToSend         = sm.elementsToSend;
+        neighbors              = sm.neighbors;
+        receiveLength          = sm.receiveLength;
+        sendLength             = sm.sendLength;
         // TODO consider something else here (memory usage)
-        globalToLocalMap      = sm.globalToLocalMap;
+        globalToLocalMap       = sm.globalToLocalMap;
     }
 };
