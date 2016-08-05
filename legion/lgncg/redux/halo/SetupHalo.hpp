@@ -274,3 +274,20 @@ SetupHalo(
     }
 #endif
 }
+
+inline void
+SetupHaloTopLevel(
+    LogicalSparseMatrix &A,
+    LegionRuntime::HighLevel::Context ctx,
+    LegionRuntime::HighLevel::Runtime *runtime
+) {
+    using namespace std;
+    //
+    cout << "*** Setting Up Regions for SPMD Exchanges..." << endl;
+    const double startTime = mytimer();
+
+
+    const double endTime = mytimer();
+    double time = endTime - startTime;
+    cout << "--> Time=" << time << "s" << endl;
+}

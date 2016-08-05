@@ -306,6 +306,7 @@ public:
         this->neighbors = neighbors;
         this->receiveLength = receiveLength;
         this->sendLength = sendLength;
+        // TODO consider something else here (memory usage)
         this->globalToLocalMap = globalToLocalMap;
     }
 

@@ -175,7 +175,7 @@ createLogicalStructures(
     xexact.partition(geom.size, ctx, runtime);
     const double initEnd = mytimer();
     const double initTime = initEnd - initStart;
-    cout << "    Done in: " << initTime << " s" << endl;
+    cout << "--> Time=" << initTime << "s" << endl;
 }
 
 /**
@@ -197,7 +197,7 @@ destroyLogicalStructures(
     xexact.deallocate(ctx, runtime);
     const double initEnd = mytimer();
     const double initTime = initEnd - initStart;
-    cout << "    Done in: " << initTime << " s" << endl;
+    cout << "--> Time=" << initTime << "s" << endl;
 }
 
 /**
@@ -224,13 +224,13 @@ mainTask(
     Geometry initGeom;
     generateInitGeometry(nShards, initGeom);
     cout << "*** Problem Information:"   << endl;
-    cout << "    size=" << initGeom.size << endl;
-    cout << "    npx="  << initGeom.npx  << endl;
-    cout << "    npy="  << initGeom.npy  << endl;
-    cout << "    npz="  << initGeom.npz  << endl;
-    cout << "    nx="   << initGeom.nx   << endl;
-    cout << "    ny="   << initGeom.ny   << endl;
-    cout << "    nz="   << initGeom.nz   << endl;
+    cout << "--> size=" << initGeom.size << endl;
+    cout << "--> npx="  << initGeom.npx  << endl;
+    cout << "--> npy="  << initGeom.npy  << endl;
+    cout << "--> npz="  << initGeom.npz  << endl;
+    cout << "--> nx="   << initGeom.nx   << endl;
+    cout << "--> ny="   << initGeom.ny   << endl;
+    cout << "--> nz="   << initGeom.nz   << endl;
     ////////////////////////////////////////////////////////////////////////////
     cout << "*** Starting Initialization..." << endl;;
     // Application structures.
@@ -270,8 +270,9 @@ mainTask(
     cout << "*** Waiting for Initialization Tasks" << endl;
     futureMap.wait_all_results();
     const double initEnd = mytimer();
-    const double initTime = initEnd - initStart;
-    cout << "*** Initialization Time (s): " << initTime << endl;
+    double initTime = initEnd - initStart;
+    cout << "--> Time=" << initTime << "s" << endl;
+    SetupHaloTopLevel(A, ctx, runtime);
     //
     cout << "*** Cleaning Up..." << endl;
     destroyLogicalStructures(
