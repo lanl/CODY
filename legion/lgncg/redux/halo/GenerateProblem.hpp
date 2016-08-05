@@ -201,8 +201,8 @@ GenerateProblem(
         xexactv = xexact->data(); // Only compute exact solution if requested
         assert(xexactv);
     }
-    //!< global-to-local mapping TODO write back into LR
-    std::map< global_int_t, local_int_t > globalToLocalMap;
+    //!< global-to-local mapping
+    auto &globalToLocalMap = A.globalToLocalMap;
     //
     local_int_t localNumberOfNonzeros = 0;
     //
@@ -331,8 +331,7 @@ GenerateProblem(
             nullptr,
             nullptr,
             nullptr,
-            nullptr,
-            globalToLocalMap
+            nullptr
         )
     );
 }

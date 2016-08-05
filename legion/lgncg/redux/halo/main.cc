@@ -272,6 +272,7 @@ mainTask(
     const double initEnd = mytimer();
     double initTime = initEnd - initStart;
     cout << "--> Time=" << initTime << "s" << endl;
+    //
     SetupHaloTopLevel(A, ctx, runtime);
     //
     cout << "*** Cleaning Up..." << endl;

@@ -291,8 +291,7 @@ public:
         local_int_t *elementsToSend,
         int *neighbors,
         local_int_t *receiveLength,
-        local_int_t *sendLength,
-        const std::map< global_int_t, local_int_t > &globalToLocalMap
+        local_int_t *sendLength
     ) {
         this->geom = geom;
         this->localData = localData;
@@ -306,8 +305,6 @@ public:
         this->neighbors = neighbors;
         this->receiveLength = receiveLength;
         this->sendLength = sendLength;
-        // TODO consider something else here (memory usage)
-        this->globalToLocalMap = globalToLocalMap;
     }
 
     /**
@@ -412,7 +409,5 @@ public:
         neighbors              = sm.neighbors;
         receiveLength          = sm.receiveLength;
         sendLength             = sm.sendLength;
-        // TODO consider something else here (memory usage)
-        globalToLocalMap       = sm.globalToLocalMap;
     }
 };

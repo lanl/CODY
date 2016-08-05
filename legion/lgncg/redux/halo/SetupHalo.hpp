@@ -275,6 +275,9 @@ SetupHalo(
 #endif
 }
 
+/**
+ *
+ */
 inline void
 SetupHaloTopLevel(
     LogicalSparseMatrix &A,
