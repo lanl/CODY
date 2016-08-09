@@ -215,6 +215,8 @@ mainTask(
                             ctx, CGMapper::TID_NUM_SHARDS
                         );
     cout << "*** Number of Shards (~ NUMPE)=" << nShards << endl;;
+    // TODO FIXME
+    assert(nShards > 1 && "Run with at least 2 shards...");
     ////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////
     // At this point we need to know some run parameters so we can allocate and

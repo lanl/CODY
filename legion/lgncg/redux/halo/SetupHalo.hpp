@@ -160,6 +160,8 @@ SetupHalo(
     ArrayAllocator<int> *aaNeighbors = nullptr;
     int *neighbors = nullptr;
     if (sendList.size() != 0) {
+        // SKG TODO make receiveList.size()
+        // okay at this point because they are the same length.
         aaNeighbors = new ArrayAllocator<int>(
             sendList.size(), WO_E, ctx, runtime
         );
@@ -186,7 +188,6 @@ SetupHalo(
         sendLength = aaSendLength->data();
         assert(sendLength);
     }
-    //
     int neighborCount = 0;
     local_int_t receiveEntryCount = 0;
     local_int_t sendEntryCount = 0;
@@ -212,7 +213,7 @@ SetupHalo(
     }
     // Convert matrix indices to local IDs
     for (local_int_t i = 0; i< localNumberOfRows; i++) {
-        for (int j=0; j<nonzerosInRow[i]; j++) {
+        for (int j = 0; j < nonzerosInRow[i]; j++) {
             global_int_t curIndex = mtxIndG(i, j);
             int rankIdOfColumnEntry = ComputeRankOfMatrixRow(*(A.geom), curIndex);
             // My column index, so convert to local index
@@ -236,6 +237,7 @@ SetupHalo(
     AlD->localNumberOfColumns   = AlD->localNumberOfRows
                                 + AlD->numberOfExternalValues;
     AlD->numberOfSendNeighbors  = sendList.size();
+    AlD->numberOfRecvNeighbors  = receiveList.size();
     AlD->totalToBeSent          = totalToBeSent;
     //
     if (aaElementsToSend) {
@@ -254,7 +256,6 @@ SetupHalo(
         aaSendLength->bindToLogicalRegion(*(A.pic.sendLength.data()));
         delete aaSendLength;
     }
-    //A.sendBuffer = sendBuffer;
 
 #if 0
     cout << " For rank " << A.geom->rank
@@ -285,31 +286,41 @@ SetupHaloTopLevel(
 ) {
     using namespace std;
     //
-    cout << "*** Setting Up Regions for SPMD Exchanges..." << endl;
+    cout << "*** Setting Up Structures for SPMD Exchanges..." << endl;
     const double startTime = mytimer();
     const int nShards = geom.size;
     // Extract required info from logical structures.
-    PhysicalRegion prNeighbors = A.lrNeighbors.mapRegion(RO_E, ctx, lrt);
-    Array<LogicalRegion> alrNeighbors(prNeighbors, ctx, lrt);
+    //
+    Array<SparseMatrixScalars> aSparseMatrixScalars(
+        A.localData.mapRegion(RO_E, ctx, lrt), ctx, lrt
+    );
+    SparseMatrixScalars *smScalars = aSparseMatrixScalars.data();
+    assert(smScalars);
+    cout << "--> Memory for SparseMatrixScalars="
+         << (sizeof(SparseMatrixScalars) * nShards) / 1024.0
+         << "kB" << endl;
+    //
+    Array<LogicalRegion> alrNeighbors(
+        A.lrNeighbors.mapRegion(RO_E, ctx, lrt), ctx, lrt
+    );
     LogicalRegion *lrpNeighbors = alrNeighbors.data();
     assert(lrpNeighbors);
     // Iterate over all shards
     for (int shard = 0; shard < nShards; ++shard) {
-        LogicalRegion &lr = lrpNeighbors[shard];
-        LogicalItem<LogicalRegion> test(lr, ctx, lrt);
-        auto testPR = test.mapRegion(RO_E, ctx, lrt);
-        Array<int> laTest(testPR, ctx,lrt);
-        int *data = laTest.data();
+        LogicalItem<LogicalRegion> lrNeighbor(lrpNeighbors[shard], ctx, lrt);
+        Array<int> aNeighbors(lrNeighbor.mapRegion(RO_E, ctx, lrt), ctx, lrt);
+        int *neighbors = aNeighbors.data(); assert(neighbors);
         cout << "Rank " << shard << " Neighbors " << endl;
-        for (int i = 0; i < nShards; ++i) {
-            cout << data[i] << " ";
+        for (int i = 0; i < smScalars[shard].numberOfRecvNeighbors; ++i) {
+            cout << neighbors[i] << " ";
         }
         cout << endl;
-        assert(data);
-        test.unmapRegion(ctx, lrt);
+        lrNeighbor.unmapRegion(ctx, lrt);
     }
     // Unmap inline mapped structures.
+    A.localData.unmapRegion(ctx, lrt);
     A.lrNeighbors.unmapRegion(ctx, lrt);
+    //
     const double endTime = mytimer();
     double time = endTime - startTime;
     cout << "--> Time=" << time << "s" << endl;

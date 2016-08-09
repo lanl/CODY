@@ -139,7 +139,7 @@ GenerateProblem(
         //
         const size_t pMemInB = sparseMatMemInB + vectorsMemInB;
         const double pMemInMB = double(pMemInB)/1024/1024;
-        cout << "*** Approx. Generate Problem Memory Footprint="
+        cout << "--> Approximate Generate Problem Memory Footprint="
              << pMemInMB << "MB" << endl;
     }
     //

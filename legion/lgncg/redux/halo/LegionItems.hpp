@@ -63,7 +63,7 @@ struct LogicalItem : public LogicalItemBase {
      * Instantiate a LogicalItem from a LogicalRegion.
      */
     LogicalItem(
-        LogicalRegion &lr,
+        const LogicalRegion &lr,
         LegionRuntime::HighLevel::Context &ctx,
         LegionRuntime::HighLevel::HighLevelRuntime *lrt
     ) : LogicalItemBase()

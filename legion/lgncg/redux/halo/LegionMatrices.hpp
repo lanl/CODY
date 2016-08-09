@@ -56,9 +56,9 @@
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
-struct SparseMatrixLocalData {
+struct SparseMatrixScalars {
     //Max number of non-zero elements in any row
-    local_int_t maxNonzerosPerRow;
+    local_int_t maxNonzerosPerRow = 0;
     //total number of matrix rows across all processes
     global_int_t totalNumberOfRows = 0;
     //total number of matrix nonzeros across all processes
@@ -70,12 +70,15 @@ struct SparseMatrixLocalData {
     //number of nonzeros local to this process
     local_int_t localNumberOfNonzeros = 0;
     //number of entries that are external to this process
-    local_int_t numberOfExternalValues;
+    local_int_t numberOfExternalValues = 0;
     //number of neighboring processes that will be send local data
-    int numberOfSendNeighbors;
+    int numberOfSendNeighbors = 0;
+    //number of neighboring processes that i'll get data from
+    int numberOfRecvNeighbors = 0;
     //total number of entries to be sent
-    local_int_t totalToBeSent;
+    local_int_t totalToBeSent = 0;
 };
+
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -88,7 +91,7 @@ public:
     //
     LogicalArray<Geometry> geometries;
     //
-    LogicalArray<SparseMatrixLocalData> localData;
+    LogicalArray<SparseMatrixScalars> localData;
     // The number of nonzeros in a row will always be 27 or fewer
     LogicalArray<LogicalRegion> lrNonzerosInRow;
     // Logical regions that point to regions of matrix indices as global values
@@ -210,7 +213,7 @@ protected:
     // Physical Item Container
     struct PIC {
         Item<Geometry> geom;
-        Item<SparseMatrixLocalData> localData;
+        Item<SparseMatrixScalars> localData;
         Item<LogicalRegion> nonzerosInRow;
         Item<LogicalRegion> mtxIndG;
         Item<LogicalRegion> mtxIndL;
@@ -241,11 +244,13 @@ public:
     //
     int numberOfSendNeighbors;
     //
+    int numberOfRecvNeighbors;
+    //
     local_int_t totalToBeSent;
     //
     Geometry *geom = nullptr;
     //
-    SparseMatrixLocalData *localData = nullptr;
+    SparseMatrixScalars *localData = nullptr;
     //
     char *nonzerosInRow = nullptr;
     //
@@ -281,7 +286,7 @@ public:
      */
     SparseMatrix(
         Geometry *geom,
-        SparseMatrixLocalData *localData,
+        SparseMatrixScalars *localData,
         char *nonzerosInRow,
         global_int_t *mtxIndG,
         local_int_t *mtxIndL,
@@ -322,7 +327,7 @@ public:
         geom = pic.geom.data();
         assert(geom);
         //
-        pic.localData = Item<SparseMatrixLocalData>(
+        pic.localData = Item<SparseMatrixScalars>(
             regions[crid++], ctx, runtime
         );
         localData = pic.localData.data();
@@ -397,6 +402,7 @@ public:
         localNumberOfNonzeros  = localData->localNumberOfNonzeros;
         numberOfExternalValues = localData->numberOfExternalValues;
         numberOfSendNeighbors  = localData->numberOfSendNeighbors;
+        numberOfRecvNeighbors  = localData->numberOfRecvNeighbors;
         totalToBeSent          = localData->totalToBeSent;
         //
         nonzerosInRow          = sm.nonzerosInRow;
