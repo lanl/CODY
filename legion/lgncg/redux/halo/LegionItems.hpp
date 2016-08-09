@@ -59,9 +59,34 @@ struct LogicalItem : public LogicalItemBase {
      */
     LogicalItem(void) : LogicalItemBase() { }
 
+    /**
+     * Instantiate a LogicalItem from a LogicalRegion.
+     */
+    LogicalItem(
+        LogicalRegion &lr,
+        LegionRuntime::HighLevel::Context &ctx,
+        LegionRuntime::HighLevel::HighLevelRuntime *lrt
+    ) : LogicalItemBase()
+    {
+        //fid
+        logicalRegion = lr;
+        //launchDomain
+        //logicalPartition
+        bounds        = lrt->get_index_space_domain(
+                            ctx, lr.get_index_space()
+                        ).get_rect<1>();
+        //
+        mLength       = 1;
+        mIndexSpace   = lr.get_index_space();
+        mFS           = lr.get_field_space();
+        mIndexSpaceID = mIndexSpace.get_id();
+        mFieldSpaceID = mFS.get_id();
+        mRTreeID      = lr.get_tree_id();
+    }
+
 protected:
     // Number of elements stored in the item (the entire extent).
-    int64_t mLength;
+    int64_t mLength = 0;
     // Index space.
     LegionRuntime::HighLevel::IndexSpace mIndexSpace;
     // Field space.

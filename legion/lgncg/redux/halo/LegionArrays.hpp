@@ -190,7 +190,10 @@ public:
      */
     ~ArrayAllocator(void)
     {
-        l.array.unmapRegion(mCTX, mRuntime);
+        // SKG TODO
+        // Do we want to unmap when we have allocated in a task? Will it flow to
+        // the top-level task if we do???
+        //l.array.unmapRegion(mCTX, mRuntime);
     }
 
     /**

@@ -103,8 +103,8 @@ genProblemTask(
     //
     SparseMatrix A(regions, rid, ctx, runtime);
     rid += A.nRegionEntries();
-    Array<floatType> b(regions[rid++], ctx, runtime);
-    Array<floatType> x(regions[rid++], ctx, runtime);
+    Array<floatType> b     (regions[rid++], ctx, runtime);
+    Array<floatType> x     (regions[rid++], ctx, runtime);
     Array<floatType> xexact(regions[rid++], ctx, runtime);
     //
     Geometry *geom = A.geom;
@@ -272,8 +272,10 @@ mainTask(
     const double initEnd = mytimer();
     double initTime = initEnd - initStart;
     cout << "--> Time=" << initTime << "s" << endl;
-    //
-    SetupHaloTopLevel(A, ctx, runtime);
+    // Now that we have all the setup information stored in LogicalRegions,
+    // perform the top-level setup required for inter-task communication using
+    // PhaseBarriers.
+    SetupHaloTopLevel(A, initGeom, ctx, runtime);
     //
     cout << "*** Cleaning Up..." << endl;
     destroyLogicalStructures(

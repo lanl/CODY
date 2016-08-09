@@ -210,9 +210,8 @@ SetupHalo(
             elementsToSend[sendEntryCount] = A.globalToLocalMap[*i];
         }
     }
-
     // Convert matrix indices to local IDs
-    for (local_int_t i=0; i< localNumberOfRows; i++) {
+    for (local_int_t i = 0; i< localNumberOfRows; i++) {
         for (int j=0; j<nonzerosInRow[i]; j++) {
             global_int_t curIndex = mtxIndG(i, j);
             int rankIdOfColumnEntry = ComputeRankOfMatrixRow(*(A.geom), curIndex);
@@ -256,21 +255,20 @@ SetupHalo(
         delete aaSendLength;
     }
     //A.sendBuffer = sendBuffer;
-    // TODO A.refreshMembers(...)
 
-#ifdef HPCG_DETAILED_DEBUG
-    HPCG_fout << " For rank " << A.geom->rank
+#if 0
+    cout << " For rank " << A.geom->rank
             << " of " << A.geom->size
-            << ", number of neighbors = " << A.numberOfSendNeighbors << endl;
-    for (int i = 0; i < A.numberOfSendNeighbors; i++) {
-        HPCG_fout << "     rank " << A.geom->rank
-                  << " neighbor " << neighbors[i]
-                  << " send/recv length = " << sendLength[i]
-                  << "/" << receiveLength[i] << endl;
+            << ", number of neighbors = " << AlD->numberOfSendNeighbors << endl;
+    for (int i = 0; i < AlD->numberOfSendNeighbors; i++) {
+        cout << "     rank " << A.geom->rank
+             << " neighbor " << neighbors[i]
+             << " send/recv length = " << sendLength[i]
+             << "/" << receiveLength[i] << endl;
         for (local_int_t j = 0; j<sendLength[i]; ++j)
-            HPCG_fout << "       rank " << A.geom->rank
-                      << " elementsToSend[" << j << "] = "
-                      << elementsToSend[j] << endl;
+            cout << "       rank " << A.geom->rank
+                 << " elementsToSend[" << j << "] = "
+                 << elementsToSend[j] << endl;
     }
 #endif
 }
@@ -281,15 +279,37 @@ SetupHalo(
 inline void
 SetupHaloTopLevel(
     LogicalSparseMatrix &A,
+    const Geometry &geom,
     LegionRuntime::HighLevel::Context ctx,
-    LegionRuntime::HighLevel::Runtime *runtime
+    LegionRuntime::HighLevel::Runtime *lrt
 ) {
     using namespace std;
     //
     cout << "*** Setting Up Regions for SPMD Exchanges..." << endl;
     const double startTime = mytimer();
-
-
+    const int nShards = geom.size;
+    // Extract required info from logical structures.
+    PhysicalRegion prNeighbors = A.lrNeighbors.mapRegion(RO_E, ctx, lrt);
+    Array<LogicalRegion> alrNeighbors(prNeighbors, ctx, lrt);
+    LogicalRegion *lrpNeighbors = alrNeighbors.data();
+    assert(lrpNeighbors);
+    // Iterate over all shards
+    for (int shard = 0; shard < nShards; ++shard) {
+        LogicalRegion &lr = lrpNeighbors[shard];
+        LogicalItem<LogicalRegion> test(lr, ctx, lrt);
+        auto testPR = test.mapRegion(RO_E, ctx, lrt);
+        Array<int> laTest(testPR, ctx,lrt);
+        int *data = laTest.data();
+        cout << "Rank " << shard << " Neighbors " << endl;
+        for (int i = 0; i < nShards; ++i) {
+            cout << data[i] << " ";
+        }
+        cout << endl;
+        assert(data);
+        test.unmapRegion(ctx, lrt);
+    }
+    // Unmap inline mapped structures.
+    A.lrNeighbors.unmapRegion(ctx, lrt);
     const double endTime = mytimer();
     double time = endTime - startTime;
     cout << "--> Time=" << time << "s" << endl;
