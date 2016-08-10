@@ -135,9 +135,11 @@ updateMappers(
     HighLevelRuntime *runtime,
     const std::set<Processor> &local_procs
 ) {
+#if 0 // SKG disable for now.
     for (const auto &p : local_procs) {
         runtime->replace_default_mapper(new CGMapper(machine, runtime, p), p);
     }
+#endif
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -193,3 +195,20 @@ getTaskID(
 ) {
     return task->index_point.point_data[0];
 }
+
+/**
+ * TODO add proc type
+ */
+inline int
+getNumProcs(
+    void
+) {
+    size_t nProc = 0;
+    std::set<Processor> allProcs;
+    Realm::Machine::get_machine().get_all_processors(allProcs);
+    for (auto &p : allProcs) {
+        if (p.kind() == Processor::LOC_PROC) nProc++;
+    }
+    return nProc;
+}
+

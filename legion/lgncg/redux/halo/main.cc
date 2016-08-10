@@ -51,7 +51,6 @@
 #include "LegionStuff.hpp"
 #include "LegionArrays.hpp"
 #include "LegionMatrices.hpp"
-#include "CGMapper.h"
 
 #include <iostream>
 #include <cstdlib>
@@ -72,9 +71,7 @@ genProblemTask(
     const std::vector<PhysicalRegion> &regions,
     Context ctx, HighLevelRuntime *runtime
 ) {
-    const auto nShards = runtime->get_tunable_value(
-                            ctx, CGMapper::TID_NUM_SHARDS
-                         );
+    const auto nShards = getNumProcs();
     const int taskID = getTaskID(task);
     //
     HPCG_Params params;
@@ -210,10 +207,8 @@ mainTask(
     const std::vector<PhysicalRegion> &,
     Context ctx, HighLevelRuntime *runtime
 ) {
+    auto nShards = getNumProcs();
     // ask the mapper how many shards we can have
-    const auto nShards = runtime->get_tunable_value(
-                            ctx, CGMapper::TID_NUM_SHARDS
-                        );
     cout << "*** Number of Shards (~ NUMPE)=" << nShards << endl;;
     // TODO FIXME
     assert(nShards > 1 && "Run with at least 2 shards...");
@@ -298,7 +293,7 @@ mainTask(
         TaskArgument(nullptr, 0),
         ArgumentMap()
     );
-#if 0
+#if 1
     for (int color = 0; color < nShards; ++color) {
         auto lsr = runtime->get_logical_subregion_by_color(
                        ctx,
@@ -313,10 +308,10 @@ mainTask(
                 SIMULTANEOUS,
                 ta.logicalRegion
             )
-        ).add_field(ta.fid)
-         .add_flags(NO_ACCESS_FLAG);
+        ).add_field(ta.fid);
+         //.add_flags(NO_ACCESS_FLAG);
     }
-#endif
+#else
     il.add_region_requirement(
         RegionRequirement(
             ta.logicalPartition,
@@ -327,9 +322,11 @@ mainTask(
         )
     ).add_field(ta.fid);
      //.add_flags(NO_ACCESS_FLAG);
+#endif
+#if 0
     auto futureMap = runtime->execute_index_space(ctx, il);
     futureMap.wait_all_results();
-#if 0
+#else
     mel.add_index_task(il);
     FutureMap fm = runtime->execute_must_epoch(ctx, mel);
     fm.wait_all_results();
@@ -368,7 +365,7 @@ testTask(
     const int taskID = getTaskID(task);
     cout << "hi from " << taskID << endl;
 
-    Array<int> priv(regions[0], ctx, runtime);
+    Array<int> priv(regions[taskID], ctx, runtime);
     int *data = priv.data();
     assert(data);
     for (int i = 0; i < 4; ++i) {
