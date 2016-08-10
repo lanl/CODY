@@ -1,6 +1,6 @@
 // mapper for SPMD CG solver
 
-#include "cgmapper.h"
+#include "CGMapper.h"
 
 LegionRuntime::Logger::Category log_cgmap("cgmapper");
 
