@@ -110,7 +110,7 @@ protected:
     ) {
         mLength = len;
         // calculate the size of the logicalRegion vec (inclusive)
-        auto n = mLength - 1;
+        size_t n = mLength - 1;
         // vec rect
         bounds = Rect<1>(Point<1>::ZEROES(), Point<1>(n));
         // vector domain

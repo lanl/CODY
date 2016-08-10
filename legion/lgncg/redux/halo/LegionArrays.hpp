@@ -73,7 +73,7 @@ public:
      */
     void
     partition(
-        int64_t nParts,
+        size_t nParts,
         LegionRuntime::HighLevel::Context &ctx,
         LegionRuntime::HighLevel::HighLevelRuntime *lrt
     ) {
@@ -93,7 +93,7 @@ public:
         //          | |
         //          | m / nSubregions
         //     (x0) + |
-        int64_t x0 = 0, x1 = inc - 1;
+        size_t x0 = 0, x1 = inc - 1;
         DomainColoring disjointColoring;
         // a list of sub-grid bounds.
         // provides a task ID to sub-grid bounds mapping.
