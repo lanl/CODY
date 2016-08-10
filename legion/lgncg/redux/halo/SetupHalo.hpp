@@ -291,27 +291,37 @@ SetupHaloTopLevel(
     const int nShards = geom.size;
     // Extract required info from logical structures.
     //
+    cout << "--> Memory for SparseMatrixScalars="
+         << (sizeof(SparseMatrixScalars) * nShards) / 1024.0
+         << "kB" << endl;
     Array<SparseMatrixScalars> aSparseMatrixScalars(
         A.localData.mapRegion(RO_E, ctx, lrt), ctx, lrt
     );
     SparseMatrixScalars *smScalars = aSparseMatrixScalars.data();
     assert(smScalars);
-    cout << "--> Memory for SparseMatrixScalars="
-         << (sizeof(SparseMatrixScalars) * nShards) / 1024.0
-         << "kB" << endl;
     //
     Array<LogicalRegion> alrNeighbors(
         A.lrNeighbors.mapRegion(RO_E, ctx, lrt), ctx, lrt
     );
     LogicalRegion *lrpNeighbors = alrNeighbors.data();
     assert(lrpNeighbors);
+    // Determine total number of PhaseBarriers required for synchronization
+    size_t totpb = 0;
+    for (int shard = 0; shard < nShards; ++shard) {
+        // 2x for ready/done pairs
+        totpb += (smScalars[shard].numberOfRecvNeighbors * 2);
+    }
+    cout << "--> Total Number of PhaseBarriers Created="
+         << totpb << endl;
     // Iterate over all shards
     for (int shard = 0; shard < nShards; ++shard) {
         LogicalItem<LogicalRegion> lrNeighbor(lrpNeighbors[shard], ctx, lrt);
         Array<int> aNeighbors(lrNeighbor.mapRegion(RO_E, ctx, lrt), ctx, lrt);
         int *neighbors = aNeighbors.data(); assert(neighbors);
-        cout << "Rank " << shard << " Neighbors " << endl;
-        for (int i = 0; i < smScalars[shard].numberOfRecvNeighbors; ++i) {
+        const int nNeighbors = smScalars[shard].numberOfRecvNeighbors;
+        cout << "Rank " << shard << " Has "
+             << nNeighbors << " Neighbors " << endl;
+        for (int i = 0; i < nNeighbors;  ++i) {
             cout << neighbors[i] << " ";
         }
         cout << endl;

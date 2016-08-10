@@ -61,9 +61,9 @@
 */
 inline int
 ComputeSPMV(
-    const SparseMatrix & A,
-    Vector & x,
-    Vector & y
+    const SparseMatrix &A,
+    Vector &x,
+    Vector &y
 ) {
     assert(x.localLength>=A.localNumberOfColumns); // Test vector lengths
     assert(y.localLength>=A.localNumberOfRows);

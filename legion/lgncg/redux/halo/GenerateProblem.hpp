@@ -138,7 +138,7 @@ GenerateProblem(
         ) * A.geom->size;
         //
         const size_t pMemInB = sparseMatMemInB + vectorsMemInB;
-        const double pMemInMB = double(pMemInB)/1024/1024;
+        const double pMemInMB = pMemInB/1024.0/1024.0;
         cout << "--> Approximate Generate Problem Memory Footprint="
              << pMemInMB << "MB" << endl;
     }
