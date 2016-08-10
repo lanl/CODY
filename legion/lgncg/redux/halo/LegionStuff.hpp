@@ -211,4 +211,3 @@ getNumProcs(
     }
     return nProc;
 }
-
