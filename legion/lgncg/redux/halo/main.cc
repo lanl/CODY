@@ -248,36 +248,105 @@ mainTask(
         ctx,
         runtime
     );
-    //
-    cout << "*** Launching Initialization Tasks..." << endl;;
-    const double initStart = mytimer();
-    IndexLauncher launcher(
-        GEN_PROB_TID,
-        A.launchDomain,
-        TaskArgument(nullptr, 0),
-        ArgumentMap()
-    );
-    //
-    intent<WO_E>(
-        launcher,
-        {A.geometries, A.localData, A.lrNonzerosInRow,
-         A.lrMtxIndG, A.lrMtxIndL, A.lrMatrixValues,
-         A.lrMatrixDiagonal, A.lrLocalToGlobalMap,
-         A.lrGlobalToLocalMap, A.lrElementsToSend,
-         A.lrNeighbors, A.lrReceiveLength, A.lrSendLength,
-         b, x, xexact}
-    );
-    //
-    auto futureMap = runtime->execute_index_space(ctx, launcher);
-    cout << "*** Waiting for Initialization Tasks" << endl;
-    futureMap.wait_all_results();
-    const double initEnd = mytimer();
-    double initTime = initEnd - initStart;
-    cout << "--> Time=" << initTime << "s" << endl;
+    {
+        //
+        cout << "*** Launching Initialization Tasks..." << endl;;
+        const double initStart = mytimer();
+        IndexLauncher launcher(
+            GEN_PROB_TID,
+            A.launchDomain,
+            TaskArgument(nullptr, 0),
+            ArgumentMap()
+        );
+        //
+        intent<WO_E>(
+            launcher,
+            {A.geometries, A.localData, A.lrNonzerosInRow,
+             A.lrMtxIndG, A.lrMtxIndL, A.lrMatrixValues,
+             A.lrMatrixDiagonal, A.lrLocalToGlobalMap,
+             A.lrGlobalToLocalMap, A.lrElementsToSend,
+             A.lrNeighbors, A.lrReceiveLength, A.lrSendLength,
+             b, x, xexact}
+        );
+        //
+        auto futureMap = runtime->execute_index_space(ctx, launcher);
+        cout << "*** Waiting for Initialization Tasks" << endl;
+        futureMap.wait_all_results();
+        const double initEnd = mytimer();
+        double initTime = initEnd - initStart;
+        cout << "--> Time=" << initTime << "s" << endl;
+    }
     // Now that we have all the setup information stored in LogicalRegions,
     // perform the top-level setup required for inter-task communication using
     // PhaseBarriers.
     SetupHaloTopLevel(A, initGeom, ctx, runtime);
+#if 1 //TEST
+    MustEpochLauncher mel;
+
+    LogicalArray<int> ta;
+    int globLen = 4 * nShards;
+    ta.allocate(globLen, ctx, runtime);
+    ta.partition(nShards, ctx, runtime);
+#if 1
+    runtime->fill_field<int>(
+        ctx, ta.logicalRegion, ta.logicalRegion, ta.fid, -1
+    );
+#endif
+    IndexLauncher il(
+        TEST_TID,
+        ta.launchDomain,
+        TaskArgument(nullptr, 0),
+        ArgumentMap()
+    );
+#if 0
+    for (int color = 0; color < nShards; ++color) {
+        auto lsr = runtime->get_logical_subregion_by_color(
+                       ctx,
+                       ta.logicalPartition,
+                       color
+        );
+        il.add_region_requirement(
+            RegionRequirement(
+                lsr,
+                0,
+                READ_WRITE,
+                SIMULTANEOUS,
+                ta.logicalRegion
+            )
+        ).add_field(ta.fid)
+         .add_flags(NO_ACCESS_FLAG);
+    }
+#endif
+    il.add_region_requirement(
+        RegionRequirement(
+            ta.logicalPartition,
+            0,
+            READ_WRITE,
+            EXCLUSIVE,
+            ta.logicalRegion
+        )
+    ).add_field(ta.fid);
+     //.add_flags(NO_ACCESS_FLAG);
+    auto futureMap = runtime->execute_index_space(ctx, il);
+    futureMap.wait_all_results();
+#if 0
+    mel.add_index_task(il);
+    FutureMap fm = runtime->execute_must_epoch(ctx, mel);
+    fm.wait_all_results();
+#endif
+    //
+    auto pta = ta.mapRegion(RO_E, ctx, runtime);
+    Array<int> res(pta, ctx, runtime);
+    int *resp = res.data();
+    assert(resp);
+    for (int i = 0; i < globLen; ++i) {
+        cout << resp[i] << " ";
+    }
+    cout << endl;
+    ta.unmapRegion(ctx, runtime);
+    //
+    ta.deallocate(ctx, runtime);
+#endif
     //
     cout << "*** Cleaning Up..." << endl;
     destroyLogicalStructures(
@@ -288,6 +357,23 @@ mainTask(
         ctx,
         runtime
     );
+}
+
+void
+testTask(
+    const Task *task,
+    const std::vector<PhysicalRegion> &regions,
+    Context ctx, HighLevelRuntime *runtime
+) {
+    const int taskID = getTaskID(task);
+    cout << "hi from " << taskID << endl;
+
+    Array<int> priv(regions[0], ctx, runtime);
+    int *data = priv.data();
+    assert(data);
+    for (int i = 0; i < 4; ++i) {
+        data[i] = taskID;
+    }
 }
 
 /**

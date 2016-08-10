@@ -157,6 +157,7 @@ void CGMapper::select_task_options(Task *task)
 
 bool CGMapper::pre_map_task(Task *task)
 {
+#if 0 // SKG FIXME (was hitting assert)
   // assume that all must_early_map regions have an existing instance and just use that
   for(unsigned idx = 0; idx < task->regions.size(); idx++)
     if(task->regions[idx].must_early_map || (task->regions[idx].prop == SIMULTANEOUS)) {
@@ -183,7 +184,7 @@ bool CGMapper::pre_map_task(Task *task)
 	assert(0);
       }
     }
-
+#endif
   return true;
 }
 

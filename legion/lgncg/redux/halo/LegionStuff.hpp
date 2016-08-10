@@ -48,7 +48,8 @@ using namespace LegionRuntime::Accessor;
 ////////////////////////////////////////////////////////////////////////////////
 enum {
     MAIN_TID = 0,
-    GEN_PROB_TID
+    GEN_PROB_TID,
+    TEST_TID
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -87,6 +88,13 @@ genProblemTask(
     Context ctx, HighLevelRuntime *runtime
 );
 
+void
+testTask(
+    const Task *task,
+    const std::vector<PhysicalRegion> &regions,
+    Context ctx, HighLevelRuntime *runtime
+);
+
 ////////////////////////////////////////////////////////////////////////////////
 // Task Registration
 ////////////////////////////////////////////////////////////////////////////////
@@ -108,6 +116,15 @@ registerTasks(void) {
         AUTO_GENERATE_ID,
         TaskConfigOptions(false /* leaf task */),
         "genProblemTask"
+    );
+    HighLevelRuntime::register_legion_task<testTask>(
+        TEST_TID /* task id */,
+        Processor::LOC_PROC /* proc kind  */,
+        true /* single */,
+        true /* index */,
+        AUTO_GENERATE_ID,
+        TaskConfigOptions(false /* leaf task */),
+        "testTask"
     );
 }
 
