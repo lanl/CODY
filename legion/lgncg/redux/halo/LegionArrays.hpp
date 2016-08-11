@@ -49,8 +49,8 @@ public:
     void
     allocate(
         int64_t nElems,
-        LegionRuntime::HighLevel::Context &ctx,
-        LegionRuntime::HighLevel::HighLevelRuntime *lrt
+        Legion::Context &ctx,
+        Legion::HighLevelRuntime *lrt
     ) {
         this->mAllocate(nElems, ctx, lrt);
     }
@@ -74,10 +74,10 @@ public:
     void
     partition(
         size_t nParts,
-        LegionRuntime::HighLevel::Context &ctx,
-        LegionRuntime::HighLevel::HighLevelRuntime *lrt
+        Legion::Context &ctx,
+        Legion::HighLevelRuntime *lrt
     ) {
-        using namespace LegionRuntime::HighLevel;
+        using namespace Legion;
         using LegionRuntime::Arrays::Rect;
 
         // For now only allow even partitioning.
@@ -116,7 +116,7 @@ public:
                          true /* disjoint */
         );
         // logical partitions
-        using LegionRuntime::HighLevel::LogicalPartition;
+        using Legion::LogicalPartition;
         this->logicalPartition = lrt->get_logical_partition(
                                      ctx, this->logicalRegion, iPart
                                  );
@@ -201,8 +201,8 @@ public:
      */
     ArrayAllocator(
         uint64_t nItems,
-        LegionRuntime::HighLevel::PrivilegeMode privMode,
-        LegionRuntime::HighLevel::CoherenceProperty cohProp,
+        Legion::PrivilegeMode privMode,
+        Legion::CoherenceProperty cohProp,
         Context ctx,
         HighLevelRuntime *runtime
     ) {
@@ -299,12 +299,12 @@ public:
  *
  */
 template<
-    LegionRuntime::HighLevel::PrivilegeMode PRIV_MODE,
-    LegionRuntime::HighLevel::CoherenceProperty COH_PROP
+    Legion::PrivilegeMode PRIV_MODE,
+    Legion::CoherenceProperty COH_PROP
 >
 static void
 intent(
-    LegionRuntime::HighLevel::IndexLauncher &launcher,
+    Legion::IndexLauncher &launcher,
     const std::deque<LogicalItemBase> &targetArrays
 ) {
     for (auto &a : targetArrays) {
