@@ -30,7 +30,7 @@ ALT_MAPPERS     ?= 0		# Include alternative mappers (not recommended)
 OUTFILE		?= halo-exchange
 # List all the application source files here
 GEN_SRC		?= \
-main.cc init.cc mytimer.cc IOOps.cc CGMapper.cc \
+main.cc init.cc mytimer.cc IOOps.cc \
 ReadHpcgDat.cc CheckAspectRatio.cc \
 MixedBaseCounter.cc ComputeOptimalShapeXYZ.cc GenerateGeometry.cc
 

@@ -31,7 +31,6 @@
 
 #pragma once
 
-#include "CGMapper.h"
 #include "legion.h"
 
 #include <vector>

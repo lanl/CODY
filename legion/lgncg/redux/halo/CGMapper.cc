@@ -224,8 +224,12 @@ int CGMapper::get_tunable_value(const Task *task,
     {
       return sysmems.size();
     }
+  default:
+    assert(0);
   }
 
+#if 0
   // if we don't recognize the tunable id, pass it on to the default mapper
   return ShimMapper::get_tunable_value(task, tid, tag);
+#endif
 }

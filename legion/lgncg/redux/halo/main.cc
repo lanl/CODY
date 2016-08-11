@@ -286,9 +286,11 @@ mainTask(
     ta.allocate(globLen, ctx, runtime);
     ta.partition(nShards, ctx, runtime);
     //
+#if 0
     runtime->fill_field<int>(
         ctx, ta.logicalRegion, ta.logicalRegion, ta.fid, -1
     );
+#endif
     //
     IndexLauncher il(
         TEST_TID,
