@@ -39,7 +39,7 @@ CGMapper::CGMapper(
     Machine machine,
     HighLevelRuntime *rt,
     Processor local
-) : DefaultMapper(machine, rt, local)
+) : ShimMapper(machine, rt, rt->get_mapper_runtime(), local)
   , shard_per_proc(true)
   , runtime(rt)
 {
@@ -152,7 +152,7 @@ void CGMapper::select_task_options(Task *task)
   }
 
   // fall through to default mapper's logic
-  DefaultMapper::select_task_options(task);
+  ShimMapper::select_task_options(task);
 }
 
 bool CGMapper::pre_map_task(Task *task)
@@ -227,5 +227,5 @@ int CGMapper::get_tunable_value(const Task *task,
   }
 
   // if we don't recognize the tunable id, pass it on to the default mapper
-  return DefaultMapper::get_tunable_value(task, tid, tag);
+  return ShimMapper::get_tunable_value(task, tid, tag);
 }

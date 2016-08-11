@@ -37,13 +37,13 @@
 ////////////////////////////////////////////////////////////////////////////////
 struct LogicalItemBase {
     // Field ID.
-    LegionRuntime::HighLevel::FieldID fid = 0;
+    Legion::FieldID fid = 0;
     // Logical region that represents array.
-    LegionRuntime::HighLevel::LogicalRegion logicalRegion;
+    Legion::LogicalRegion logicalRegion;
     // launch domain
-    LegionRuntime::HighLevel::Domain launchDomain;
+    Legion::Domain launchDomain;
     // logical partition
-    LegionRuntime::HighLevel::LogicalPartition logicalPartition;
+    Legion::LogicalPartition logicalPartition;
     // The vector rectangle bounds.
     LegionRuntime::Arrays::Rect<1> bounds;
 };
@@ -64,8 +64,8 @@ struct LogicalItem : public LogicalItemBase {
      */
     LogicalItem(
         const LogicalRegion &lr,
-        LegionRuntime::HighLevel::Context &ctx,
-        LegionRuntime::HighLevel::HighLevelRuntime *lrt
+        Legion::Context &ctx,
+        Legion::HighLevelRuntime *lrt
     ) : LogicalItemBase()
     {
         //fid
@@ -88,16 +88,16 @@ protected:
     // Number of elements stored in the item (the entire extent).
     int64_t mLength = 0;
     // Index space.
-    LegionRuntime::HighLevel::IndexSpace mIndexSpace;
+    Legion::IndexSpace mIndexSpace;
     // Field space.
-    LegionRuntime::HighLevel::FieldSpace mFS;
+    Legion::FieldSpace mFS;
     // The following are used for vector equality tests. That is, equality in
     // the "are these vectors the same from legion's perspective."
-    LegionRuntime::HighLevel::IndexSpaceID mIndexSpaceID;
+    Legion::IndexSpaceID mIndexSpaceID;
     //
-    LegionRuntime::HighLevel::FieldSpaceID mFieldSpaceID;
+    Legion::FieldSpaceID mFieldSpaceID;
     //
-    LegionRuntime::HighLevel::RegionTreeID mRTreeID;
+    Legion::RegionTreeID mRTreeID;
 
     /**
      *
@@ -105,8 +105,8 @@ protected:
     void
     mAllocate(
         int64_t len,
-        LegionRuntime::HighLevel::Context &ctx,
-        LegionRuntime::HighLevel::HighLevelRuntime *lrt
+        Legion::Context &ctx,
+        Legion::HighLevelRuntime *lrt
     ) {
         mLength = len;
         // calculate the size of the logicalRegion vec (inclusive)
@@ -139,8 +139,8 @@ public:
      */
     void
     allocate(
-        LegionRuntime::HighLevel::Context &ctx,
-        LegionRuntime::HighLevel::HighLevelRuntime *lrt
+        Legion::Context &ctx,
+        Legion::HighLevelRuntime *lrt
     ) {
         mAllocate(1, ctx, lrt);
     }
@@ -150,8 +150,8 @@ public:
      */
     void
     deallocate(
-        LegionRuntime::HighLevel::Context &ctx,
-        LegionRuntime::HighLevel::HighLevelRuntime *lrt
+        Legion::Context &ctx,
+        Legion::HighLevelRuntime *lrt
     ) {
         lrt->destroy_logical_region(ctx, logicalRegion);
         lrt->destroy_field_space(ctx, mFS);
@@ -175,14 +175,14 @@ public:
     /**
      *
      */
-    LegionRuntime::HighLevel::PhysicalRegion
+    Legion::PhysicalRegion
     mapRegion(
-        LegionRuntime::HighLevel::PrivilegeMode privMode,
-        LegionRuntime::HighLevel::CoherenceProperty cohProp,
-        LegionRuntime::HighLevel::Context &ctx,
-        LegionRuntime::HighLevel::HighLevelRuntime *lrt
+        Legion::PrivilegeMode privMode,
+        Legion::CoherenceProperty cohProp,
+        Legion::Context &ctx,
+        Legion::HighLevelRuntime *lrt
     ) {
-        using namespace LegionRuntime::HighLevel;
+        using namespace Legion;
         using namespace LegionRuntime::Accessor;
         using LegionRuntime::Arrays::Rect;
         RegionRequirement req(
@@ -201,8 +201,8 @@ public:
      */
     void
     unmapRegion(
-        LegionRuntime::HighLevel::Context &ctx,
-        LegionRuntime::HighLevel::HighLevelRuntime *lrt
+        Legion::Context &ctx,
+        Legion::HighLevelRuntime *lrt
     ) {
         lrt->unmap_region(ctx, physicalRegion);
     }
