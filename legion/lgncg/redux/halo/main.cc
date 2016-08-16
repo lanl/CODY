@@ -56,9 +56,6 @@
 #include <cstdlib>
 #include <iomanip>
 
-// SKG
-#define NO_LUCK
-
 using namespace std;
 
 LegionRuntime::Logger::Category Logger("LGNCG");
@@ -278,7 +275,7 @@ mainTask(
     // perform the top-level setup required for inter-task communication using
     // PhaseBarriers.
     SetupHaloTopLevel(A, initGeom, ctx, runtime);
-#if 1 // SEAN TEST
+
     MustEpochLauncher mel;
 
     int globLen = 4 * nShards;
@@ -286,19 +283,12 @@ mainTask(
     ta.allocate(globLen, ctx, runtime);
     ta.partition(nShards, ctx, runtime);
     //
-#if 0
-    runtime->fill_field<int>(
-        ctx, ta.logicalRegion, ta.logicalRegion, ta.fid, -1
-    );
-#endif
-    //
     IndexLauncher il(
         TEST_TID,
         ta.launchDomain,
         TaskArgument(nullptr, 0),
         ArgumentMap()
     );
-#ifdef NO_LUCK
     for (int color = 0; color < nShards; ++color) {
         auto lsr = runtime->get_logical_subregion_by_color(
                        ctx,
@@ -316,25 +306,9 @@ mainTask(
         ).add_field(ta.fid)
          .add_flags(NO_ACCESS_FLAG);
     }
-#else
-    il.add_region_requirement(
-        RegionRequirement(
-            ta.logicalPartition,
-            0,
-            READ_WRITE,
-            EXCLUSIVE,
-            ta.logicalRegion
-        )
-    ).add_field(ta.fid);
-#endif
-#ifdef NO_LUCK
     mel.add_index_task(il);
     FutureMap fm = runtime->execute_must_epoch(ctx, mel);
     fm.wait_all_results();
-#else
-    auto futureMap = runtime->execute_index_space(ctx, il);
-    futureMap.wait_all_results();
-#endif
     //
     auto pta = ta.mapRegion(RO_E, ctx, runtime);
     Array<int> res(pta, ctx, runtime);
@@ -347,7 +321,6 @@ mainTask(
     ta.unmapRegion(ctx, runtime);
     //
     ta.deallocate(ctx, runtime);
-#endif
     //
     cout << "*** Cleaning Up..." << endl;
     destroyLogicalStructures(
@@ -369,11 +342,7 @@ testTask(
     const int taskID = getTaskID(task);
     cout << "hi from " << taskID << endl;
 
-#ifdef NO_LUCK
     Array<int> priv(regions[taskID], ctx, runtime);
-#else
-    Array<int> priv(regions[0], ctx, runtime);
-#endif
     int *data = priv.data();
     assert(data);
     for (int i = 0; i < 4; ++i) {
