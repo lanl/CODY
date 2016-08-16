@@ -30,6 +30,7 @@
 #include "LegionItems.hpp"
 
 #include <deque>
+#include <vector>
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -109,6 +110,58 @@ public:
             disjointColoring[color] = Domain::from_rect<1>(subRect);
             x0 += inc;
             x1 += inc;
+        }
+        auto iPart = lrt->create_index_partition(
+                         ctx, this->mIndexSpace,
+                         colorDomain, disjointColoring,
+                         true /* disjoint */
+        );
+        // logical partitions
+        using Legion::LogicalPartition;
+        this->logicalPartition = lrt->get_logical_partition(
+                                     ctx, this->logicalRegion, iPart
+                                 );
+        // launch domain -- one task per color
+        // launch domain
+        this->launchDomain = colorDomain;
+    }
+
+    /**
+     *
+     */
+    void
+    partition(
+        std::vector<size_t> partLens,
+        Legion::Context &ctx,
+        Legion::HighLevelRuntime *lrt
+    ) {
+        using namespace Legion;
+        using LegionRuntime::Arrays::Rect;
+
+        //
+        const size_t nParts = partLens.size();
+        Rect<1> colorBounds(Point<1>(0), Point<1>(nParts - 1));
+        Domain colorDomain = Domain::from_rect<1>(colorBounds);
+        //
+        size_t parti = 0;
+        size_t x0 = 0, x1 = partLens[parti] - 1;
+        DomainColoring disjointColoring;
+        // provides a task ID to sub-grid bounds mapping.
+        std::vector< Rect<1> > subGridBounds;
+        for (int64_t color = 0; color < nParts; ++color) {
+            Rect<1> subRect((Point<1>(x0)), (Point<1>(x1)));
+            // cache the subgrid bounds
+            subGridBounds.push_back(subRect);
+#if 0 // nice debug
+            printf("vec len=%ld\n", (long)partLens[parti]);
+            printf("vec disjoint partition: (%ld) to (%ld)\n",
+                    (long)subRect.lo.x[0], (long)subRect.hi.x[0]);
+#endif
+            disjointColoring[color] = Domain::from_rect<1>(subRect);
+            // slide window
+            parti++;
+            x0 += partLens[parti];
+            x1 += partLens[parti];
         }
         auto iPart = lrt->create_index_partition(
                          ctx, this->mIndexSpace,

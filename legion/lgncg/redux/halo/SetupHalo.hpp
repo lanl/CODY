@@ -297,6 +297,16 @@ SetupHaloTopLevel(
     );
     SparseMatrixScalars *smScalars = aSparseMatrixScalars.data();
     assert(smScalars);
+    // Calculate the entire extent (including ghost cells) for a given halo'd
+    // vector. This is simply the sum of all localNumberOfColumns.
+    size_t totVecLen = 0;
+    std::vector<size_t> vecPartLens;
+    for (int s = 0; s < nShards; ++s) {
+        const auto locLen = smScalars[s].localNumberOfColumns;
+        totVecLen += locLen;
+        vecPartLens.push_back(locLen);
+    }
+    cout << "--> Halo'd Vector Total Length=" << totVecLen << endl;
     //
     Array<LogicalRegion> alrNeighbors(
         A.lrNeighbors.mapRegion(RO_E, ctx, lrt), ctx, lrt
