@@ -234,8 +234,6 @@ SetupHalo(
     AlD->numberOfExternalValues = externalToLocalMap.size();
     AlD->localNumberOfColumns   = AlD->localNumberOfRows
                                 + AlD->numberOfExternalValues;
-    AlD->localNumberOfColumns   = AlD->localNumberOfRows
-                                + AlD->numberOfExternalValues;
     AlD->numberOfSendNeighbors  = sendList.size();
     AlD->numberOfRecvNeighbors  = receiveList.size();
     AlD->totalToBeSent          = totalToBeSent;
