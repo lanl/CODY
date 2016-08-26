@@ -160,8 +160,6 @@ SetupHalo(
     ArrayAllocator<int> *aaNeighbors = nullptr;
     int *neighbors = nullptr;
     if (sendList.size() != 0) {
-        // SKG TODO make receiveList.size()
-        // okay at this point because they are the same length.
         aaNeighbors = new ArrayAllocator<int>(
             sendList.size(), WO_E, ctx, runtime
         );
@@ -308,36 +306,53 @@ SetupHaloTopLevel(
     }
     cout << "--> Halo'd Vector Total Length=" << totVecLen << endl;
     //
-    Array<LogicalRegion> alrNeighbors(
-        A.lrNeighbors.mapRegion(RO_E, ctx, lrt), ctx, lrt
+    Array<LogicalRegion> alrNeighborss(
+        A.lrNeighborss.mapRegion(RO_E, ctx, lrt), ctx, lrt
     );
-    LogicalRegion *lrpNeighbors = alrNeighbors.data();
+    LogicalRegion *lrpNeighbors = alrNeighborss.data();
     assert(lrpNeighbors);
     // Determine total number of PhaseBarriers required for synchronization
     size_t totpb = 0;
+    // Record number of PhaseBarriers required for each task and tally total
+    // number of PhaseBarriers required for this calculation.
+    std::vector<size_t> numPhaseBarriers;
     for (int shard = 0; shard < nShards; ++shard) {
-        // 2x for ready/done pairs
-        totpb += (smScalars[shard].numberOfRecvNeighbors * 2);
+        const size_t nrn = smScalars[shard].numberOfSendNeighbors;
+        numPhaseBarriers.push_back(nrn);
+        totpb += nrn;
     }
+    // 2x for ready/done pairs
     cout << "--> Total Number of PhaseBarriers Created="
-         << totpb << endl;
+         << 2 * totpb << endl;
+    // Create and partition logical regions that will store PhaseBarriers
+    LogicalArray<PhaseBarrier> lrReadyPhaseBarriers;
+    LogicalArray<PhaseBarrier> lrDonePhaseBarriers;
+    //
+    lrReadyPhaseBarriers.allocate(totpb, ctx, lrt);
+    lrDonePhaseBarriers.allocate(totpb, ctx, lrt);
+    //
+    lrReadyPhaseBarriers.partition(numPhaseBarriers, ctx, lrt);
+    lrDonePhaseBarriers.partition(numPhaseBarriers, ctx, lrt);
     // Iterate over all shards
     for (int shard = 0; shard < nShards; ++shard) {
-        LogicalItem<LogicalRegion> lrNeighbor(lrpNeighbors[shard], ctx, lrt);
-        Array<int> aNeighbors(lrNeighbor.mapRegion(RO_E, ctx, lrt), ctx, lrt);
+        LogicalItem<LogicalRegion> lrNeighbors(lrpNeighbors[shard], ctx, lrt);
+        Array<int> aNeighbors(lrNeighbors.mapRegion(RO_E, ctx, lrt), ctx, lrt);
         int *neighbors = aNeighbors.data(); assert(neighbors);
-        const int nNeighbors = smScalars[shard].numberOfRecvNeighbors;
+        const int nNeighbors = smScalars[shard].numberOfSendNeighbors;
         cout << "Rank " << shard << " Has "
-             << nNeighbors << " Neighbors " << endl;
+             << nNeighbors << " Send Neighbors " << endl;
         for (int i = 0; i < nNeighbors;  ++i) {
             cout << neighbors[i] << " ";
         }
         cout << endl;
-        lrNeighbor.unmapRegion(ctx, lrt);
+        lrNeighbors.unmapRegion(ctx, lrt);
     }
     // Unmap inline mapped structures.
     A.localData.unmapRegion(ctx, lrt);
-    A.lrNeighbors.unmapRegion(ctx, lrt);
+    A.lrNeighborss.unmapRegion(ctx, lrt);
+    //
+    lrReadyPhaseBarriers.deallocate(ctx, lrt);
+    lrDonePhaseBarriers.deallocate(ctx, lrt);
     //
     const double endTime = mytimer();
     double time = endTime - startTime;

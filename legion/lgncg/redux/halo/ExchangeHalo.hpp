@@ -51,13 +51,19 @@
 #include <cstdlib>
 
 /*!
-  Communicates data that is at the border of the part of the domain assigned to this processor.
+  Communicates data that is at the border of the part of the domain assigned to
+  this processor.
 
   @param[in]    A The known system matrix
-  @param[inout] x On entry: the local vector entries followed by entries to be communicated; on exit: the vector with non-local entries updated by other processors
+  @param[inout] x On entry: the local vector entries followed by entries to be
+  communicated; on exit: the vector with non-local entries updated by other
+  processors
  */
-void ExchangeHalo(const SparseMatrix & A, Vector & x) {
-
+inline void
+ExchangeHalo(
+    const SparseMatrix & A,
+    Vector & x
+) {
   // Extract Matrix pieces
 
   local_int_t localNumberOfRows = A.localNumberOfRows;
