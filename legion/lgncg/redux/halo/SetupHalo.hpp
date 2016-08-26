@@ -53,6 +53,7 @@
 #include "hpcg.hpp"
 #include "mytimer.hpp"
 
+#include <vector>
 #include <map>
 #include <set>
 #include <cassert>
@@ -316,13 +317,13 @@ SetupHaloTopLevel(
     // PhaseBarrier to notify its consumers and a done PhaseBarrier to receive
     // notifications from its consumers.
     // 2x for ready/done pairs
-    int totpb = 2 * nShards;
+    const int totpb = 2 * nShards;
     cout << "--> Total Number of PhaseBarriers Created="
          << totpb << endl;
     //
     std::vector<PhaseBarriers> myPhaseBarriers;
     // For each color (shard), keep track of its neighbor PhaseBarriers;
-    //std::vector< std::map<int, std::vector<PhaseBarriers> > neighborPhaseBarriers;
+    vector< map< int, vector<PhaseBarriers> > > neighborPhaseBarriers(nShards);
     // Iterate over all shards
     for (int shard = 0; shard < nShards; ++shard) {
         // Get total number of neighbors this shard has
@@ -344,6 +345,11 @@ SetupHaloTopLevel(
             .done  = lrt->create_phase_barrier(ctx, nNeighbors)
         };
         myPhaseBarriers.push_back(pbs);
+        // Share them with my neighbors
+        auto &myNeighborMap = neighborPhaseBarriers[shard];
+        for (int n = 0; n < nNeighbors; ++n) {
+            myNeighborMap[neighbors[n]].push_back(pbs);
+        }
         // Done with this data, so unmap.
         lrNeighbors.unmapRegion(ctx, lrt);
     }
