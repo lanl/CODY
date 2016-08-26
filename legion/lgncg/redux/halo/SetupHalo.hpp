@@ -316,21 +316,35 @@ SetupHaloTopLevel(
     // PhaseBarrier to notify its consumers and a done PhaseBarrier to receive
     // notifications from its consumers.
     // 2x for ready/done pairs
-    size_t totpb = 2 * nShards;
+    int totpb = 2 * nShards;
     cout << "--> Total Number of PhaseBarriers Created="
          << totpb << endl;
+    //
+    std::vector<PhaseBarriers> myPhaseBarriers;
+    // For each color (shard), keep track of its neighbor PhaseBarriers;
+    //std::vector< std::map<int, std::vector<PhaseBarriers> > neighborPhaseBarriers;
     // Iterate over all shards
     for (int shard = 0; shard < nShards; ++shard) {
+        // Get total number of neighbors this shard has
         LogicalItem<LogicalRegion> lrNeighbors(lrpNeighbors[shard], ctx, lrt);
         Array<int> aNeighbors(lrNeighbors.mapRegion(RO_E, ctx, lrt), ctx, lrt);
         int *neighbors = aNeighbors.data(); assert(neighbors);
         const int nNeighbors = smScalars[shard].numberOfSendNeighbors;
+#if 1
         cout << "Rank " << shard << " Has "
              << nNeighbors << " Send Neighbors " << endl;
         for (int i = 0; i < nNeighbors;  ++i) {
             cout << neighbors[i] << " ";
         }
         cout << endl;
+#endif
+        // Create my PhaseBarriers that I will then share with my neighbors.
+        PhaseBarriers pbs = {
+            .ready = lrt->create_phase_barrier(ctx, 1),
+            .done  = lrt->create_phase_barrier(ctx, nNeighbors)
+        };
+        myPhaseBarriers.push_back(pbs);
+        // Done with this data, so unmap.
         lrNeighbors.unmapRegion(ctx, lrt);
     }
     // Unmap inline mapped structures.
