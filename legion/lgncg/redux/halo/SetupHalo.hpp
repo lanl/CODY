@@ -307,32 +307,18 @@ SetupHaloTopLevel(
     cout << "--> Halo'd Vector Total Length=" << totVecLen << endl;
     //
     Array<LogicalRegion> alrNeighborss(
-        A.lrNeighborss.mapRegion(RO_E, ctx, lrt), ctx, lrt
+        A.lrNeighbors.mapRegion(RO_E, ctx, lrt), ctx, lrt
     );
     LogicalRegion *lrpNeighbors = alrNeighborss.data();
     assert(lrpNeighbors);
-    // Determine total number of PhaseBarriers required for synchronization
-    size_t totpb = 0;
-    // Record number of PhaseBarriers required for each task and tally total
-    // number of PhaseBarriers required for this calculation.
-    std::vector<size_t> numPhaseBarriers;
-    for (int shard = 0; shard < nShards; ++shard) {
-        const size_t nrn = smScalars[shard].numberOfSendNeighbors;
-        numPhaseBarriers.push_back(nrn);
-        totpb += nrn;
-    }
+    // Determine total number of PhaseBarriers required for synchronization.
+    // Each shard will create two PhaseBarriers that it owns. A ready
+    // PhaseBarrier to notify its consumers and a done PhaseBarrier to receive
+    // notifications from its consumers.
     // 2x for ready/done pairs
+    size_t totpb = 2 * nShards;
     cout << "--> Total Number of PhaseBarriers Created="
-         << 2 * totpb << endl;
-    // Create and partition logical regions that will store PhaseBarriers
-    LogicalArray<PhaseBarrier> lrReadyPhaseBarriers;
-    LogicalArray<PhaseBarrier> lrDonePhaseBarriers;
-    //
-    lrReadyPhaseBarriers.allocate(totpb, ctx, lrt);
-    lrDonePhaseBarriers.allocate(totpb, ctx, lrt);
-    //
-    lrReadyPhaseBarriers.partition(numPhaseBarriers, ctx, lrt);
-    lrDonePhaseBarriers.partition(numPhaseBarriers, ctx, lrt);
+         << totpb << endl;
     // Iterate over all shards
     for (int shard = 0; shard < nShards; ++shard) {
         LogicalItem<LogicalRegion> lrNeighbors(lrpNeighbors[shard], ctx, lrt);
@@ -349,10 +335,7 @@ SetupHaloTopLevel(
     }
     // Unmap inline mapped structures.
     A.localData.unmapRegion(ctx, lrt);
-    A.lrNeighborss.unmapRegion(ctx, lrt);
-    //
-    lrReadyPhaseBarriers.deallocate(ctx, lrt);
-    lrDonePhaseBarriers.deallocate(ctx, lrt);
+    A.lrNeighbors.unmapRegion(ctx, lrt);
     //
     const double endTime = mytimer();
     double time = endTime - startTime;
