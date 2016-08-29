@@ -321,13 +321,8 @@ SetupHaloTopLevel(
     cout << "--> Total Number of PhaseBarriers Created="
          << totpb << endl;
     //
-    std::vector<PhaseBarriers> myPhaseBarriers(nShards);
-    // For each color (shard), keep track of its neighbor PhaseBarriers; The
-    // vector index is the target task ID that does not own the PhaseBarriers,
-    // but rather uses them for synchronization. The mapping is between neighbor
-    // IDs (PhaseBarrier owners) and the PhaseBarriers that a particular ID is
-    // sharing.
-    vector< map< int, vector<PhaseBarriers> > > neighborPhaseBarriers(nShards);
+    A.ownerPhaseBarriers.reserve(nShards);
+    A.neighborPhaseBarriers.reserve(nShards);
     // Iterate over all shards
     for (int shard = 0; shard < nShards; ++shard) {
         // Get total number of neighbors this shard has
@@ -348,10 +343,10 @@ SetupHaloTopLevel(
             .ready = lrt->create_phase_barrier(ctx, 1),
             .done  = lrt->create_phase_barrier(ctx, nNeighbors)
         };
-        myPhaseBarriers[shard] = pbs;
+        A.ownerPhaseBarriers[shard] = pbs;
         // Share my PhaseBarriers with my neighbors
         for (int n = 0; n < nNeighbors; ++n) {
-            auto &neighborMap = neighborPhaseBarriers[neighbors[n]];
+            auto &neighborMap = A.neighborPhaseBarriers[neighbors[n]];
             neighborMap[shard].push_back(pbs);
         }
         // Done with this data, so unmap.

@@ -272,7 +272,7 @@ mainTask(
         cout << "--> Time=" << initTime << "s" << endl;
     }
     // Now that we have all the setup information stored in LogicalRegions,
-    // perform the top-level setup required for inter-task communication using
+    // perform the top-level setup required for inter-task synchronization using
     // PhaseBarriers.
     SetupHaloTopLevel(A, initGeom, ctx, runtime);
 

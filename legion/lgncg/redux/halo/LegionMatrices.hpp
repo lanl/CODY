@@ -117,6 +117,14 @@ public:
     //Logical regions that point to lengths of messages sent to neighboring
     //processes
     LogicalArray<LogicalRegion> lrSendLength;
+    //
+    std::vector<PhaseBarriers> ownerPhaseBarriers;
+    // For each color (shard), keep track of its neighbor PhaseBarriers; The
+    // vector index is the target task ID that does not own the PhaseBarriers,
+    // but rather uses them for synchronization. The mapping is between neighbor
+    // IDs (PhaseBarrier owners) and the PhaseBarriers that a particular ID is
+    // sharing.
+    std::vector< std::map< int, std::vector<PhaseBarriers> > > neighborPhaseBarriers;
     // Coarse grid matrix
     mutable struct SparseMatrix_STRUCT *Ac;
     // Pointer to the coarse level data for this fine matrix
