@@ -321,8 +321,8 @@ SetupHaloTopLevel(
     cout << "--> Total Number of PhaseBarriers Created="
          << totpb << endl;
     //
-    A.ownerPhaseBarriers.reserve(nShards);
-    A.neighborPhaseBarriers.reserve(nShards);
+    A.ownerPhaseBarriers.resize(nShards);
+    A.neighborPhaseBarriers.resize(nShards);
     // Iterate over all shards
     for (int shard = 0; shard < nShards; ++shard) {
         // Get total number of neighbors this shard has
