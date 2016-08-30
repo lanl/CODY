@@ -126,9 +126,15 @@ public:
     // sharing.
     std::vector< std::map< int, std::vector<PhaseBarriers> > > neighborPhaseBarriers;
     // Coarse grid matrix
-    mutable struct SparseMatrix_STRUCT *Ac;
+    mutable struct SparseMatrix_STRUCT *Ac = nullptr;
     // Pointer to the coarse level data for this fine matrix
     mutable MGData *mgData;
+    // Given the characteristics of this matrix, provide the required length of
+    // vectors that will include halo cells.
+    size_t requiredVectorLen = 0;
+    // Given the characteristics of this matrix, provide the required
+    // partitioning information of vectors that will interact with this matrix.
+    std::vector<size_t> targetVectorPartLens;
 
     /**
      *

@@ -298,14 +298,12 @@ SetupHaloTopLevel(
     assert(smScalars);
     // Calculate the entire extent (including ghost cells) for a given halo'd
     // vector. This is simply the sum of all localNumberOfColumns.
-    size_t totVecLen = 0;
-    std::vector<size_t> vecPartLens;
     for (int s = 0; s < nShards; ++s) {
         const auto locLen = smScalars[s].localNumberOfColumns;
-        totVecLen += locLen;
-        vecPartLens.push_back(locLen);
+        A.requiredVectorLen += locLen;
+        A.targetVectorPartLens.push_back(locLen);
     }
-    cout << "--> Halo'd Vector Total Length=" << totVecLen << endl;
+    cout << "--> Halo'd Vector Total Length=" << A.requiredVectorLen << endl;
     //
     Array<LogicalRegion> alrNeighborss(
         A.lrNeighbors.mapRegion(RO_E, ctx, lrt), ctx, lrt
@@ -330,7 +328,7 @@ SetupHaloTopLevel(
         Array<int> aNeighbors(lrNeighbors.mapRegion(RO_E, ctx, lrt), ctx, lrt);
         int *neighbors = aNeighbors.data(); assert(neighbors);
         const int nNeighbors = smScalars[shard].numberOfSendNeighbors;
-#if 1
+#if 0
         cout << "Rank " << shard << " Has "
              << nNeighbors << " Send Neighbors " << endl;
         for (int i = 0; i < nNeighbors;  ++i) {
