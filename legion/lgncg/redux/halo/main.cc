@@ -286,7 +286,6 @@ mainTask(
     ////////////////////////////////////////////////////////////////////////////
     // Launch the tasks to begin the solve.
     ////////////////////////////////////////////////////////////////////////////
-    MustEpochLauncher mel;
     // Populate the argument map
     ArgumentMap localArgs;
     for (int idx = 0; idx < nShards; idx++) {
@@ -304,18 +303,15 @@ mainTask(
         // Get size of serialized buffer.
         argsSS.seekp(0, ios::end);
         auto sizeInB = argsSS.tellp();
-        //
-        string strBuff(argsSS.str());
-        //
         DomainPoint point = DomainPoint::from_point<1>(Point<1>(idx));
-        localArgs.set_point(point, TaskArgument(strBuff.data(), sizeInB));
+        localArgs.set_point(point, TaskArgument(argsSS.str().c_str(), sizeInB));
     }
     //
     IndexLauncher il(
         START_SOLVE,
-        testV.launchDomain,
+        A.launchDomain,
         TaskArgument(nullptr, 0),
-        ArgumentMap()
+        localArgs
     );
     // First give access to all logical subregions. Will be first nShards
     // regions.
@@ -335,6 +331,8 @@ mainTask(
         ).add_field(testV.fid)
          .add_flags(NO_ACCESS_FLAG);
     }
+    //
+    MustEpochLauncher mel;
     mel.add_index_task(il);
     FutureMap fm = runtime->execute_must_epoch(ctx, mel);
     fm.wait_all_results();
@@ -350,13 +348,25 @@ mainTask(
     );
 }
 
+/**
+ *
+ */
 void
 startSolveTask(
     const Task *task,
     const std::vector<PhysicalRegion> &regions,
     Context ctx, HighLevelRuntime *runtime
 ) {
-    cout << "hi" << endl;
+    const int taskID = getTaskID(task);
+    StartSolveArgs solvArgs;
+    // Deserialize argument data
+    std::stringstream solvArgsSS;
+    // Extract taks-specific arguments passed by ArgumentMap
+    solvArgsSS.write((char *)task->local_args, task->local_arglen);
+    {   // Scoped to guarantee flushing, etc.
+        cereal::BinaryInputArchive ia(solvArgsSS);
+        ia(solvArgs);
+    }
 }
 
 /**
