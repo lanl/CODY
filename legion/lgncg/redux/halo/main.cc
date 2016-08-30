@@ -56,6 +56,8 @@
 #include <cstdlib>
 #include <iomanip>
 
+#include "cereal/archives/binary.hpp"
+
 using namespace std;
 
 LegionRuntime::Logger::Category Logger("LGNCG");
@@ -276,51 +278,66 @@ mainTask(
     // PhaseBarriers.
     SetupHaloTopLevel(A, initGeom, ctx, runtime);
 
-    MustEpochLauncher mel;
+    // SKG TODO RM For testing
+    LogicalArray<floatType> testV;
+    testV.allocate(A.requiredVectorLen, ctx, runtime);
+    testV.partition(A.targetVectorPartLens, ctx, runtime);
 
-    int globLen = 4 * nShards;
-    LogicalArray<int> ta;
-    ta.allocate(globLen, ctx, runtime);
-    ta.partition(nShards, ctx, runtime);
+    ////////////////////////////////////////////////////////////////////////////
+    // Launch the tasks to begin the solve.
+    ////////////////////////////////////////////////////////////////////////////
+    MustEpochLauncher mel;
+    // Populate the argument map
+    ArgumentMap localArgs;
+    for (int idx = 0; idx < nShards; idx++) {
+        StartSolveArgs args {
+            .nShards = nShards,
+            .myPhaseBarriers = A.ownerPhaseBarriers[idx],
+            .neighborPhaseBarriers = A.neighborPhaseBarriers[idx]
+        };
+        // Perform serialization of items for storage into logical regions.
+        std::stringstream argsSS;
+        {   // Scoped to guarantee flushing, etc.
+            cereal::BinaryOutputArchive oa(argsSS);
+            oa(args);
+        }
+        // Get size of serialized buffer.
+        argsSS.seekp(0, ios::end);
+        auto sizeInB = argsSS.tellp();
+        //
+        string strBuff(argsSS.str());
+        //
+        DomainPoint point = DomainPoint::from_point<1>(Point<1>(idx));
+        localArgs.set_point(point, TaskArgument(strBuff.data(), sizeInB));
+    }
     //
     IndexLauncher il(
-        TEST_TID,
-        ta.launchDomain,
+        START_SOLVE,
+        testV.launchDomain,
         TaskArgument(nullptr, 0),
         ArgumentMap()
     );
+    // First give access to all logical subregions. Will be first nShards
+    // regions.
     for (int color = 0; color < nShards; ++color) {
         auto lsr = runtime->get_logical_subregion_by_color(
                        ctx,
-                       ta.logicalPartition,
+                       testV.logicalPartition,
                        color
         );
         il.add_region_requirement(
             RegionRequirement(
                 lsr,
                 0,
-                READ_WRITE,
-                SIMULTANEOUS,
-                ta.logicalRegion
+                RW_S,
+                testV.logicalRegion
             )
-        ).add_field(ta.fid)
+        ).add_field(testV.fid)
          .add_flags(NO_ACCESS_FLAG);
     }
     mel.add_index_task(il);
     FutureMap fm = runtime->execute_must_epoch(ctx, mel);
     fm.wait_all_results();
-    //
-    auto pta = ta.mapRegion(RO_E, ctx, runtime);
-    Array<int> res(pta, ctx, runtime);
-    int *resp = res.data();
-    assert(resp);
-    for (int i = 0; i < globLen; ++i) {
-        cout << resp[i] << " ";
-    }
-    cout << endl;
-    ta.unmapRegion(ctx, runtime);
-    //
-    ta.deallocate(ctx, runtime);
     //
     cout << "*** Cleaning Up..." << endl;
     destroyLogicalStructures(
@@ -334,20 +351,12 @@ mainTask(
 }
 
 void
-testTask(
+startSolveTask(
     const Task *task,
     const std::vector<PhysicalRegion> &regions,
     Context ctx, HighLevelRuntime *runtime
 ) {
-    const int taskID = getTaskID(task);
-    cout << "hi from " << taskID << endl;
-
-    Array<int> priv(regions[taskID], ctx, runtime);
-    int *data = priv.data();
-    assert(data);
-    for (int i = 0; i < 4; ++i) {
-        data[i] = taskID;
-    }
+    cout << "hi" << endl;
 }
 
 /**

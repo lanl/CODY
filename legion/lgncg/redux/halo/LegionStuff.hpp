@@ -33,7 +33,14 @@
 
 #include "legion.h"
 
+// For serialization.
+#include "cereal/cereal.hpp"
+#include "cereal/types/vector.hpp"
+#include "cereal/types/map.hpp"
+#include "cereal/archives/binary.hpp"
+
 #include <vector>
+#include <map>
 
 using namespace LegionRuntime::HighLevel;
 using namespace LegionRuntime::Accessor;
@@ -42,9 +49,36 @@ using namespace LegionRuntime::Accessor;
 #define RO_E READ_ONLY , EXCLUSIVE
 #define WO_E WRITE_ONLY, EXCLUSIVE
 
+#define RW_S READ_WRITE, SIMULTANEOUS
+#define RO_S READ_ONLY , SIMULTANEOUS
+#define WO_S WRITE_ONLY, SIMULTANEOUS
+
+namespace cereal
+{
+    template <class Archive>
+    inline void
+    serialize(Archive &ar, PhaseBarrier &m)
+    {
+        // SKG TODO remove copy here
+        PhaseBarrier copy = m;
+        ar(cereal::binary_data(&copy, sizeof(PhaseBarrier)));
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 struct PhaseBarriers {
     PhaseBarrier ready;
     PhaseBarrier done;
+
+    PhaseBarriers(void) = default;
+
+    template <class Archive>
+    void
+    serialize(Archive &ar)
+    {
+        ar(ready, done);
+    }
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -53,6 +87,7 @@ struct PhaseBarriers {
 enum {
     MAIN_TID = 0,
     GEN_PROB_TID,
+    START_SOLVE,
     TEST_TID
 };
 
@@ -76,6 +111,23 @@ struct SPMDContext {
 };
 
 ////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+struct StartSolveArgs {
+    int nShards;
+    PhaseBarriers myPhaseBarriers;
+    std::map< int, std::vector<PhaseBarriers> > neighborPhaseBarriers;
+
+    StartSolveArgs(void) = default;
+
+    template <class Archive>
+    void
+    serialize(Archive &ar)
+    {
+        ar(nShards, myPhaseBarriers, neighborPhaseBarriers);
+    }
+};
+
+////////////////////////////////////////////////////////////////////////////////
 // Task forward declarations.
 ////////////////////////////////////////////////////////////////////////////////
 void
@@ -93,11 +145,20 @@ genProblemTask(
 );
 
 void
-testTask(
+startSolveTask(
     const Task *task,
     const std::vector<PhysicalRegion> &regions,
     Context ctx, HighLevelRuntime *runtime
 );
+
+inline void
+testTask(
+    const Task *task,
+    const std::vector<PhysicalRegion> &regions,
+    Context ctx, HighLevelRuntime *runtime
+) {
+    ;
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 // Task Registration
@@ -120,6 +181,15 @@ registerTasks(void) {
         AUTO_GENERATE_ID,
         TaskConfigOptions(false /* leaf task */),
         "genProblemTask"
+    );
+    HighLevelRuntime::register_legion_task<startSolveTask>(
+        START_SOLVE /* task id */,
+        Processor::LOC_PROC /* proc kind  */,
+        true /* single */,
+        true /* index */,
+        AUTO_GENERATE_ID,
+        TaskConfigOptions(false /* leaf task */),
+        "startSolveTask"
     );
     HighLevelRuntime::register_legion_task<testTask>(
         TEST_TID /* task id */,
