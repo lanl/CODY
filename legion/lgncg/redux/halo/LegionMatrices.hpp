@@ -52,27 +52,6 @@
 #include <map>
 #include <cassert>
 
-#if 0
-/**
- *
- */
-static inline void
-deserializeSynchronizers(
-    char *rawData,
-    size_t rawDataSizeInB,
-    LogicalSparseMatrix::Synchronizers &outRes
-) {
-    // Deserialize argument data
-    std::stringstream solvArgsSS;
-    // Extract taks-specific arguments passed by ArgumentMap
-    solvArgsSS.write(rawData, rawDataSizeInB);
-    {   // Scoped to guarantee flushing, etc.
-        cereal::BinaryInputArchive ia(solvArgsSS);
-        ia(outRes);
-    }
-}
-#endif
-
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -167,8 +146,8 @@ struct LogicalSparseMatrix {
     //Logical regions that point to lengths of messages sent to neighboring
     //processes
     LogicalArray<LogicalRegion> lrSendLength;
-    // Logical regions that point to serialized synchronizers.
-    LogicalArray<LogicalRegion> lrSynchronizers;
+    // Holds serialization data for Synchronizers.
+    LogicalArray<char> synchronizersData;
     //
     std::vector<PhaseBarriers> ownerPhaseBarriers;
     // For each color (shard), keep track of its neighbor PhaseBarriers; The
@@ -217,7 +196,22 @@ struct LogicalSparseMatrix {
                lrNeighbors.allocate(size, ctx, lrt);
            lrReceiveLength.allocate(size, ctx, lrt);
               lrSendLength.allocate(size, ctx, lrt);
-           lrSynchronizers.allocate(size, ctx, lrt);
+           // Dummy
+         synchronizersData.allocate(size, ctx, lrt);
+    }
+
+    /**
+     *
+     */
+    void
+    allocateSynchronizers(
+        size_t n,
+        LegionRuntime::HighLevel::Context &ctx,
+        LegionRuntime::HighLevel::HighLevelRuntime *lrt
+    ) {
+        // Deallocate dummy
+        synchronizersData.deallocate(ctx, lrt);
+        synchronizersData.allocate(n, ctx, lrt);
     }
 
     /**
@@ -242,9 +236,21 @@ struct LogicalSparseMatrix {
                lrNeighbors.partition(nParts, ctx, lrt);
            lrReceiveLength.partition(nParts, ctx, lrt);
               lrSendLength.partition(nParts, ctx, lrt);
-           lrSynchronizers.partition(nParts, ctx, lrt);
+         synchronizersData.partition(nParts, ctx, lrt);
         // just pick a structure that has a representative launch domain.
         launchDomain = geometries.launchDomain;
+    }
+
+    /**
+     *
+     */
+    void
+    partitionSynchronizers(
+        std::vector<size_t> partLens,
+        LegionRuntime::HighLevel::Context &ctx,
+        LegionRuntime::HighLevel::HighLevelRuntime *lrt
+    ) {
+        synchronizersData.partition(partLens, ctx, lrt);
     }
 
     /**
@@ -268,7 +274,7 @@ struct LogicalSparseMatrix {
                lrNeighbors.deallocate(ctx, lrt);
            lrReceiveLength.deallocate(ctx, lrt);
               lrSendLength.deallocate(ctx, lrt);
-           lrSynchronizers.deallocate(ctx, lrt);
+         synchronizersData.deallocate(ctx, lrt);
     }
 };
 
@@ -294,7 +300,7 @@ protected:
         Item<LogicalRegion> neighbors;
         Item<LogicalRegion> receiveLength;
         Item<LogicalRegion> sendLength;
-        Item<LogicalRegion> synchronizers;
+        Array<char>         synchronizersData;
     };
 public:
     //
@@ -450,7 +456,7 @@ public:
         pic.sendLength = Item<LogicalRegion>(
             regions[crid++], ctx, runtime
         );
-        pic.synchronizers = Item<LogicalRegion>(
+        pic.synchronizersData = Array<char>(
             regions[crid++], ctx, runtime
         );
         //

@@ -261,7 +261,7 @@ mainTask(
              A.lrMatrixDiagonal, A.lrLocalToGlobalMap,
              A.lrGlobalToLocalMap, A.lrElementsToSend,
              A.lrNeighbors, A.lrReceiveLength, A.lrSendLength,
-             A.lrSynchronizers, b, x, xexact}
+             A.synchronizersData, b, x, xexact}
         );
         //
         auto futureMap = runtime->execute_index_space(ctx, launcher);
@@ -314,7 +314,6 @@ mainTask(
     // TODO FIXME - add real access flags on a per-item basis.
     // The application structures will always be at the end of the logical
     // subregions, which will always be of length nShards.
-    // TODO
     intent<RW_S, NO_ACCESS_FLAG>(
         launcher,
         {A.geometries, A.localData, A.lrNonzerosInRow,
@@ -322,7 +321,7 @@ mainTask(
          A.lrMatrixDiagonal, A.lrLocalToGlobalMap,
          A.lrGlobalToLocalMap, A.lrElementsToSend,
          A.lrNeighbors, A.lrReceiveLength, A.lrSendLength,
-         A.lrSynchronizers, b, x, xexact}
+         A.synchronizersData, b, x, xexact}
     );
     //
     MustEpochLauncher mel;
@@ -344,6 +343,25 @@ mainTask(
 /**
  *
  */
+static inline void
+deserializeSynchronizers(
+    char *rawData,
+    size_t rawDataSizeInB,
+    Synchronizers &outRes
+) {
+    // Deserialize argument data
+    std::stringstream solvArgsSS;
+    // Extract taks-specific arguments passed by ArgumentMap
+    solvArgsSS.write(rawData, rawDataSizeInB);
+    {   // Scoped to guarantee flushing, etc.
+        cereal::BinaryInputArchive ia(solvArgsSS);
+        ia(outRes);
+    }
+}
+
+/**
+ *
+ */
 void
 startSolveTask(
     const Task *task,
@@ -357,13 +375,13 @@ startSolveTask(
     SparseMatrix A(regions, 0, ctx, lrt);
 
     auto siz = A.localData->sizeofSynchronizersBuffer;
-    cout << taskID << " " << siz << endl;
+    cout << taskID << " size=" << siz << endl;
 
-    LogicalRegion *lrpSynchronizers = A.pic.synchronizers.data();
-    assert(lrpSynchronizers);
-    //
-    LogicalArray<char> lrfoo(*lrpSynchronizers, ctx, lrt);
-    lrfoo.mapRegion(RW_E, ctx, lrt);
+    Synchronizers syncs;
+    char *synchronizersDataP = A.pic.synchronizersData.data();
+    assert(synchronizersDataP);
+    deserializeSynchronizers(synchronizersDataP, siz, syncs);
+    cout << taskID << " " << syncs.myPhaseBarriers.done << endl;
 }
 
 /**

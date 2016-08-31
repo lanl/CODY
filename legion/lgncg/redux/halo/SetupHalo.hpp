@@ -282,12 +282,9 @@ populateSynchronizers(
     const double startTime = mytimer();
     const int nShards = geom.size;
     //
-    Array<LogicalRegion> alrSynchronizers(
-        A.lrSynchronizers.mapRegion(RW_E, ctx, lrt), ctx, lrt
-    );
-    LogicalRegion *lrSynchronizers = alrSynchronizers.data();
-    assert(lrSynchronizers);
-    //
+    std::vector< std::vector<char> > syncData(nShards);
+    std::vector<size_t> syncDataPartLens(nShards);
+    size_t totalSyncDataSize = 0;
     for (int s = 0; s < nShards; ++s) {
         Synchronizers syncs = {
             .myPhaseBarriers = A.ownerPhaseBarriers[s],
@@ -301,22 +298,33 @@ populateSynchronizers(
         // Get size of serialized buffer.
         ss.seekp(0, ios::end);
         auto regionSizeInB = ss.tellp();
-        // Allocate region-based backing store for serialized data.
-        ArrayAllocator<char> lrStore(
-            regionSizeInB, WO_E, ctx, lrt
-        );
-        char *lrStoreP = lrStore.data(); assert(lrStoreP);
-        // Write back into logical region.
-        memmove(lrStoreP, ss.str().c_str(), regionSizeInB);
-        // Bind to shard's logical region.
-        lrStore.bindToLogicalRegion(lrSynchronizers[s]);
+        //
+        totalSyncDataSize += regionSizeInB;
+        syncDataPartLens[s] = regionSizeInB;
+        //
+        const char *data = ss.str().c_str();
+        syncData[s] = std::vector<char>(data, data + regionSizeInB);
         // Update shard's metadata associated with this buffer.
         smScalars[s].sizeofSynchronizersBuffer = regionSizeInB;
-        // TODO Done, so unmap?
-        lrStore.unmapRegion();
     }
-    // TODO Done, so unmap?
-    A.lrSynchronizers.unmapRegion(ctx, lrt);
+    //
+    A.allocateSynchronizers(totalSyncDataSize, ctx, lrt);
+    A.partitionSynchronizers(syncDataPartLens, ctx, lrt);
+    // Populate all synchronizers.
+    Array<char> aAllSynchronizers(
+        A.synchronizersData.mapRegion(WO_E, ctx, lrt),
+        ctx, lrt
+    );
+    char *allSynchronizers = aAllSynchronizers.data();
+    assert(allSynchronizers);
+    size_t offset = 0;
+    for (int s = 0; s < nShards; ++s) {
+        const size_t dataLen = syncDataPartLens[s];
+        memmove(allSynchronizers + offset, syncData[s].data(), dataLen);
+        offset += dataLen;
+    }
+    //
+    A.synchronizersData.unmapRegion(ctx, lrt);
     //
     const double endTime = mytimer();
     double time = endTime - startTime;
