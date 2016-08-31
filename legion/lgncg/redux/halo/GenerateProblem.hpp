@@ -328,6 +328,7 @@ GenerateProblem(
             nullptr,
             nullptr,
             nullptr,
+            nullptr,
             nullptr
         )
     );

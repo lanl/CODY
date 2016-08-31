@@ -261,7 +261,7 @@ mainTask(
              A.lrMatrixDiagonal, A.lrLocalToGlobalMap,
              A.lrGlobalToLocalMap, A.lrElementsToSend,
              A.lrNeighbors, A.lrReceiveLength, A.lrSendLength,
-             b, x, xexact}
+             A.lrSynchronizers, b, x, xexact}
         );
         //
         auto futureMap = runtime->execute_index_space(ctx, launcher);
@@ -285,7 +285,7 @@ mainTask(
     // Launch the tasks to begin the solve.
     ////////////////////////////////////////////////////////////////////////////
     //
-    IndexLauncher il(
+    IndexLauncher launcher(
         START_SOLVE,
         A.launchDomain,
         TaskArgument(nullptr, 0),
@@ -299,7 +299,7 @@ mainTask(
                        testV.logicalPartition,
                        color
         );
-        il.add_region_requirement(
+        launcher.add_region_requirement(
             RegionRequirement(
                 lsr,
                 0,
@@ -310,8 +310,18 @@ mainTask(
          .add_flags(NO_ACCESS_FLAG);
     }
     //
+    intent<WO_E, NO_ACCESS_FLAG>(
+        launcher,
+        {A.geometries, A.localData, A.lrNonzerosInRow,
+         A.lrMtxIndG, A.lrMtxIndL, A.lrMatrixValues,
+         A.lrMatrixDiagonal, A.lrLocalToGlobalMap,
+         A.lrGlobalToLocalMap, A.lrElementsToSend,
+         A.lrNeighbors, A.lrReceiveLength, A.lrSendLength,
+         A.lrSynchronizers, b, x, xexact}
+    );
+    //
     MustEpochLauncher mel;
-    mel.add_index_task(il);
+    mel.add_index_task(launcher);
     FutureMap fm = runtime->execute_must_epoch(ctx, mel);
     fm.wait_all_results();
     //

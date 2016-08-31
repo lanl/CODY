@@ -274,25 +274,6 @@ SetupHalo(
 /**
  *
  */
-static inline void
-deserializeSynchronizers(
-    char *rawData,
-    size_t rawDataSizeInB,
-    LogicalSparseMatrix::Synchronizers &outRes
-) {
-    // Deserialize argument data
-    std::stringstream solvArgsSS;
-    // Extract taks-specific arguments passed by ArgumentMap
-    solvArgsSS.write(rawData, rawDataSizeInB);
-    {   // Scoped to guarantee flushing, etc.
-        cereal::BinaryInputArchive ia(solvArgsSS);
-        ia(outRes);
-    }
-}
-
-/**
- *
- */
 inline void
 populateSynchronizers(
     LogicalSparseMatrix &A,
@@ -314,7 +295,7 @@ populateSynchronizers(
     assert(lrSynchronizers);
     //
     for (int s = 0; s < nShards; ++s) {
-        LogicalSparseMatrix::Synchronizers syncs = {
+        Synchronizers syncs = {
             .myPhaseBarriers = A.ownerPhaseBarriers[s],
             .neighborPhaseBarriers = A.neighborPhaseBarriers[s]
         };

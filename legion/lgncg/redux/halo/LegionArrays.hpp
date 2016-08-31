@@ -380,3 +380,30 @@ intent(
         ).add_field(a.fid);
     }
 }
+
+/**
+ * TODO unify intent.
+ */
+template<
+    Legion::PrivilegeMode PRIV_MODE,
+    Legion::CoherenceProperty COH_PROP,
+    Legion::RegionFlags FLAGS
+>
+static void
+intent(
+    Legion::IndexLauncher &launcher,
+    const std::deque<LogicalItemBase> &targetArrays
+) {
+    for (auto &a : targetArrays) {
+        launcher.add_region_requirement(
+            RegionRequirement(
+                a.logicalPartition,
+                0,
+                PRIV_MODE,
+                COH_PROP,
+                a.logicalRegion
+            )
+        ).add_field(a.fid)
+         .add_flags(FLAGS);
+    }
+}

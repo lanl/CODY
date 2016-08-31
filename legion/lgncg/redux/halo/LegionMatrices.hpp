@@ -106,29 +106,36 @@ struct SparseMatrixScalars {
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
+/**
+ * Holds structures required for task synchronization.
+ */
+struct Synchronizers {
+    //
+    PhaseBarriers myPhaseBarriers;
+    //
+    std::map< int, std::vector<PhaseBarriers> > neighborPhaseBarriers;
+
+    /**
+     *
+     */
+    Synchronizers(void) = default;
+
+    /**
+     *
+     */
+    template <class Archive>
+    void
+    serialize(Archive &ar)
+    {
+        ar(myPhaseBarriers, neighborPhaseBarriers);
+    }
+};
+
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 struct LogicalSparseMatrix {
-    // Holds structures required for task synchronization.
-    struct Synchronizers {
-        //
-        PhaseBarriers myPhaseBarriers;
-        //
-        std::map< int, std::vector<PhaseBarriers> > neighborPhaseBarriers;
-
-        /**
-         *
-         */
-        Synchronizers(void) = default;
-
-        /**
-         *
-         */
-        template <class Archive>
-        void
-        serialize(Archive &ar)
-        {
-            ar(myPhaseBarriers, neighborPhaseBarriers);
-        }
-    };
     // launch domain
     LegionRuntime::HighLevel::Domain launchDomain;
     //
@@ -287,6 +294,7 @@ protected:
         Item<LogicalRegion> neighbors;
         Item<LogicalRegion> receiveLength;
         Item<LogicalRegion> sendLength;
+        Item<LogicalRegion> synchronizers;
     };
 public:
     //
@@ -334,6 +342,8 @@ public:
     //
     local_int_t *sendLength = nullptr;
     //
+    Synchronizers *synchronizers = nullptr;
+    //
     std::map< global_int_t, local_int_t > globalToLocalMap;
     //
     PIC pic;
@@ -358,7 +368,8 @@ public:
         local_int_t *elementsToSend,
         int *neighbors,
         local_int_t *receiveLength,
-        local_int_t *sendLength
+        local_int_t *sendLength,
+        Synchronizers *synchronizers
     ) {
         this->geom = geom;
         this->localData = localData;
@@ -372,6 +383,7 @@ public:
         this->neighbors = neighbors;
         this->receiveLength = receiveLength;
         this->sendLength = sendLength;
+        this->synchronizers = synchronizers;
     }
 
     /**
@@ -438,6 +450,9 @@ public:
         pic.sendLength = Item<LogicalRegion>(
             regions[crid++], ctx, runtime
         );
+        pic.synchronizers = Item<LogicalRegion>(
+            regions[crid++], ctx, runtime
+        );
         //
         cNItemsToUnpack = crid - baseRegionID;
     }
@@ -477,5 +492,6 @@ public:
         neighbors              = sm.neighbors;
         receiveLength          = sm.receiveLength;
         sendLength             = sm.sendLength;
+        synchronizers          = sm.synchronizers;
     }
 };
