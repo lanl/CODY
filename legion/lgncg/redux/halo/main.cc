@@ -362,8 +362,8 @@ startSolveTask(
     LogicalRegion *lrpSynchronizers = A.pic.synchronizers.data();
     assert(lrpSynchronizers);
     //
-    LogicalItem<LogicalRegion> lilrSynchronizers(*lrpSynchronizers, ctx, lrt);
-    lilrSynchronizers.mapRegion(RW_E, ctx, lrt);
+    LogicalArray<char> lrfoo(*lrpSynchronizers, ctx, lrt);
+    lrfoo.mapRegion(RW_E, ctx, lrt);
 }
 
 /**

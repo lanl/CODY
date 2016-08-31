@@ -283,7 +283,7 @@ populateSynchronizers(
     const int nShards = geom.size;
     //
     Array<LogicalRegion> alrSynchronizers(
-        A.lrSynchronizers.mapRegion(WO_E, ctx, lrt), ctx, lrt
+        A.lrSynchronizers.mapRegion(RW_E, ctx, lrt), ctx, lrt
     );
     LogicalRegion *lrSynchronizers = alrSynchronizers.data();
     assert(lrSynchronizers);
