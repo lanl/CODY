@@ -367,6 +367,7 @@ startSolveTask(
         cereal::BinaryInputArchive ia(solvArgsSS);
         ia(solvArgs);
     }
+    cout << "-->task " << taskID << " " << solvArgs.myPhaseBarriers.done << endl;
 }
 
 /**

@@ -53,17 +53,28 @@ using namespace LegionRuntime::Accessor;
 #define RO_S READ_ONLY , SIMULTANEOUS
 #define WO_S WRITE_ONLY, SIMULTANEOUS
 
-namespace cereal
-{
-    template <class Archive>
+namespace cereal {
+    /**
+     *
+     */
+    template<class Archive>
     inline void
-    serialize(Archive &ar, PhaseBarrier &m)
+    save(Archive &ar, PhaseBarrier const &pb)
     {
-        // SKG TODO remove copy here
-        PhaseBarrier copy = m;
-        ar(cereal::binary_data(&copy, sizeof(PhaseBarrier)));
+        ar(cereal::binary_data(&pb, sizeof(PhaseBarrier)));
+    }
+
+    /**
+     *
+     */
+    template<class Archive>
+    inline void
+    load(Archive &ar, PhaseBarrier &pb)
+    {
+        ar(cereal::binary_data(&pb, sizeof(PhaseBarrier)));
     }
 }
+
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////

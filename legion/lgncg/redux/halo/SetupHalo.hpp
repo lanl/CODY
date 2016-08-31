@@ -341,6 +341,8 @@ SetupHaloTopLevel(
             .ready = lrt->create_phase_barrier(ctx, 1),
             .done  = lrt->create_phase_barrier(ctx, nNeighbors)
         };
+
+        cout << "<-- task " << shard << " " << pbs.done << endl;
         A.ownerPhaseBarriers[shard] = pbs;
         // Share my PhaseBarriers with my neighbors
         for (int n = 0; n < nNeighbors; ++n) {
