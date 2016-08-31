@@ -351,6 +351,25 @@ mainTask(
 /**
  *
  */
+static void
+deserializeStartSolveArgs(
+    char *rawData,
+    size_t rawDataSizeInB,
+    StartSolveArgs &outRes
+) {
+    // Deserialize argument data
+    std::stringstream solvArgsSS;
+    // Extract taks-specific arguments passed by ArgumentMap
+    solvArgsSS.write(rawData, rawDataSizeInB);
+    {   // Scoped to guarantee flushing, etc.
+        cereal::BinaryInputArchive ia(solvArgsSS);
+        ia(outRes);
+    }
+}
+
+/**
+ *
+ */
 void
 startSolveTask(
     const Task *task,
@@ -359,15 +378,11 @@ startSolveTask(
 ) {
     const int taskID = getTaskID(task);
     StartSolveArgs solvArgs;
-    // Deserialize argument data
-    std::stringstream solvArgsSS;
-    // Extract taks-specific arguments passed by ArgumentMap
-    solvArgsSS.write((char *)task->local_args, task->local_arglen);
-    {   // Scoped to guarantee flushing, etc.
-        cereal::BinaryInputArchive ia(solvArgsSS);
-        ia(solvArgs);
-    }
-    cout << "-->task " << taskID << " " << solvArgs.myPhaseBarriers.done << endl;
+    deserializeStartSolveArgs(
+        (char *)task->local_args,
+        task->local_arglen,
+        solvArgs
+    );
 }
 
 /**
