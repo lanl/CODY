@@ -291,6 +291,7 @@ mainTask(
         TaskArgument(nullptr, 0),
         ArgumentMap()
     );
+#if 0
     // First give access to all logical subregions. Will be first nShards
     // regions.
     for (int color = 0; color < nShards; ++color) {
@@ -309,8 +310,12 @@ mainTask(
         ).add_field(testV.fid)
          .add_flags(NO_ACCESS_FLAG);
     }
-    //
-    intent<WO_E, NO_ACCESS_FLAG>(
+#endif
+    // TODO FIXME - add real access flags on a per-item basis.
+    // The application structures will always be at the end of the logical
+    // subregions, which will always be of length nShards.
+    // TODO
+    intent<RW_S, NO_ACCESS_FLAG>(
         launcher,
         {A.geometries, A.localData, A.lrNonzerosInRow,
          A.lrMtxIndG, A.lrMtxIndL, A.lrMatrixValues,
@@ -343,9 +348,22 @@ void
 startSolveTask(
     const Task *task,
     const std::vector<PhysicalRegion> &regions,
-    Context ctx, HighLevelRuntime *runtime
+    Context ctx, HighLevelRuntime *lrt
 ) {
+    const int nShards = getNumProcs();
     const int taskID = getTaskID(task);
+    const int nSubRegionReqs = nShards;
+
+    SparseMatrix A(regions, 0, ctx, lrt);
+
+    auto siz = A.localData->sizeofSynchronizersBuffer;
+    cout << taskID << " " << siz << endl;
+
+    LogicalRegion *lrpSynchronizers = A.pic.synchronizers.data();
+    assert(lrpSynchronizers);
+    //
+    LogicalItem<LogicalRegion> lilrSynchronizers(*lrpSynchronizers, ctx, lrt);
+    lilrSynchronizers.mapRegion(RW_E, ctx, lrt);
 }
 
 /**

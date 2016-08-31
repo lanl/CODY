@@ -40,12 +40,6 @@
 // ***************************************************
 //@HEADER
 
-/*!
- @file SetupHalo_ref.cpp
-
- HPCG routine
- */
-
 #pragma once
 
 #include "LegionMatrices.hpp"
@@ -321,7 +315,7 @@ populateSynchronizers(
         // TODO Done, so unmap?
         lrStore.unmapRegion();
     }
-    //
+    // TODO Done, so unmap?
     A.lrSynchronizers.unmapRegion(ctx, lrt);
     //
     const double endTime = mytimer();
