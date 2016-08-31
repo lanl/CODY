@@ -79,11 +79,19 @@ namespace cereal {
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 struct PhaseBarriers {
+    //
     PhaseBarrier ready;
+    //
     PhaseBarrier done;
 
+    /**
+     *
+     */
     PhaseBarriers(void) = default;
 
+    /**
+     *
+     */
     template <class Archive>
     void
     serialize(Archive &ar)
@@ -119,23 +127,6 @@ struct SPMDContext {
     int rank;
     // Number of participants in SPMD.
     int nRanks;
-};
-
-////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-struct StartSolveArgs {
-    int nShards;
-    PhaseBarriers myPhaseBarriers;
-    std::map< int, std::vector<PhaseBarriers> > neighborPhaseBarriers;
-
-    StartSolveArgs(void) = default;
-
-    template <class Archive>
-    void
-    serialize(Archive &ar)
-    {
-        ar(nShards, myPhaseBarriers, neighborPhaseBarriers);
-    }
 };
 
 ////////////////////////////////////////////////////////////////////////////////

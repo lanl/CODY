@@ -52,6 +52,27 @@
 #include <map>
 #include <cassert>
 
+#if 0
+/**
+ *
+ */
+static inline void
+deserializeSynchronizers(
+    char *rawData,
+    size_t rawDataSizeInB,
+    LogicalSparseMatrix::Synchronizers &outRes
+) {
+    // Deserialize argument data
+    std::stringstream solvArgsSS;
+    // Extract taks-specific arguments passed by ArgumentMap
+    solvArgsSS.write(rawData, rawDataSizeInB);
+    {   // Scoped to guarantee flushing, etc.
+        cereal::BinaryInputArchive ia(solvArgsSS);
+        ia(outRes);
+    }
+}
+#endif
+
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -77,6 +98,8 @@ struct SparseMatrixScalars {
     int numberOfRecvNeighbors = 0;
     //total number of entries to be sent
     local_int_t totalToBeSent = 0;
+    // size of serialized buffer used for Synchronizers.
+    size_t sizeofSynchronizersBuffer = 0;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -84,10 +107,30 @@ struct SparseMatrixScalars {
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 struct LogicalSparseMatrix {
-public:
+    // Holds structures required for task synchronization.
+    struct Synchronizers {
+        //
+        PhaseBarriers myPhaseBarriers;
+        //
+        std::map< int, std::vector<PhaseBarriers> > neighborPhaseBarriers;
+
+        /**
+         *
+         */
+        Synchronizers(void) = default;
+
+        /**
+         *
+         */
+        template <class Archive>
+        void
+        serialize(Archive &ar)
+        {
+            ar(myPhaseBarriers, neighborPhaseBarriers);
+        }
+    };
     // launch domain
     LegionRuntime::HighLevel::Domain launchDomain;
-public:
     //
     LogicalArray<Geometry> geometries;
     //
@@ -117,6 +160,8 @@ public:
     //Logical regions that point to lengths of messages sent to neighboring
     //processes
     LogicalArray<LogicalRegion> lrSendLength;
+    // Logical regions that point to serialized synchronizers.
+    LogicalArray<LogicalRegion> lrSynchronizers;
     //
     std::vector<PhaseBarriers> ownerPhaseBarriers;
     // For each color (shard), keep track of its neighbor PhaseBarriers; The
@@ -165,6 +210,7 @@ public:
                lrNeighbors.allocate(size, ctx, lrt);
            lrReceiveLength.allocate(size, ctx, lrt);
               lrSendLength.allocate(size, ctx, lrt);
+           lrSynchronizers.allocate(size, ctx, lrt);
     }
 
     /**
@@ -189,6 +235,7 @@ public:
                lrNeighbors.partition(nParts, ctx, lrt);
            lrReceiveLength.partition(nParts, ctx, lrt);
               lrSendLength.partition(nParts, ctx, lrt);
+           lrSynchronizers.partition(nParts, ctx, lrt);
         // just pick a structure that has a representative launch domain.
         launchDomain = geometries.launchDomain;
     }
@@ -214,6 +261,7 @@ public:
                lrNeighbors.deallocate(ctx, lrt);
            lrReceiveLength.deallocate(ctx, lrt);
               lrSendLength.deallocate(ctx, lrt);
+           lrSynchronizers.deallocate(ctx, lrt);
     }
 };
 

@@ -56,8 +56,6 @@
 #include <cstdlib>
 #include <iomanip>
 
-#include "cereal/archives/binary.hpp"
-
 using namespace std;
 
 LegionRuntime::Logger::Category Logger("LGNCG");
@@ -286,32 +284,12 @@ mainTask(
     ////////////////////////////////////////////////////////////////////////////
     // Launch the tasks to begin the solve.
     ////////////////////////////////////////////////////////////////////////////
-    // Populate the argument map
-    ArgumentMap localArgs;
-    for (int idx = 0; idx < nShards; idx++) {
-        StartSolveArgs args {
-            .nShards = nShards,
-            .myPhaseBarriers = A.ownerPhaseBarriers[idx],
-            .neighborPhaseBarriers = A.neighborPhaseBarriers[idx]
-        };
-        // Perform serialization of items for storage into logical regions.
-        std::stringstream argsSS;
-        {   // Scoped to guarantee flushing, etc.
-            cereal::BinaryOutputArchive oa(argsSS);
-            oa(args);
-        }
-        // Get size of serialized buffer.
-        argsSS.seekp(0, ios::end);
-        auto sizeInB = argsSS.tellp();
-        DomainPoint point = DomainPoint::from_point<1>(Point<1>(idx));
-        localArgs.set_point(point, TaskArgument(argsSS.str().c_str(), sizeInB));
-    }
     //
     IndexLauncher il(
         START_SOLVE,
         A.launchDomain,
         TaskArgument(nullptr, 0),
-        localArgs
+        ArgumentMap()
     );
     // First give access to all logical subregions. Will be first nShards
     // regions.
@@ -351,25 +329,6 @@ mainTask(
 /**
  *
  */
-static void
-deserializeStartSolveArgs(
-    char *rawData,
-    size_t rawDataSizeInB,
-    StartSolveArgs &outRes
-) {
-    // Deserialize argument data
-    std::stringstream solvArgsSS;
-    // Extract taks-specific arguments passed by ArgumentMap
-    solvArgsSS.write(rawData, rawDataSizeInB);
-    {   // Scoped to guarantee flushing, etc.
-        cereal::BinaryInputArchive ia(solvArgsSS);
-        ia(outRes);
-    }
-}
-
-/**
- *
- */
 void
 startSolveTask(
     const Task *task,
@@ -377,12 +336,6 @@ startSolveTask(
     Context ctx, HighLevelRuntime *runtime
 ) {
     const int taskID = getTaskID(task);
-    StartSolveArgs solvArgs;
-    deserializeStartSolveArgs(
-        (char *)task->local_args,
-        task->local_arglen,
-        solvArgs
-    );
 }
 
 /**

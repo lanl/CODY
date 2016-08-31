@@ -283,6 +283,14 @@ public:
     bindToLogicalRegion(LogicalRegion &lr) {
         lr = p.region.get_logical_region();
     }
+
+    /**
+     *
+     */
+    void
+    unmapRegion(void) {
+        l.array.unmapRegion(mCTX, mRuntime);
+    }
 };
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -274,6 +274,83 @@ SetupHalo(
 /**
  *
  */
+static inline void
+deserializeSynchronizers(
+    char *rawData,
+    size_t rawDataSizeInB,
+    LogicalSparseMatrix::Synchronizers &outRes
+) {
+    // Deserialize argument data
+    std::stringstream solvArgsSS;
+    // Extract taks-specific arguments passed by ArgumentMap
+    solvArgsSS.write(rawData, rawDataSizeInB);
+    {   // Scoped to guarantee flushing, etc.
+        cereal::BinaryInputArchive ia(solvArgsSS);
+        ia(outRes);
+    }
+}
+
+/**
+ *
+ */
+inline void
+populateSynchronizers(
+    LogicalSparseMatrix &A,
+    const Geometry &geom,
+    SparseMatrixScalars *smScalars,
+    LegionRuntime::HighLevel::Context ctx,
+    LegionRuntime::HighLevel::Runtime *lrt
+) {
+    using namespace std;
+    //
+    cout << "*** Populating Synchronizers ..." << endl;
+    const double startTime = mytimer();
+    const int nShards = geom.size;
+    //
+    Array<LogicalRegion> alrSynchronizers(
+        A.lrSynchronizers.mapRegion(WO_E, ctx, lrt), ctx, lrt
+    );
+    LogicalRegion *lrSynchronizers = alrSynchronizers.data();
+    assert(lrSynchronizers);
+    //
+    for (int s = 0; s < nShards; ++s) {
+        LogicalSparseMatrix::Synchronizers syncs = {
+            .myPhaseBarriers = A.ownerPhaseBarriers[s],
+            .neighborPhaseBarriers = A.neighborPhaseBarriers[s]
+        };
+        std::stringstream ss;
+        {   // Scoped to guarantee flushing, etc.
+            cereal::BinaryOutputArchive oa(ss);
+            oa(syncs);
+        }
+        // Get size of serialized buffer.
+        ss.seekp(0, ios::end);
+        auto regionSizeInB = ss.tellp();
+        // Allocate region-based backing store for serialized data.
+        ArrayAllocator<char> lrStore(
+            regionSizeInB, WO_E, ctx, lrt
+        );
+        char *lrStoreP = lrStore.data(); assert(lrStoreP);
+        // Write back into logical region.
+        memmove(lrStoreP, ss.str().c_str(), regionSizeInB);
+        // Bind to shard's logical region.
+        lrStore.bindToLogicalRegion(lrSynchronizers[s]);
+        // Update shard's metadata associated with this buffer.
+        smScalars[s].sizeofSynchronizersBuffer = regionSizeInB;
+        // TODO Done, so unmap?
+        lrStore.unmapRegion();
+    }
+    //
+    A.lrSynchronizers.unmapRegion(ctx, lrt);
+    //
+    const double endTime = mytimer();
+    double time = endTime - startTime;
+    cout << "--> Time=" << time << "s" << endl;
+}
+
+/**
+ *
+ */
 inline void
 SetupHaloTopLevel(
     LogicalSparseMatrix &A,
@@ -292,7 +369,7 @@ SetupHaloTopLevel(
          << (sizeof(SparseMatrixScalars) * nShards) / 1024.0
          << "kB" << endl;
     Array<SparseMatrixScalars> aSparseMatrixScalars(
-        A.localData.mapRegion(RO_E, ctx, lrt), ctx, lrt
+        A.localData.mapRegion(RW_E, ctx, lrt), ctx, lrt
     );
     SparseMatrixScalars *smScalars = aSparseMatrixScalars.data();
     assert(smScalars);
@@ -305,10 +382,10 @@ SetupHaloTopLevel(
     }
     cout << "--> Halo'd Vector Total Length=" << A.requiredVectorLen << endl;
     //
-    Array<LogicalRegion> alrNeighborss(
+    Array<LogicalRegion> alrNeighbors(
         A.lrNeighbors.mapRegion(RO_E, ctx, lrt), ctx, lrt
     );
-    LogicalRegion *lrpNeighbors = alrNeighborss.data();
+    LogicalRegion *lrpNeighbors = alrNeighbors.data();
     assert(lrpNeighbors);
     // Determine total number of PhaseBarriers required for synchronization.
     // Each shard will create two PhaseBarriers that it owns. A ready
@@ -341,7 +418,6 @@ SetupHaloTopLevel(
             .ready = lrt->create_phase_barrier(ctx, 1),
             .done  = lrt->create_phase_barrier(ctx, nNeighbors)
         };
-
         cout << "<-- task " << shard << " " << pbs.done << endl;
         A.ownerPhaseBarriers[shard] = pbs;
         // Share my PhaseBarriers with my neighbors
@@ -352,11 +428,14 @@ SetupHaloTopLevel(
         // Done with this data, so unmap.
         lrNeighbors.unmapRegion(ctx, lrt);
     }
-    // Unmap inline mapped structures.
-    A.localData.unmapRegion(ctx, lrt);
+    // No longer needed, so unmap.
     A.lrNeighbors.unmapRegion(ctx, lrt);
     //
     const double endTime = mytimer();
     double time = endTime - startTime;
     cout << "--> Time=" << time << "s" << endl;
+    //
+    populateSynchronizers(A, geom, smScalars, ctx, lrt);
+    //
+    A.localData.unmapRegion(ctx, lrt);
 }

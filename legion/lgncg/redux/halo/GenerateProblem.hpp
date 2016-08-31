@@ -50,13 +50,10 @@
 
 #include "hpcg.hpp"
 
+#include "LegionStuff.hpp"
 #include "LegionItems.hpp"
 #include "LegionArrays.hpp"
 #include "LegionMatrices.hpp"
-
-// For STL serialization into regions.
-#include "cereal/archives/binary.hpp"
-#include "cereal/types/map.hpp"
 
 #include <map>
 #include <sstream>
@@ -286,7 +283,7 @@ GenerateProblem(
     // Get size of serialized buffer.
     ssGlobalToLocalMap->seekp(0, ios::end);
     auto regionSizeInB = ssGlobalToLocalMap->tellp();
-    //
+    // TODO FIXME
     string strBuff(ssGlobalToLocalMap->str());
     // Remove one copy of the data, since it is stored elsewhere now.
     delete ssGlobalToLocalMap;
