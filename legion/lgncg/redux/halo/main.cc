@@ -353,7 +353,6 @@ deserializeSynchronizers(
 ) {
     // Deserialize argument data
     std::stringstream solvArgsSS;
-    // Extract taks-specific arguments passed by ArgumentMap
     solvArgsSS.write(rawData, rawDataSizeInB);
     {   // Scoped to guarantee flushing, etc.
         cereal::BinaryInputArchive ia(solvArgsSS);
@@ -383,9 +382,8 @@ startSolveTask(
     assert(synchronizersDataP);
     deserializeSynchronizers(synchronizersDataP, siz, syncs);
 
-    //cout << taskID << " size=" << siz << endl;
+#if 0 // Serialization debug
     cout << "--> task " << taskID << " " << syncs.myPhaseBarriers.done << endl;
-#if 1
     sleep(taskID + 1);
     if (taskID == 0) printf("--> ALL DATA=");
     for (int i = 0; i < siz; ++i) {
