@@ -377,20 +377,24 @@ startSolveTask(
     SparseMatrix A(regions, 0, ctx, lrt);
 
     auto siz = A.localData->sizeofSynchronizersBuffer;
-    cout << taskID << " size=" << siz << endl;
+    //cout << taskID << " size=" << siz << endl;
 
     Synchronizers syncs;
     char *synchronizersDataP = A.pic.synchronizersData.data();
     assert(synchronizersDataP);
     deserializeSynchronizers(synchronizersDataP, siz, syncs);
-    cout << taskID << " " << syncs.myPhaseBarriers.done << endl;
 
-    sleep(taskID);
-    if (!taskID) printf("--> ALL DATA=");
+    cout << taskID << " " << syncs.myPhaseBarriers.done << endl;
+#if 0
+    sleep(taskID + 1);
+    printf("-->");
     for (int i = 0; i < siz; ++i) {
-        printf("%x", (unsigned)synchronizersDataP[i] & 0xFF);
+        printf("%02hhX", (unsigned char)synchronizersDataP[i]);
+        fflush(stdout);
     }
+    printf("\n");
     if (taskID == nShards - 1) printf("\n");
+#endif
 }
 
 /**

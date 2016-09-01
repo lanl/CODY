@@ -168,9 +168,8 @@ public:
 #endif
             disjointColoring[color] = Domain::from_rect<1>(subRect);
             // slide window
-            parti++;
             x0 += partLens[parti];
-            x1 += partLens[parti];
+            x1 = (x0 + partLens[++parti] - 1);
         }
         auto iPart = lrt->create_index_partition(
                          ctx, this->mIndexSpace,

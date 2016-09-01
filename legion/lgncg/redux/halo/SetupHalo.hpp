@@ -323,11 +323,13 @@ populateSynchronizers(
         memmove(allSynchronizers + offset, syncData[s].data(), dataLen);
         offset += dataLen;
     }
+#if 0
     printf("<-- ALL DATA=");
     for (int i = 0; i < totalSyncDataSize; ++i) {
-        printf("%x", (unsigned)allSynchronizers[i] & 0xFF);
+        printf("%02hhX", (unsigned char)allSynchronizers[i]);
     }
     printf("\n");
+#endif
     //
     A.synchronizersData.unmapRegion(ctx, lrt);
     //
