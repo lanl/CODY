@@ -53,6 +53,7 @@ using namespace LegionRuntime::Accessor;
 #define RO_S READ_ONLY , SIMULTANEOUS
 #define WO_S WRITE_ONLY, SIMULTANEOUS
 
+// Set to 1 for debug.
 #define DEBUG_PHASE_BARRIER_SERIALIZATION 0
 
 namespace cereal {

@@ -108,6 +108,24 @@ struct Synchronizers {
     {
         ar(myPhaseBarriers, neighborPhaseBarriers);
     }
+
+    /**
+     *
+     */
+    static void
+    deserialize(
+        char *rawData,
+        size_t rawDataSizeInB,
+        Synchronizers &outRes
+    ) {
+        // Deserialize argument data
+        std::stringstream solvArgsSS;
+        solvArgsSS.write(rawData, rawDataSizeInB);
+        {   // Scoped to guarantee flushing, etc.
+            cereal::BinaryInputArchive ia(solvArgsSS);
+            ia(outRes);
+        }
+    }
 };
 
 ////////////////////////////////////////////////////////////////////////////////

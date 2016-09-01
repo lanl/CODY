@@ -321,7 +321,7 @@ mainTask(
          A.lrMatrixDiagonal, A.lrLocalToGlobalMap,
          A.lrGlobalToLocalMap, A.lrElementsToSend,
          A.lrNeighbors, A.lrReceiveLength, A.lrSendLength,
-         A.synchronizersData, b, x, xexact}
+         A.synchronizersData, b}
     );
     //
     MustEpochLauncher mel;
@@ -343,24 +343,6 @@ mainTask(
 /**
  *
  */
-static inline void
-deserializeSynchronizers(
-    char *rawData,
-    size_t rawDataSizeInB,
-    Synchronizers &outRes
-) {
-    // Deserialize argument data
-    std::stringstream solvArgsSS;
-    solvArgsSS.write(rawData, rawDataSizeInB);
-    {   // Scoped to guarantee flushing, etc.
-        cereal::BinaryInputArchive ia(solvArgsSS);
-        ia(outRes);
-    }
-}
-
-/**
- *
- */
 void
 startSolveTask(
     const Task *task,
@@ -370,23 +352,28 @@ startSolveTask(
     const int nShards = getNumProcs();
     const int taskID = getTaskID(task);
     const int nSubRegionReqs = nShards;
-    // First n elements will be sub-region requirements.
+    // First n elements will be sub-region requirements for x.
     SparseMatrix A(regions, nSubRegionReqs, ctx, lrt);
+    //
+    Array<floatType> x(regions[taskID], ctx, lrt);
 
 #if (DEBUG_PHASE_BARRIER_SERIALIZATION == 1) // Serialization debug
-    auto siz = A.localData->sizeofSynchronizersBuffer;
-    Synchronizers syncs;
-    char *synchronizersDataP = A.pic.synchronizersData.data();
-    assert(synchronizersDataP);
-    deserializeSynchronizers(synchronizersDataP, siz, syncs);
-    cout << "--> task " << taskID << " " << syncs.myPhaseBarriers.done << endl;
-    sleep(taskID + 1);
-    if (taskID == 0) printf("--> ALL DATA=");
-    for (int i = 0; i < siz; ++i) {
-        printf("%02hhX", (unsigned char)synchronizersDataP[i]);
-        fflush(stdout);
+    {
+        size_t dataSize = A.localData->sizeofSynchronizersBuffer;
+        Synchronizers syncs;
+        char *synchronizersDataP = A.pic.synchronizersData.data();
+        assert(synchronizersDataP);
+        Synchronizers::deserialize(synchronizersDataP, dataSize, syncs);
+        cout << "--> task " << taskID << " "
+             << syncs.myPhaseBarriers.done << endl;
+        sleep(taskID + 1);
+        if (taskID == 0) printf("--> ALL DATA=");
+        for (size_t i = 0; i < dataSize; ++i) {
+            printf("%02hhX", (unsigned char)synchronizersDataP[i]);
+            fflush(stdout);
+        }
+        if (taskID == nShards - 1) printf("\n");
     }
-    if (taskID == nShards - 1) printf("\n");
 #endif
 }
 

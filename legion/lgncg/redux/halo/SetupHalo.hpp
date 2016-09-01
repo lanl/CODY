@@ -325,7 +325,7 @@ populateSynchronizers(
     }
 #if (DEBUG_PHASE_BARRIER_SERIALIZATION == 1) // Serialization debug
     printf("<-- ALL DATA=");
-    for (int i = 0; i < totalSyncDataSize; ++i) {
+    for (size_t i = 0; i < totalSyncDataSize; ++i) {
         printf("%02hhX", (unsigned char)allSynchronizers[i]);
     }
     printf("\n");
