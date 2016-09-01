@@ -47,15 +47,6 @@ public:
     /**
      *
      */
-    LogicalArray(
-        const LogicalRegion &lr,
-        Legion::Context &ctx,
-        Legion::HighLevelRuntime *lrt
-    ) : LogicalItem<TYPE>(lr, ctx, lrt) { }
-
-    /**
-     *
-     */
     void
     allocate(
         int64_t nElems,

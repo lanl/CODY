@@ -387,7 +387,7 @@ startSolveTask(
     cout << taskID << " " << syncs.myPhaseBarriers.done << endl;
 #if 1
     sleep(taskID + 1);
-    if (taskID == 0) printf("-->");
+    if (taskID == 0) printf("--> ALL DATA=");
     for (int i = 0; i < siz; ++i) {
         printf("%02hhX", (unsigned char)synchronizersDataP[i]);
         fflush(stdout);
