@@ -375,14 +375,12 @@ startSolveTask(
 
     SparseMatrix A(regions, 0, ctx, lrt);
 
+#if 0 // Serialization debug
     auto siz = A.localData->sizeofSynchronizersBuffer;
-
     Synchronizers syncs;
     char *synchronizersDataP = A.pic.synchronizersData.data();
     assert(synchronizersDataP);
     deserializeSynchronizers(synchronizersDataP, siz, syncs);
-
-#if 0 // Serialization debug
     cout << "--> task " << taskID << " " << syncs.myPhaseBarriers.done << endl;
     sleep(taskID + 1);
     if (taskID == 0) printf("--> ALL DATA=");
