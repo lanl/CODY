@@ -302,7 +302,8 @@ populateSynchronizers(
         totalSyncDataSize += regionSizeInB;
         syncDataPartLens[s] = regionSizeInB;
         //
-        const char *data = ss.str().c_str();
+        std::string tmpStr(ss.str().c_str(), regionSizeInB);
+        const char *data =  tmpStr.c_str();
         syncData[s] = std::vector<char>(data, data + regionSizeInB);
         // Update shard's metadata associated with this buffer.
         smScalars[s].sizeofSynchronizersBuffer = regionSizeInB;
