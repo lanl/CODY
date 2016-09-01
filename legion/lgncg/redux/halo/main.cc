@@ -56,6 +56,8 @@
 #include <cstdlib>
 #include <iomanip>
 
+#include <unistd.h>
+
 using namespace std;
 
 LegionRuntime::Logger::Category Logger("LGNCG");
@@ -382,6 +384,13 @@ startSolveTask(
     assert(synchronizersDataP);
     deserializeSynchronizers(synchronizersDataP, siz, syncs);
     cout << taskID << " " << syncs.myPhaseBarriers.done << endl;
+
+    sleep(taskID);
+    if (!taskID) printf("--> ALL DATA=");
+    for (int i = 0; i < siz; ++i) {
+        printf("%x", (unsigned)synchronizersDataP[i] & 0xFF);
+    }
+    if (taskID == nShards - 1) printf("\n");
 }
 
 /**
