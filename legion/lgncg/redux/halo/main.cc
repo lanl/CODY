@@ -384,7 +384,7 @@ startSolveTask(
     deserializeSynchronizers(synchronizersDataP, siz, syncs);
 
     //cout << taskID << " size=" << siz << endl;
-    cout << taskID << " " << syncs.myPhaseBarriers.done << endl;
+    cout << "--> task " << taskID << " " << syncs.myPhaseBarriers.done << endl;
 #if 1
     sleep(taskID + 1);
     if (taskID == 0) printf("--> ALL DATA=");
