@@ -281,8 +281,7 @@ GenerateProblem(
         oa(globalToLocalMap);
     }
     // Get size of serialized buffer.
-    ssGlobalToLocalMap->seekp(0, ios::end);
-    auto regionSizeInB = ssGlobalToLocalMap->tellp();
+    auto regionSizeInB = ssGlobalToLocalMap->str().size();
     string strBuff(ssGlobalToLocalMap->str().c_str(), regionSizeInB);
     // Remove one copy of the data, since it is stored elsewhere now.
     delete ssGlobalToLocalMap;

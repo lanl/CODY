@@ -296,8 +296,7 @@ populateSynchronizers(
             oa(syncs);
         }
         // Get size of serialized buffer.
-        ss.seekp(0, ios::end);
-        auto regionSizeInB = ss.tellp();
+        auto regionSizeInB = ss.str().size();
         //
         totalSyncDataSize += regionSizeInB;
         syncDataPartLens[s] = regionSizeInB;
