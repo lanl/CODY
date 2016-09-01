@@ -323,7 +323,7 @@ populateSynchronizers(
         memmove(allSynchronizers + offset, syncData[s].data(), dataLen);
         offset += dataLen;
     }
-#if 0
+#if 1
     printf("<-- ALL DATA=");
     for (int i = 0; i < totalSyncDataSize; ++i) {
         printf("%02hhX", (unsigned char)allSynchronizers[i]);

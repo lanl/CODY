@@ -61,7 +61,8 @@ namespace cereal {
     inline void
     save(Archive &ar, PhaseBarrier const &pb)
     {
-        ar(cereal::binary_data(&pb, sizeof(PhaseBarrier)));
+        PhaseBarrier copy = pb;
+        ar(cereal::binary_data(&copy, sizeof(PhaseBarrier)));
     }
 
     /**
@@ -71,7 +72,9 @@ namespace cereal {
     inline void
     load(Archive &ar, PhaseBarrier &pb)
     {
-        ar(cereal::binary_data(&pb, sizeof(PhaseBarrier)));
+        PhaseBarrier newpb;
+        ar(cereal::binary_data(&newpb, sizeof(PhaseBarrier)));
+        pb = newpb;
     }
 }
 
