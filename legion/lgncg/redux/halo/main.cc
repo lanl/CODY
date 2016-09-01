@@ -293,7 +293,6 @@ mainTask(
         TaskArgument(nullptr, 0),
         ArgumentMap()
     );
-#if 0
     // First give access to all logical subregions. Will be first nShards
     // regions.
     for (int color = 0; color < nShards; ++color) {
@@ -312,7 +311,6 @@ mainTask(
         ).add_field(testV.fid)
          .add_flags(NO_ACCESS_FLAG);
     }
-#endif
     // TODO FIXME - add real access flags on a per-item basis.
     // The application structures will always be at the end of the logical
     // subregions, which will always be of length nShards.
@@ -372,10 +370,10 @@ startSolveTask(
     const int nShards = getNumProcs();
     const int taskID = getTaskID(task);
     const int nSubRegionReqs = nShards;
+    // First n elements will be sub-region requirements.
+    SparseMatrix A(regions, nSubRegionReqs, ctx, lrt);
 
-    SparseMatrix A(regions, 0, ctx, lrt);
-
-#if 0 // Serialization debug
+#if (DEBUG_PHASE_BARRIER_SERIALIZATION == 1) // Serialization debug
     auto siz = A.localData->sizeofSynchronizersBuffer;
     Synchronizers syncs;
     char *synchronizersDataP = A.pic.synchronizersData.data();

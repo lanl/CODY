@@ -53,6 +53,8 @@ using namespace LegionRuntime::Accessor;
 #define RO_S READ_ONLY , SIMULTANEOUS
 #define WO_S WRITE_ONLY, SIMULTANEOUS
 
+#define DEBUG_PHASE_BARRIER_SERIALIZATION 0
+
 namespace cereal {
     /**
      *

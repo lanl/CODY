@@ -323,7 +323,7 @@ populateSynchronizers(
         memmove(allSynchronizers + offset, syncData[s].data(), dataLen);
         offset += dataLen;
     }
-#if 0 // Serialization debug
+#if (DEBUG_PHASE_BARRIER_SERIALIZATION == 1) // Serialization debug
     printf("<-- ALL DATA=");
     for (int i = 0; i < totalSyncDataSize; ++i) {
         printf("%02hhX", (unsigned char)allSynchronizers[i]);
@@ -408,6 +408,9 @@ SetupHaloTopLevel(
             .ready = lrt->create_phase_barrier(ctx, 1),
             .done  = lrt->create_phase_barrier(ctx, nNeighbors)
         };
+#if (DEBUG_PHASE_BARRIER_SERIALIZATION == 1) // Serialization debug
+        cout << "<-- task " << shard << " " << pbs.done << endl;
+#endif
         A.ownerPhaseBarriers[shard] = pbs;
         // Share my PhaseBarriers with my neighbors
         for (int n = 0; n < nNeighbors; ++n) {
