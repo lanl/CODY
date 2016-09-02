@@ -356,6 +356,9 @@ startSolveTask(
     SparseMatrix A(regions, nSubRegionReqs, ctx, lrt);
     //
     Array<floatType> x(regions[taskID], ctx, lrt);
+    //
+    const int yrid = nSubRegionReqs + A.nRegionEntries();
+    Array<floatType> y(regions[yrid], ctx, lrt);
 
 #if (DEBUG_PHASE_BARRIER_SERIALIZATION == 1) // Serialization debug
     {

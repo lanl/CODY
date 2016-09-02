@@ -282,7 +282,7 @@ GenerateProblem(
     }
     // Get size of serialized buffer.
     auto regionSizeInB = ssGlobalToLocalMap->str().size();
-    string strBuff(ssGlobalToLocalMap->str().c_str(), regionSizeInB);
+    string strBuff(ssGlobalToLocalMap->str());
     // Remove one copy of the data, since it is stored elsewhere now.
     delete ssGlobalToLocalMap;
     // Allocate region-based backing store for serialized data.
