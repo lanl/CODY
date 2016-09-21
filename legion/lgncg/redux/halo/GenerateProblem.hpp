@@ -308,6 +308,7 @@ GenerateProblem(
              aaMtxIndG.bindToLogicalRegion(*(A.pic.mtxIndG.data()));
              aaMtxIndL.bindToLogicalRegion(*(A.pic.mtxIndL.data()));
         aaMatrixValues.bindToLogicalRegion(*(A.pic.matrixValues.data()));
+        std::cout << A.geom->rank << ": <----- " << *(A.pic.matrixValues.data()) << std::endl;
       aaMatrixDiagonal.bindToLogicalRegion(*(A.pic.matrixDiagonal.data()));
     aaLocalToGlobalMap.bindToLogicalRegion(*(A.pic.localToGlobalMap.data()));
     aaGlobalToLocalMap.bindToLogicalRegion(*(A.pic.globalToLocalMap.data()));

@@ -314,7 +314,7 @@ mainTask(
     // TODO FIXME - add real access flags on a per-item basis.
     // The application structures will always be at the end of the logical
     // subregions, which will always be of length nShards.
-    intent<RW_S, NO_ACCESS_FLAG>(
+    intent<RW_S>(
         launcher,
         {A.geometries, A.localData, A.lrNonzerosInRow,
          A.lrMtxIndG, A.lrMtxIndL, A.lrMatrixValues,
@@ -378,6 +378,17 @@ startSolveTask(
         if (taskID == nShards - 1) printf("\n");
     }
 #endif
+
+    // Test access
+    LogicalRegion *lrTest = A.pic.matrixValues.data();
+    assert(lrTest);
+    sleep(taskID + 1);
+    cout << taskID << ": -----> " << (*lrTest) << endl;
+    // Now "dereference" the LogicalRegion.
+    LogicalItem<floatType> lifTest(
+       *lrTest, ctx, lrt
+    );
+    PhysicalRegion prTest = lifTest.mapRegion(RO_E, ctx, lrt);
 }
 
 /**
