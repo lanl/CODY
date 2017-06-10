@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2016      Los Alamos National Security, LLC
+ * Copyright (c) 2016-2017 Los Alamos National Security, LLC
  *                         All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -56,6 +56,7 @@ operator<<(std::ostream &os, const Geometry &geom) {
     os << "nx: "         << geom.nx << endl;
     os << "ny: "         << geom.ny << endl;
     os << "nz: "         << geom.nz << endl;
+    os << "stencilSize: "<< geom.stencilSize<< endl;
     os << "npx: "        << geom.npx << endl;
     os << "npy: "        << geom.npy << endl;
     os << "npz: "        << geom.npz << endl;

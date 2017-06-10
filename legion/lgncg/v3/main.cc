@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2016      Los Alamos National Security, LLC
+ * Copyright (c) 2016-2017 Los Alamos National Security, LLC
  *                         All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -45,8 +45,10 @@
 #include "Geometry.hpp"
 #include "CheckAspectRatio.hpp"
 #include "GenerateGeometry.hpp"
+#if 0
 #include "GenerateProblem.hpp"
 #include "SetupHalo.hpp"
+#endif
 
 #include "LegionStuff.hpp"
 #include "LegionArrays.hpp"
@@ -73,6 +75,7 @@ genProblemTask(
     const std::vector<PhysicalRegion> &regions,
     Context ctx, HighLevelRuntime *runtime
 ) {
+#if 0
     const auto nShards = getNumProcs();
     const int taskID = getTaskID(task);
     //
@@ -118,8 +121,7 @@ genProblemTask(
     double setup_time = mytimer();
     //
     GenerateProblem(A, &b, &x, &xexact, ctx, runtime);
-    //
-    SetupHalo(A, ctx, runtime);
+#endif
 }
 
 /**
@@ -130,6 +132,7 @@ generateInitGeometry(
     int nShards,
     Geometry &globalGeom
 ) {
+    const int stencilSize = 27;
     // We only care about passing nShards for this bit. rank doesn't make sense
     // in this context.
     const SPMDMeta meta = {.rank = 0, .nRanks = nShards};
@@ -143,7 +146,8 @@ generateInitGeometry(
     ny = (local_int_t)params.ny;
     nz = (local_int_t)params.nz;
     // Generate geometry so we can get things like npx, npy, npz, etc.
-    GenerateGeometry(size, rank, params.numThreads, nx, ny, nz, &globalGeom);
+    GenerateGeometry(size, rank, params.numThreads,
+                     nx, ny, nz, stencilSize, &globalGeom);
 }
 
 /**
@@ -209,11 +213,11 @@ mainTask(
     const std::vector<PhysicalRegion> &,
     Context ctx, HighLevelRuntime *runtime
 ) {
-    auto nShards = getNumProcs();
+    size_t nShards = getNumProcs();
     // ask the mapper how many shards we can have
     cout << "*** Number of Shards (~ NUMPE)=" << nShards << endl;;
     // TODO FIXME
-    assert(nShards > 1 && "Run with at least 2 shards...");
+    assert(nShards > 1 && "Run with at least 2 shards (e.g., try -ll:cpu 2)");
     ////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////
     // At this point we need to know some run parameters so we can allocate and
@@ -245,6 +249,7 @@ mainTask(
         ctx,
         runtime
     );
+#if 0
     {
         //
         cout << "*** Launching Initialization Tasks..." << endl;;
@@ -338,6 +343,7 @@ mainTask(
         ctx,
         runtime
     );
+#endif
 }
 
 /**
@@ -349,6 +355,7 @@ startSolveTask(
     const std::vector<PhysicalRegion> &regions,
     Context ctx, HighLevelRuntime *lrt
 ) {
+#if 0
     const int nShards = getNumProcs();
     const int taskID = getTaskID(task);
     const int nSubRegionReqs = nShards;
@@ -389,6 +396,7 @@ startSolveTask(
        *lrTest, ctx, lrt
     );
     PhysicalRegion prTest = lifTest.mapRegion(RO_E, ctx, lrt);
+#endif
 }
 
 /**

@@ -27,12 +27,12 @@ USE_HDF         ?= 0		# Include HDF5 support (requires HDF5)
 ALT_MAPPERS     ?= 0		# Include alternative mappers (not recommended)
 
 # Put the binary file name here
-OUTFILE		?= halo-exchange
+OUTFILE		?= legion-hpcg
 # List all the application source files here
 GEN_SRC		?= \
 main.cc init.cc mytimer.cc IOOps.cc \
 ReadHpcgDat.cc CheckAspectRatio.cc \
-MixedBaseCounter.cc ComputeOptimalShapeXYZ.cc GenerateGeometry.cc
+MixedBaseCounter.cc ComputeOptimalShapeXYZ.cc
 
 GEN_GPU_SRC	?= 					# .cu files
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014-2016 Los Alamos National Security, LLC
+ * Copyright (c) 2014-2017 Los Alamos National Security, LLC
  *                         All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -55,6 +55,7 @@ public:
     ) {
         this->mAllocate(nElems, ctx, lrt);
     }
+
     /**
      * Returns whether or not two LogicalArrays are the same (as far as the
      * Legion RT is concerned).

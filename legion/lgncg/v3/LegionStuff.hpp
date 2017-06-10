@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2016      Los Alamos National Security, LLC
+ * Copyright (c) 2016-2017 Los Alamos National Security, LLC
  *                         All rights reserved.
  *
  * Copyright (c) 2016      Stanford University
@@ -280,7 +280,7 @@ getTaskID(
 /**
  * TODO add proc type
  */
-inline int
+inline size_t
 getNumProcs(
     void
 ) {

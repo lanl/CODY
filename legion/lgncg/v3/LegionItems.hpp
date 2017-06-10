@@ -38,11 +38,11 @@
 struct LogicalItemBase {
     // Field ID.
     Legion::FieldID fid = 0;
-    // Logical region that represents array.
+    // Logical region that represents item.
     Legion::LogicalRegion logicalRegion;
-    // launch domain
+    // Launch domain.
     Legion::Domain launchDomain;
-    // logical partition
+    // Logical partition.
     Legion::LogicalPartition logicalPartition;
     // The vector rectangle bounds.
     LegionRuntime::Arrays::Rect<1> bounds;
