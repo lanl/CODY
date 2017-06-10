@@ -125,9 +125,11 @@ inline global_int_t
 getGlobalXYZ(
     const Geometry &geom
 ) {
-    return geom.npx * geom.nx *
-           geom.npy * geom.ny *
-           geom.npz * geom.nz;
+    global_int_t res = global_int_t(geom.npx * geom.nx) *
+                       global_int_t(geom.npy * geom.ny) *
+                       global_int_t(geom.npz * geom.nz);
+
+    return res;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

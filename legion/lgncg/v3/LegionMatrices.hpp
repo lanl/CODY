@@ -133,8 +133,6 @@ struct Synchronizers {
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 struct LogicalSparseMatrix {
-protected:
-    LegionRuntime::Arrays::Rect<2> mBounds;
 public:
     // launch domain
     LegionRuntime::HighLevel::Domain launchDomain;
@@ -142,6 +140,8 @@ public:
     LogicalArray<Geometry> geometries;
     //
     LogicalArray<SparseMatrixScalars> localData;
+    //
+    LogicalArray2D<floatType> matrixValues;
 
     /**
      *
@@ -158,16 +158,12 @@ public:
         LegionRuntime::HighLevel::HighLevelRuntime *lrt
     ) {
         const auto size = geom.size;
+        const auto globalXYZ = getGlobalXYZ(geom);
+        const auto stencilSize = geom.stencilSize;
 
         geometries.allocate(size, ctx, lrt);
         localData.allocate(size, ctx, lrt);
-        //
-        Point<2> pBounds;
-        // Global number of rows.
-        pBounds.x[0] = getGlobalXYZ(geom);
-        // Number of columns per row.
-        pBounds.x[1] = 27;
-        mBounds = Rect<2>(Point<2>::ZEROES(), pBounds - Point<2>::ONES());
+        matrixValues.allocate(globalXYZ, stencilSize, ctx, lrt);
     }
 
     /**
@@ -181,6 +177,7 @@ public:
     ) {
                 geometries.partition(nParts, ctx, lrt);
                  localData.partition(nParts, ctx, lrt);
+              matrixValues.partition(nParts, ctx, lrt);
         // just pick a structure that has a representative launch domain.
         launchDomain = geometries.launchDomain;
     }

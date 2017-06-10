@@ -44,8 +44,6 @@ struct LogicalItemBase {
     Legion::Domain launchDomain;
     // Logical partition.
     Legion::LogicalPartition logicalPartition;
-    // The vector rectangle bounds.
-    LegionRuntime::Arrays::Rect<1> bounds;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -72,7 +70,7 @@ struct LogicalItem : public LogicalItemBase {
         logicalRegion = lr;
         //launchDomain
         //logicalPartition
-        bounds        = lrt->get_index_space_domain(
+        mBounds       = lrt->get_index_space_domain(
                             ctx, lr.get_index_space()
                         ).get_rect<1>();
         //
@@ -83,6 +81,10 @@ struct LogicalItem : public LogicalItemBase {
         mFieldSpaceID = mFS.get_id();
         mRTreeID      = lr.get_tree_id();
     }
+
+private:
+    // The vector rectangle bounds.
+    LegionRuntime::Arrays::Rect<1> mBounds;
 
 protected:
     // Number of elements stored in the item (the entire extent).
@@ -112,9 +114,9 @@ protected:
         // calculate the size of the logicalRegion vec (inclusive)
         size_t n = mLength - 1;
         // vec rect
-        bounds = Rect<1>(Point<1>::ZEROES(), Point<1>(n));
+        mBounds = Rect<1>(Point<1>::ZEROES(), Point<1>(n));
         // vector domain
-        Domain dom(Domain::from_rect<1>(bounds));
+        Domain dom(Domain::from_rect<1>(mBounds));
         // vec index space
         mIndexSpace = lrt->create_index_space(ctx, dom);
         // vec field space

@@ -75,9 +75,9 @@ genProblemTask(
     const std::vector<PhysicalRegion> &regions,
     Context ctx, HighLevelRuntime *runtime
 ) {
-#if 0
     const auto nShards = getNumProcs();
     const int taskID = getTaskID(task);
+#if 0
     //
     HPCG_Params params;
     //
@@ -249,26 +249,20 @@ mainTask(
         ctx,
         runtime
     );
-#if 0
     {
         //
         cout << "*** Launching Initialization Tasks..." << endl;;
         const double initStart = mytimer();
         IndexLauncher launcher(
             GEN_PROB_TID,
-            A.launchDomain,
+            A.matrixValues.launchDomain,
             TaskArgument(nullptr, 0),
             ArgumentMap()
         );
         // TODO do better
         intent<WO_E>(
             launcher,
-            {A.geometries, A.localData, A.lrNonzerosInRow,
-             A.lrMtxIndG, A.lrMtxIndL, A.lrMatrixValues,
-             A.lrMatrixDiagonal, A.lrLocalToGlobalMap,
-             A.lrGlobalToLocalMap, A.lrElementsToSend,
-             A.lrNeighbors, A.lrReceiveLength, A.lrSendLength,
-             A.synchronizersData, b, x, xexact}
+            {A.matrixValues}
         );
         //
         auto futureMap = runtime->execute_index_space(ctx, launcher);
@@ -278,6 +272,7 @@ mainTask(
         double initTime = initEnd - initStart;
         cout << "--> Time=" << initTime << "s" << endl;
     }
+#if 0
     // Now that we have all the setup information stored in LogicalRegions,
     // perform the top-level setup required for inter-task synchronization using
     // PhaseBarriers.
