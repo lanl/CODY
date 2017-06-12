@@ -213,9 +213,8 @@ mainTask(
     const std::vector<PhysicalRegion> &,
     Context ctx, HighLevelRuntime *runtime
 ) {
-    size_t nShards = getNumProcs();
+    const size_t nShards = getNumProcs();
     // ask the mapper how many shards we can have
-    cout << "*** Number of Shards (~ NUMPE)=" << nShards << endl;;
     // TODO FIXME
     assert(nShards > 1 && "Run with at least 2 shards (e.g., try -ll:cpu 2)");
     ////////////////////////////////////////////////////////////////////////////
@@ -224,6 +223,7 @@ mainTask(
     // partition the logical data structures. We'll use this info to calculate
     // global values, etc. NOTE: not all members will contain valid data after
     // generateInitGeometry returns (e.g., rank, ipx, ipy, ipz).
+    cout << "*** Number of Shards (~ NUMPE)=" << nShards << endl;;
     Geometry initGeom;
     generateInitGeometry(nShards, initGeom);
     cout << "*** Problem Information:"   << endl;
@@ -255,15 +255,13 @@ mainTask(
         const double initStart = mytimer();
         IndexLauncher launcher(
             GEN_PROB_TID,
-            A.matrixValues.launchDomain,
+            A.launchDomain,
             TaskArgument(nullptr, 0),
             ArgumentMap()
         );
-        // TODO do better
-        intent<WO_E>(
-            launcher,
-            {A.matrixValues}
-        );
+        A.intent(WO_E, launcher);
+        b.intent(WO_E, launcher);
+        x.intent(WO_E, launcher);
         //
         auto futureMap = runtime->execute_index_space(ctx, launcher);
         cout << "*** Waiting for Initialization Tasks" << endl;

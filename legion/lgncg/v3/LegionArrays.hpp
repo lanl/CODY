@@ -133,7 +133,7 @@ public:
      */
     void
     partition(
-        std::vector<size_t> partLens,
+        const std::vector<size_t> &partLens,
         Legion::Context &ctx,
         Legion::HighLevelRuntime *lrt
     ) {
@@ -324,7 +324,6 @@ public:
         mNCols = 0;
         // Don't free memory here because we don't know what allocated that
         // memory. Assume that it'll get cleaned up another way.
-        mBasePtr = nullptr;
     }
 
     /**
@@ -357,31 +356,7 @@ public:
     }
 };
 
-/**
- *
- */
-template<
-    Legion::PrivilegeMode PRIV_MODE,
-    Legion::CoherenceProperty COH_PROP
->
-static void
-intent(
-    Legion::IndexLauncher &launcher,
-    const std::deque<LogicalItemBase> &targetArrays
-) {
-    for (auto &a : targetArrays) {
-        launcher.add_region_requirement(
-            RegionRequirement(
-                a.logicalPartition,
-                0,
-                PRIV_MODE,
-                COH_PROP,
-                a.logicalRegion
-            )
-        ).add_field(a.fid);
-    }
-}
-
+#if 0
 /**
  * TODO unify intent.
  */
@@ -408,6 +383,7 @@ intent(
          .add_flags(FLAGS);
     }
 }
+#endif
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////

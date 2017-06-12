@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014-2016 Los Alamos National Security, LLC
+ * Copyright (c) 2014-2017 Los Alamos National Security, LLC
  *                         All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -36,6 +36,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 struct LogicalItemBase {
+public:
     // Field ID.
     Legion::FieldID fid = 0;
     // Logical region that represents item.
@@ -44,6 +45,36 @@ struct LogicalItemBase {
     Legion::Domain launchDomain;
     // Logical partition.
     Legion::LogicalPartition logicalPartition;
+
+protected:
+    /**
+     *
+     */
+    std::deque<LogicalItemBase *>
+    mRegionPack(void) {
+        return std::deque<LogicalItemBase *>({this});
+    }
+
+public:
+    /**
+     *
+     */
+    void
+    intent(
+        Legion::PrivilegeMode privMode,
+        Legion::CoherenceProperty cohProp,
+        Legion::IndexLauncher &launcher
+    ) {
+        launcher.add_region_requirement(
+            RegionRequirement(
+                logicalPartition,
+                0,
+                privMode,
+                cohProp,
+                logicalRegion
+            )
+        ).add_field(fid);
+    }
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -132,6 +163,7 @@ protected:
         mFieldSpaceID = logicalRegion.get_field_space().get_id();
         mRTreeID      = logicalRegion.get_tree_id();
     }
+
 public:
     //
     PhysicalRegion physicalRegion;

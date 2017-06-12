@@ -51,6 +51,8 @@
 #include <vector>
 #include <map>
 #include <cassert>
+#include <deque>
+#include <utility> // For pair
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -133,20 +135,36 @@ struct Synchronizers {
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 struct LogicalSparseMatrix {
-public:
-    // launch domain
+    // Launch domain
     LegionRuntime::HighLevel::Domain launchDomain;
     //
-    LogicalArray<Geometry> geometries;
+    LogicalArray<Geometry> geoms;
     //
     LogicalArray<SparseMatrixScalars> localData;
     //
-    LogicalArray2D<floatType> matrixValues;
+    LogicalArray<floatType> matrixValues;
 
+protected:
+    std::deque<LogicalItemBase *> mLogicalItems;
+
+    /**
+     * Order matters here. If you update this, also update unpack.
+     */
+    void
+    mPopulateRegionList(void) {
+        mLogicalItems = {&geoms,
+                         &localData,
+                         &matrixValues
+        };
+    }
+
+public:
     /**
      *
      */
-    LogicalSparseMatrix(void) = default;
+    LogicalSparseMatrix(void) {
+        mPopulateRegionList();
+    }
 
     /**
      *
@@ -161,9 +179,10 @@ public:
         const auto globalXYZ = getGlobalXYZ(geom);
         const auto stencilSize = geom.stencilSize;
 
-        geometries.allocate(size, ctx, lrt);
-        localData.allocate(size, ctx, lrt);
-        matrixValues.allocate(globalXYZ, stencilSize, ctx, lrt);
+               geoms.allocate(size, ctx, lrt);
+           localData.allocate(size, ctx, lrt);
+        // Flattened to 1D from 2D.
+        matrixValues.allocate(globalXYZ * stencilSize, ctx, lrt);
     }
 
     /**
@@ -175,11 +194,11 @@ public:
         LegionRuntime::HighLevel::Context &ctx,
         LegionRuntime::HighLevel::HighLevelRuntime *lrt
     ) {
-                geometries.partition(nParts, ctx, lrt);
-                 localData.partition(nParts, ctx, lrt);
-              matrixValues.partition(nParts, ctx, lrt);
-        // just pick a structure that has a representative launch domain.
-        launchDomain = geometries.launchDomain;
+               geoms.partition(nParts, ctx, lrt);
+           localData.partition(nParts, ctx, lrt);
+        matrixValues.partition(nParts, ctx, lrt);
+        // Just pick a structure that has a representative launch domain.
+        launchDomain = geoms.launchDomain;
     }
 
     /**
@@ -190,7 +209,66 @@ public:
         LegionRuntime::HighLevel::Context &ctx,
         LegionRuntime::HighLevel::HighLevelRuntime *lrt
     ) {
-                geometries.deallocate(ctx, lrt);
-                 localData.deallocate(ctx, lrt);
+               geoms.deallocate(ctx, lrt);
+           localData.deallocate(ctx, lrt);
+        matrixValues.deallocate(ctx, lrt);
+    }
+
+protected:
+    /**
+     *
+     */
+    void
+    mIntent(
+        Legion::PrivilegeMode privMode,
+        Legion::CoherenceProperty cohProp,
+        const std::deque<LogicalItemBase *> &targetArrays,
+        Legion::IndexLauncher &launcher
+    ) {
+        for (auto &a : targetArrays) {
+            a->intent(privMode, cohProp, launcher);
+        }
+    }
+
+public:
+    /**
+     *
+     */
+    void
+    intent(
+        Legion::PrivilegeMode privMode,
+        Legion::CoherenceProperty cohProp,
+        Legion::IndexLauncher &launcher
+    ) {
+        mIntent(privMode, cohProp, mLogicalItems, launcher);
+    }
+};
+
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+struct SparseMatrix {
+    // Geometry info for this instance.
+    Geometry *geom = nullptr;
+    // Container for all scalar values.
+    SparseMatrixScalars *sclrs = nullptr;
+    // Flattened to 1D from 2D.
+    floatType *matrixValues = nullptr;
+
+    /**
+     *
+     */
+    SparseMatrix(void) = default;
+
+    /**
+     *
+     */
+    SparseMatrix(
+        const std::vector<PhysicalRegion> &regions,
+        size_t baseRID,
+        Context ctx,
+        HighLevelRuntime *runtime
+    ) {
     }
 };
