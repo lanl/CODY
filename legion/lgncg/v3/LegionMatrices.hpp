@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014-2016 Los Alamos National Security, LLC
+ * Copyright (c) 2014-2017 Los Alamos National Security, LLC
  *                         All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -142,7 +142,17 @@ struct LogicalSparseMatrix {
     //
     LogicalArray<SparseMatrixScalars> sclrs;
     //
+    LogicalArray<char> nonzerosInRow;
+    //
+    LogicalArray<global_int_t> mtxIndG;
+    //
+    LogicalArray<local_int_t> mtxIndL;
+    //
     LogicalArray<floatType> matrixValues;
+    //
+    LogicalArray<floatType> matrixDiagonal;
+    //
+    LogicalArray<global_int_t> localToGlobalMap;
 
 protected:
     std::deque<LogicalItemBase *> mLogicalItems;
@@ -154,7 +164,12 @@ protected:
     mPopulateRegionList(void) {
         mLogicalItems = {&geoms,
                          &sclrs,
-                         &matrixValues
+                         &nonzerosInRow,
+                         &mtxIndG,
+                         &mtxIndL,
+                         &matrixValues,
+                         &matrixDiagonal,
+                         &localToGlobalMap
         };
     }
 
@@ -179,10 +194,19 @@ public:
         const auto globalXYZ = getGlobalXYZ(geom);
         const auto stencilSize = geom.stencilSize;
 
-               geoms.allocate(size, ctx, lrt);
-               sclrs.allocate(size, ctx, lrt);
+        geoms.allocate(size, ctx, lrt);
+        sclrs.allocate(size, ctx, lrt);
+        nonzerosInRow.allocate(globalXYZ, ctx, lrt);
+        // Flattened to 1D from 2D.
+        mtxIndG.allocate(globalXYZ * stencilSize, ctx, lrt);
+        // Flattened to 1D from 2D.
+        mtxIndL.allocate(globalXYZ * stencilSize, ctx, lrt);
         // Flattened to 1D from 2D.
         matrixValues.allocate(globalXYZ * stencilSize, ctx, lrt);
+        // 2D thing in reference implementation, but not needed (1D suffices).
+        matrixDiagonal.allocate(globalXYZ, ctx, lrt);
+        //
+        localToGlobalMap.allocate(globalXYZ, ctx, lrt);
     }
 
     /**
@@ -194,9 +218,14 @@ public:
         LegionRuntime::HighLevel::Context &ctx,
         LegionRuntime::HighLevel::HighLevelRuntime *lrt
     ) {
-               geoms.partition(nParts, ctx, lrt);
-               sclrs.partition(nParts, ctx, lrt);
+        geoms.partition(nParts, ctx, lrt);
+        sclrs.partition(nParts, ctx, lrt);
+        nonzerosInRow.partition(nParts, ctx, lrt);
+        mtxIndG.partition(nParts, ctx, lrt);
+        mtxIndL.partition(nParts, ctx, lrt);
         matrixValues.partition(nParts, ctx, lrt);
+        matrixDiagonal.partition(nParts, ctx, lrt);
+        localToGlobalMap.partition(nParts, ctx, lrt);
         // Just pick a structure that has a representative launch domain.
         launchDomain = geoms.launchDomain;
     }
@@ -209,9 +238,14 @@ public:
         LegionRuntime::HighLevel::Context &ctx,
         LegionRuntime::HighLevel::HighLevelRuntime *lrt
     ) {
-               geoms.deallocate(ctx, lrt);
-               sclrs.deallocate(ctx, lrt);
+        geoms.deallocate(ctx, lrt);
+        sclrs.deallocate(ctx, lrt);
+        mtxIndG.deallocate(ctx, lrt);
+        mtxIndL.deallocate(ctx, lrt);
+        nonzerosInRow.deallocate(ctx, lrt);
         matrixValues.deallocate(ctx, lrt);
+        matrixDiagonal.deallocate(ctx, lrt);
+        localToGlobalMap.deallocate(ctx, lrt);
     }
 
 protected:
@@ -253,8 +287,19 @@ struct SparseMatrix {
     Geometry *geom = nullptr;
     // Container for all scalar values.
     SparseMatrixScalars *sclrs = nullptr;
+    //
+    char *nonzerosInRow = nullptr;
+    // Flattened to 1D from 2D.
+    global_int_t *mtxIndG = nullptr;
+    // Flattened to 1D from 2D.
+    local_int_t *mtxIndL = nullptr;
     // Flattened to 1D from 2D.
     floatType *matrixValues = nullptr;
+    //
+    floatType *matrixDiagonal = nullptr;
+    //
+    global_int_t *localToGlobalMap = nullptr;
+
 protected:
     // Number of region entries.
     size_t mNRegionEntries = 0;
@@ -285,8 +330,9 @@ public:
     size_t
     nRegionEntries(void) { return mNRegionEntries; }
 protected:
+
     /**
-     *
+     * MUST MATCH PACK ORDER IN mPopulateRegionList!
      */
     void
     mUnpack(
@@ -309,19 +355,57 @@ protected:
                     runtime
                 ).data();
         //
+        nonzerosInRow = Array<char>(
+                            regions[crid++],
+                            ctx,
+                            runtime
+                       ).data();
+        //
+        mtxIndG = Array<global_int_t>(
+                      regions[crid++],
+                      ctx,
+                      runtime
+                  ).data();
+        //
+        mtxIndL = Array<local_int_t>(
+                      regions[crid++],
+                      ctx,
+                      runtime
+                  ).data();
+        //
         matrixValues = Array<floatType>(
                            regions[crid++],
                            ctx,
                            runtime
                        ).data();
+        //
+        matrixDiagonal = Array<floatType>(
+                             regions[crid++],
+                             ctx,
+                             runtime
+                         ).data();
+        //
+        localToGlobalMap = Array<global_int_t>(
+                               regions[crid++],
+                               ctx,
+                               runtime
+                           ).data();
         // Calculate number of region entries for this structure.
         mNRegionEntries = crid - baseRID;
     }
 
+    /**
+     *
+     */
     void
     mVerifyUnpack(void) {
         assert(geom);
         assert(sclrs);
+        assert(nonzerosInRow);
+        assert(mtxIndG);
+        assert(mtxIndL);
         assert(matrixValues);
+        assert(matrixDiagonal);
+        assert(localToGlobalMap);
     }
 };

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2016      Los Alamos National Security, LLC
+ * Copyright (c) 2016-2017 Los Alamos National Security, LLC
  *                         All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -105,14 +105,14 @@ GenerateProblem(
     assert(localNumberOfRows > 0);
     // We are approximating a 27-point finite element/volume/difference 3D
     // stencil
-    local_int_t numberOfNonzerosPerRow = 27;
+    local_int_t numberOfNonzerosPerRow = A.geom->stencilSize;
 
     // Total number of grid points in mesh
     global_int_t totalNumberOfRows = ((global_int_t)localNumberOfRows)
                                    * ((global_int_t)A.geom->size);
     // If this assert fails, it most likely means that the global_int_t is set
     // to int and should be set to long long
-    assert(totalNumberOfRows>0);
+    assert(totalNumberOfRows > 0);
     ////////////////////////////////////////////////////////////////////////////
     // Allocate arrays
     ////////////////////////////////////////////////////////////////////////////
@@ -139,49 +139,24 @@ GenerateProblem(
         cout << "--> Approximate Generate Problem Memory Footprint="
              << pMemInMB << "MB" << endl;
     }
-    //
-    ArrayAllocator<char> aaNonzerosInRow (
-        localNumberOfRows, WO_E, ctx, runtime
-    );
-    char *nonzerosInRow = aaNonzerosInRow.data();
+    char *nonzerosInRow = A.nonzerosInRow;
     assert(nonzerosInRow);
     // Interpreted as 2D array
-    ArrayAllocator<global_int_t> aaMtxIndG(
-        localNumberOfRows * numberOfNonzerosPerRow, WO_E, ctx, runtime
-    );
-    global_int_t *mtxIndG1D = aaMtxIndG.data();
-    assert(mtxIndG1D);
-    // Interpreted as 2D array
     Array2D<global_int_t> mtxIndG(
-        localNumberOfRows, numberOfNonzerosPerRow, mtxIndG1D
+        localNumberOfRows, numberOfNonzerosPerRow, A.mtxIndG
     );
     // Interpreted as 2D array
-    ArrayAllocator<local_int_t> aaMtxIndL(
-        localNumberOfRows * numberOfNonzerosPerRow, WO_E, ctx, runtime
+    Array2D<local_int_t> mtxIndL(
+        localNumberOfRows, numberOfNonzerosPerRow, A.mtxIndL
     );
-    local_int_t *mtxIndL = aaMtxIndL.data();
-    assert(mtxIndL);
-    ArrayAllocator<floatType> aaMatrixValues(
-        localNumberOfRows * numberOfNonzerosPerRow, WO_E, ctx, runtime
-    );
-    floatType *matrixValues1D = aaMatrixValues.data();
-    assert(matrixValues1D);
     // Interpreted as 2D array
     Array2D<floatType> matrixValues(
-        localNumberOfRows, numberOfNonzerosPerRow, matrixValues1D
+        localNumberOfRows, numberOfNonzerosPerRow, A.matrixValues
     );
-    // Interpreted as 1D array
-    ArrayAllocator<floatType> aaMatrixDiagonal(
-        localNumberOfRows, WO_E, ctx, runtime
-    );
-    floatType *matrixDiagonal = aaMatrixDiagonal.data();
-    assert(matrixDiagonal);
-    // Local-to-global mapping
-    ArrayAllocator<global_int_t> aaLocalToGlobalMap(
-        localNumberOfRows, WO_E, ctx, runtime
-    );
-    global_int_t *localToGlobalMap = aaLocalToGlobalMap.data();
-    assert(localToGlobalMap);
+    //
+    floatType *matrixDiagonal = A.matrixDiagonal;
+    //
+    global_int_t *localToGlobalMap = A.localToGlobalMap;
     //
     floatType *bv      = nullptr;
     floatType *xv      = nullptr;
@@ -198,8 +173,10 @@ GenerateProblem(
         xexactv = xexact->data(); // Only compute exact solution if requested
         assert(xexactv);
     }
+#if 0 // TODO
     //!< global-to-local mapping
     auto &globalToLocalMap = A.globalToLocalMap;
+#endif
     //
     local_int_t localNumberOfNonzeros = 0;
     //
@@ -211,7 +188,9 @@ GenerateProblem(
                 global_int_t gix = ipx*nx+ix;
                 local_int_t currentLocalRow = iz*nx*ny+iy*nx+ix;
                 global_int_t currentGlobalRow = giz*gnx*gny+giy*gnx+gix;
+#if 0 // TODO
                 globalToLocalMap[currentGlobalRow] = currentLocalRow;
+#endif
                 localToGlobalMap[currentLocalRow] = currentGlobalRow;
                 char numberOfNonzerosInRow = 0;
                 // Current index in current row
@@ -274,61 +253,17 @@ GenerateProblem(
     // exception of the number of nonzeros is less than zero (can happen if int
     // overflow)
     assert(totalNumberOfNonzeros>0);
-    // Perform serialization of items for storage into logical regions.
-    std::stringstream *ssGlobalToLocalMap = new std::stringstream;
-    {   // Scoped to guarantee flushing, etc.
-        cereal::BinaryOutputArchive oa(*ssGlobalToLocalMap);
-        oa(globalToLocalMap);
-    }
-    // Get size of serialized buffer.
-    auto regionSizeInB = ssGlobalToLocalMap->str().size();
-    string strBuff(ssGlobalToLocalMap->str());
-    // Remove one copy of the data, since it is stored elsewhere now.
-    delete ssGlobalToLocalMap;
-    // Allocate region-based backing store for serialized data.
-    ArrayAllocator<char> aaGlobalToLocalMap(
-        regionSizeInB, WO_E, ctx, runtime
-    );
-    char *globalToLocalMapBytesPtr = aaGlobalToLocalMap.data();
-    assert(globalToLocalMapBytesPtr);
-    // Write back into logical region
-    memmove(globalToLocalMapBytesPtr, strBuff.c_str(), regionSizeInB);
-    // Kill last unneeded intermediate buffer.
-    strBuff.clear();
-    // Convenience pointer to A.localData
-    auto *AlD = A.localData;
-    AlD->maxNonzerosPerRow     = numberOfNonzerosPerRow;
-    AlD->totalNumberOfRows     = totalNumberOfRows;
-    AlD->totalNumberOfNonzeros = totalNumberOfNonzeros;
-    AlD->localNumberOfRows     = localNumberOfRows;
-    AlD->localNumberOfColumns  = localNumberOfRows;
-    AlD->localNumberOfNonzeros = localNumberOfNonzeros;
-    //
-       aaNonzerosInRow.bindToLogicalRegion(*(A.pic.nonzerosInRow.data()));
-             aaMtxIndG.bindToLogicalRegion(*(A.pic.mtxIndG.data()));
-             aaMtxIndL.bindToLogicalRegion(*(A.pic.mtxIndL.data()));
-        aaMatrixValues.bindToLogicalRegion(*(A.pic.matrixValues.data()));
-        std::cout << A.geom->rank << ": <----- " << *(A.pic.matrixValues.data()) << std::endl;
-      aaMatrixDiagonal.bindToLogicalRegion(*(A.pic.matrixDiagonal.data()));
-    aaLocalToGlobalMap.bindToLogicalRegion(*(A.pic.localToGlobalMap.data()));
-    aaGlobalToLocalMap.bindToLogicalRegion(*(A.pic.globalToLocalMap.data()));
-    // For convenience let's refresh members for easier access in subsequent
-    // uses. NOTE: these members are only valid during the life of a task.
-    A.refreshMembers(
-        SparseMatrix(
-            A.geom,
-            A.localData,
-            nonzerosInRow,
-            mtxIndG1D,
-            mtxIndL,
-            matrixValues1D,
-            matrixDiagonal,
-            localToGlobalMap,
-            nullptr,
-            nullptr,
-            nullptr,
-            nullptr,
-            nullptr
-        )
-    );
+
+    A.sclrs->totalNumberOfRows = totalNumberOfRows;
+    A.sclrs->totalNumberOfNonzeros = totalNumberOfNonzeros;
+    A.sclrs->localNumberOfRows = localNumberOfRows;
+    A.sclrs->localNumberOfColumns = localNumberOfRows;
+    A.sclrs->localNumberOfNonzeros = localNumberOfNonzeros;
+#if 0 // Not required.
+    A.nonzerosInRow = nonzerosInRow;
+    A.mtxIndG = mtxIndG;
+    A.mtxIndL = mtxIndL;
+    A.matrixValues = matrixValues;
+    A.matrixDiagonal = matrixDiagonal;
+#endif
 }

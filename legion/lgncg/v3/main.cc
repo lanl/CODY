@@ -45,8 +45,8 @@
 #include "Geometry.hpp"
 #include "CheckAspectRatio.hpp"
 #include "GenerateGeometry.hpp"
-#if 0
 #include "GenerateProblem.hpp"
+#if 0
 #include "SetupHalo.hpp"
 #endif
 
@@ -120,9 +120,7 @@ genProblemTask(
     //
     double setup_time = mytimer();
     //
-#if 0
     GenerateProblem(A, &b, &x, &xexact, ctx, runtime);
-#endif
 }
 
 /**
@@ -214,8 +212,8 @@ mainTask(
     const std::vector<PhysicalRegion> &,
     Context ctx, HighLevelRuntime *runtime
 ) {
+    // Ask the mapper how many shards we can have.
     const size_t nShards = getNumProcs();
-    // ask the mapper how many shards we can have
     // TODO FIXME
     assert(nShards > 1 && "Run with at least 2 shards (e.g., try -ll:cpu 2)");
     ////////////////////////////////////////////////////////////////////////////
@@ -328,6 +326,7 @@ mainTask(
     mel.add_index_task(launcher);
     FutureMap fm = runtime->execute_must_epoch(ctx, mel);
     fm.wait_all_results();
+#endif
     //
     cout << "*** Cleaning Up..." << endl;
     destroyLogicalStructures(
@@ -338,7 +337,6 @@ mainTask(
         ctx,
         runtime
     );
-#endif
 }
 
 /**
