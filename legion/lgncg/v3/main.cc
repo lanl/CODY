@@ -75,9 +75,8 @@ genProblemTask(
     const std::vector<PhysicalRegion> &regions,
     Context ctx, HighLevelRuntime *runtime
 ) {
-    const auto nShards = getNumProcs();
+    const int nShards = int(getNumProcs());
     const int taskID = getTaskID(task);
-#if 0
     //
     HPCG_Params params;
     //
@@ -110,7 +109,8 @@ genProblemTask(
     Array<floatType> xexact(regions[rid++], ctx, runtime);
     //
     Geometry *geom = A.geom;
-    GenerateGeometry(size, rank, params.numThreads, nx, ny, nz, geom);
+    GenerateGeometry(size, rank, params.numThreads,
+                     nx, ny, nz, params.stencilSize, geom);
     //
     ierr = CheckAspectRatio(0.125, geom->npx, geom->npy, geom->npz,
                             "process grid", rank == 0);
@@ -120,6 +120,7 @@ genProblemTask(
     //
     double setup_time = mytimer();
     //
+#if 0
     GenerateProblem(A, &b, &x, &xexact, ctx, runtime);
 #endif
 }
@@ -262,6 +263,7 @@ mainTask(
         A.intent(WO_E, launcher);
         b.intent(WO_E, launcher);
         x.intent(WO_E, launcher);
+        xexact.intent(WO_E, launcher);
         //
         auto futureMap = runtime->execute_index_space(ctx, launcher);
         cout << "*** Waiting for Initialization Tasks" << endl;

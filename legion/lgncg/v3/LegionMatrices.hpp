@@ -140,7 +140,7 @@ struct LogicalSparseMatrix {
     //
     LogicalArray<Geometry> geoms;
     //
-    LogicalArray<SparseMatrixScalars> localData;
+    LogicalArray<SparseMatrixScalars> sclrs;
     //
     LogicalArray<floatType> matrixValues;
 
@@ -153,7 +153,7 @@ protected:
     void
     mPopulateRegionList(void) {
         mLogicalItems = {&geoms,
-                         &localData,
+                         &sclrs,
                          &matrixValues
         };
     }
@@ -180,7 +180,7 @@ public:
         const auto stencilSize = geom.stencilSize;
 
                geoms.allocate(size, ctx, lrt);
-           localData.allocate(size, ctx, lrt);
+               sclrs.allocate(size, ctx, lrt);
         // Flattened to 1D from 2D.
         matrixValues.allocate(globalXYZ * stencilSize, ctx, lrt);
     }
@@ -195,7 +195,7 @@ public:
         LegionRuntime::HighLevel::HighLevelRuntime *lrt
     ) {
                geoms.partition(nParts, ctx, lrt);
-           localData.partition(nParts, ctx, lrt);
+               sclrs.partition(nParts, ctx, lrt);
         matrixValues.partition(nParts, ctx, lrt);
         // Just pick a structure that has a representative launch domain.
         launchDomain = geoms.launchDomain;
@@ -210,7 +210,7 @@ public:
         LegionRuntime::HighLevel::HighLevelRuntime *lrt
     ) {
                geoms.deallocate(ctx, lrt);
-           localData.deallocate(ctx, lrt);
+               sclrs.deallocate(ctx, lrt);
         matrixValues.deallocate(ctx, lrt);
     }
 
@@ -255,6 +255,11 @@ struct SparseMatrix {
     SparseMatrixScalars *sclrs = nullptr;
     // Flattened to 1D from 2D.
     floatType *matrixValues = nullptr;
+protected:
+    // Number of region entries.
+    size_t mNRegionEntries = 0;
+
+public:
 
     /**
      *
@@ -270,5 +275,53 @@ struct SparseMatrix {
         Context ctx,
         HighLevelRuntime *runtime
     ) {
+        mUnpack(regions, baseRID, ctx, runtime);
+        mVerifyUnpack();
+    }
+
+    /**
+     *
+     */
+    size_t
+    nRegionEntries(void) { return mNRegionEntries; }
+protected:
+    /**
+     *
+     */
+    void
+    mUnpack(
+        const std::vector<PhysicalRegion> &regions,
+        size_t baseRID,
+        Context ctx,
+        HighLevelRuntime *runtime
+    ) {
+        size_t crid = baseRID;
+        // Populate members from physical regions.
+        geom = Item<Geometry>(
+                   regions[crid++],
+                   ctx,
+                   runtime
+               ).data();
+        //
+        sclrs = Item<SparseMatrixScalars>(
+                    regions[crid++],
+                    ctx,
+                    runtime
+                ).data();
+        //
+        matrixValues = Array<floatType>(
+                           regions[crid++],
+                           ctx,
+                           runtime
+                       ).data();
+        // Calculate number of region entries for this structure.
+        mNRegionEntries = crid - baseRID;
+    }
+
+    void
+    mVerifyUnpack(void) {
+        assert(geom);
+        assert(sclrs);
+        assert(matrixValues);
     }
 };
