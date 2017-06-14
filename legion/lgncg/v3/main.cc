@@ -46,6 +46,7 @@
 #include "CheckAspectRatio.hpp"
 #include "GenerateGeometry.hpp"
 #include "GenerateProblem.hpp"
+#include "VectorOps.hpp"
 #if 0
 #include "SetupHalo.hpp"
 #endif
@@ -317,6 +318,12 @@ startSolveTask(
     const int taskID = getTaskID(task);
     //
     HPCG_Params params = *(HPCG_Params *)task->args;
+    //
+    size_t rid = 0;
+    SparseMatrix     A(regions, rid, ctx, lrt); rid += A.nRegionEntries();
+    Array<floatType> b     (regions[rid++], ctx, lrt);
+    Array<floatType> x     (regions[rid++], ctx, lrt);
+    Array<floatType> xexact(regions[rid++], ctx, lrt);
 
     const int refMaxIters  = 50;
     const int optMaxIters  = 10 * refMaxIters;
@@ -336,13 +343,13 @@ startSolveTask(
     int tolerance_failures = 0;
     double opt_worst_time  = 0.0;
 
-    std::vector<double> opt_times(9,0.0);
+    std::vector<double> opt_times(9, 0.0);
 
     // Compute the residual reduction and residual count for the user ordering and optimized kernels.
     for (int i = 0; i < numberOfCalls; ++i) {
-#if 0
         ZeroVector(x); // start x at all zeros
         double last_cummulative_time = opt_times[0];
+#if 0
         ierr = CG( A, data, b, x, optMaxIters, refTolerance, niters, normr, normr0, &opt_times[0], true);
         if (ierr) ++err_count; // count the number of errors in CG
         if (normr / normr0 > refTolerance) ++tolerance_failures; // the number of failures to reduce residual
