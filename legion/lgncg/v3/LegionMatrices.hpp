@@ -339,59 +339,27 @@ protected:
         const std::vector<PhysicalRegion> &regions,
         size_t baseRID,
         Context ctx,
-        HighLevelRuntime *runtime
+        HighLevelRuntime *rt
     ) {
-        size_t crid = baseRID;
+        size_t cid = baseRID;
         // Populate members from physical regions.
-        geom = Item<Geometry>(
-                   regions[crid++],
-                   ctx,
-                   runtime
-               ).data();
+        geom = Item<Geometry>(regions[cid++], ctx, rt).data();
         //
-        sclrs = Item<SparseMatrixScalars>(
-                    regions[crid++],
-                    ctx,
-                    runtime
-                ).data();
+        sclrs = Item<SparseMatrixScalars>(regions[cid++], ctx, rt).data();
         //
-        nonzerosInRow = Array<char>(
-                            regions[crid++],
-                            ctx,
-                            runtime
-                       ).data();
+        nonzerosInRow = Array<char>(regions[cid++], ctx, rt).data();
         //
-        mtxIndG = Array<global_int_t>(
-                      regions[crid++],
-                      ctx,
-                      runtime
-                  ).data();
+        mtxIndG = Array<global_int_t>(regions[cid++], ctx, rt).data();
         //
-        mtxIndL = Array<local_int_t>(
-                      regions[crid++],
-                      ctx,
-                      runtime
-                  ).data();
+        mtxIndL = Array<local_int_t>(regions[cid++], ctx, rt).data();
         //
-        matrixValues = Array<floatType>(
-                           regions[crid++],
-                           ctx,
-                           runtime
-                       ).data();
+        matrixValues = Array<floatType>(regions[cid++], ctx, rt).data();
         //
-        matrixDiagonal = Array<floatType>(
-                             regions[crid++],
-                             ctx,
-                             runtime
-                         ).data();
+        matrixDiagonal = Array<floatType>(regions[cid++], ctx, rt).data();
         //
-        localToGlobalMap = Array<global_int_t>(
-                               regions[crid++],
-                               ctx,
-                               runtime
-                           ).data();
+        localToGlobalMap = Array<global_int_t>(regions[cid++], ctx, rt).data();
         // Calculate number of region entries for this structure.
-        mNRegionEntries = crid - baseRID;
+        mNRegionEntries = cid - baseRID;
     }
 
     /**

@@ -275,12 +275,9 @@ mainTask(
     // perform the top-level setup required for inter-task synchronization using
     // PhaseBarriers.
     SetupHaloTopLevel(A, initGeom, ctx, runtime);
+#endif
 
-    // SKG TODO RM For testing
-    LogicalArray<floatType> testV;
-    testV.allocate(A.requiredVectorLen, ctx, runtime);
-    testV.partition(A.targetVectorPartLens, ctx, runtime);
-
+#if 0
     ////////////////////////////////////////////////////////////////////////////
     // Launch the tasks to begin the solve.
     ////////////////////////////////////////////////////////////////////////////

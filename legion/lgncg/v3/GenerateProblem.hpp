@@ -254,10 +254,10 @@ GenerateProblem(
     // overflow)
     assert(totalNumberOfNonzeros>0);
 
-    A.sclrs->totalNumberOfRows = totalNumberOfRows;
+    A.sclrs->totalNumberOfRows     = totalNumberOfRows;
     A.sclrs->totalNumberOfNonzeros = totalNumberOfNonzeros;
-    A.sclrs->localNumberOfRows = localNumberOfRows;
-    A.sclrs->localNumberOfColumns = localNumberOfRows;
+    A.sclrs->localNumberOfRows     = localNumberOfRows;
+    A.sclrs->localNumberOfColumns  = localNumberOfRows;
     A.sclrs->localNumberOfNonzeros = localNumberOfNonzeros;
 #if 0 // Not required.
     A.nonzerosInRow = nonzerosInRow;
