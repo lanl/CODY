@@ -39,7 +39,6 @@ operator<<(std::ostream &os, const HPCG_Params &params) {
     //
     os << "runningTime: " << params.runningTime << endl;
     os << "comm_size: "   << params.comm_size << endl;
-    os << "comm_rank: "   << params.comm_rank << endl;
     os << "numThreads: "  << params.numThreads << endl;
     os << "nx: "          << params.nx << endl;
     os << "ny: "          << params.ny << endl;

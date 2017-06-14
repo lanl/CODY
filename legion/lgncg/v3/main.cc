@@ -75,18 +75,11 @@ genProblemTask(
     const std::vector<PhysicalRegion> &regions,
     Context ctx, HighLevelRuntime *runtime
 ) {
-    const int nShards = int(getNumProcs());
     const int taskID = getTaskID(task);
     //
-    HPCG_Params params;
-    //
-    SPMDMeta spmdMeta = {.rank = taskID, .nRanks = nShards};
-    HPCG_Init(params, spmdMeta);
-    // Check if QuickPath option is enabled.  If the running time is set to
-    // zero, we minimize all paths through the program
-    bool quickPath = (params.runningTime == 0);
+    HPCG_Params params = *(HPCG_Params *)task->args;
     // Number of processes, my process ID
-    int size = params.comm_size, rank = params.comm_rank;
+    int size = params.comm_size, rank = taskID;
     //
     local_int_t nx, ny,nz;
     nx = (local_int_t)params.nx;
@@ -129,16 +122,11 @@ genProblemTask(
 static void
 generateInitGeometry(
     int nShards,
+    const HPCG_Params &params,
     Geometry &globalGeom
 ) {
-    const int stencilSize = 27;
-    // We only care about passing nShards for this bit. rank doesn't make sense
-    // in this context.
-    const SPMDMeta meta = {.rank = 0, .nRanks = nShards};
-    HPCG_Params params;
-    HPCG_Init(params, meta);
     // Number of processes, my process ID
-    const int size = params.comm_size, rank = params.comm_rank;
+    const int size = params.comm_size, rank = 0;
     //
     local_int_t nx, ny,nz;
     nx = (local_int_t)params.nx;
@@ -146,7 +134,7 @@ generateInitGeometry(
     nz = (local_int_t)params.nz;
     // Generate geometry so we can get things like npx, npy, npz, etc.
     GenerateGeometry(size, rank, params.numThreads,
-                     nx, ny, nz, stencilSize, &globalGeom);
+                     nx, ny, nz, params.stencilSize, &globalGeom);
 }
 
 /**
@@ -223,8 +211,15 @@ mainTask(
     // global values, etc. NOTE: not all members will contain valid data after
     // generateInitGeometry returns (e.g., rank, ipx, ipy, ipz).
     cout << "*** Number of Shards (~ NUMPE)=" << nShards << endl;;
+    //
+    // We only care about passing nShards for this bit. rank doesn't make sense
+    // in this context.
+    const SPMDMeta meta = {.rank = 0, .nRanks = int(nShards)};
+    HPCG_Params params;
+    HPCG_Init(params, meta);
+    //
     Geometry initGeom;
-    generateInitGeometry(nShards, initGeom);
+    generateInitGeometry(nShards, params, initGeom);
     cout << "*** Problem Information:"   << endl;
     cout << "--> size=" << initGeom.size << endl;
     cout << "--> npx="  << initGeom.npx  << endl;
@@ -255,7 +250,7 @@ mainTask(
         IndexLauncher launcher(
             GEN_PROB_TID,
             A.launchDomain,
-            TaskArgument(nullptr, 0),
+            TaskArgument(&params, sizeof(params)),
             ArgumentMap()
         );
         A.intent(WO_E, launcher);
@@ -285,7 +280,7 @@ mainTask(
         IndexLauncher launcher(
             START_SOLVE,
             A.launchDomain,
-            TaskArgument(nullptr, 0),
+            TaskArgument(&params, sizeof(params)),
             ArgumentMap()
         );
         A.intent(RW_E, launcher);
@@ -319,6 +314,46 @@ startSolveTask(
     const std::vector<PhysicalRegion> &regions,
     Context ctx, HighLevelRuntime *lrt
 ) {
+    const int taskID = getTaskID(task);
+    //
+    HPCG_Params params = *(HPCG_Params *)task->args;
+
+    const int refMaxIters  = 50;
+    const int optMaxIters  = 10 * refMaxIters;
+    const int optNiters    = refMaxIters;
+    //
+    int numberOfCalls = 10;
+    // Check if QuickPath option is enabled.  If the running time is set to
+    // zero, we minimize all paths through the program
+    bool quickPath = (params.runningTime == 0);
+    //QuickPath means we do on one call of each block of repetitive code
+    if (quickPath) numberOfCalls = 1;
+    //
+    int niters             = 0;
+    double normr           = 0.0;
+    double normr0          = 0.0;
+    int err_count          = 0;
+    int tolerance_failures = 0;
+    double opt_worst_time  = 0.0;
+
+    std::vector<double> opt_times(9,0.0);
+
+    // Compute the residual reduction and residual count for the user ordering and optimized kernels.
+    for (int i = 0; i < numberOfCalls; ++i) {
+#if 0
+        ZeroVector(x); // start x at all zeros
+        double last_cummulative_time = opt_times[0];
+        ierr = CG( A, data, b, x, optMaxIters, refTolerance, niters, normr, normr0, &opt_times[0], true);
+        if (ierr) ++err_count; // count the number of errors in CG
+        if (normr / normr0 > refTolerance) ++tolerance_failures; // the number of failures to reduce residual
+
+        // pick the largest number of iterations to guarantee convergence
+        if (niters > optNiters) optNiters = niters;
+
+        double current_time = opt_times[0] - last_cummulative_time;
+        if (current_time > opt_worst_time) opt_worst_time = current_time;
+#endif
+    }
 }
 
 /**

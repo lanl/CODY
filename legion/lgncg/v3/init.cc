@@ -84,7 +84,6 @@ HPCG_Init(
     //
     params.runningTime = iparams[3];
     //
-    params.comm_rank = spmdMeta.rank;
     params.comm_size = spmdMeta.nRanks;
     //
     params.numThreads = 1;
