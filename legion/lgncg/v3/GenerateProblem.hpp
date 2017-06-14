@@ -137,7 +137,7 @@ GenerateProblem(
         const size_t pMemInB = sparseMatMemInB + vectorsMemInB;
         const double pMemInMB = pMemInB/1024.0/1024.0;
         cout << "--> Approximate Generate Problem Memory Footprint="
-             << pMemInMB << "MB" << endl;
+             << pMemInMB << " MB" << endl;
     }
     char *nonzerosInRow = A.nonzerosInRow;
     assert(nonzerosInRow);

@@ -277,53 +277,27 @@ mainTask(
     SetupHaloTopLevel(A, initGeom, ctx, runtime);
 #endif
 
-#if 0
     ////////////////////////////////////////////////////////////////////////////
     // Launch the tasks to begin the solve.
     ////////////////////////////////////////////////////////////////////////////
-    //
-    IndexLauncher launcher(
-        START_SOLVE,
-        A.launchDomain,
-        TaskArgument(nullptr, 0),
-        ArgumentMap()
-    );
-    // First give access to all logical subregions. Will be first nShards
-    // regions.
-    for (int color = 0; color < nShards; ++color) {
-        auto lsr = runtime->get_logical_subregion_by_color(
-                       ctx,
-                       testV.logicalPartition,
-                       color
+    {
+        cout << "*** Starting Solve..." << endl;
+        IndexLauncher launcher(
+            START_SOLVE,
+            A.launchDomain,
+            TaskArgument(nullptr, 0),
+            ArgumentMap()
         );
-        launcher.add_region_requirement(
-            RegionRequirement(
-                lsr,
-                0,
-                RW_S,
-                testV.logicalRegion
-            )
-        ).add_field(testV.fid)
-         .add_flags(NO_ACCESS_FLAG);
+        A.intent(RW_E, launcher);
+        b.intent(RW_E, launcher);
+        x.intent(RW_E, launcher);
+        xexact.intent(RW_E, launcher);
+        //
+        MustEpochLauncher mel;
+        mel.add_index_task(launcher);
+        FutureMap fm = runtime->execute_must_epoch(ctx, mel);
+        fm.wait_all_results();
     }
-    // TODO FIXME - add real access flags on a per-item basis.
-    // The application structures will always be at the end of the logical
-    // subregions, which will always be of length nShards.
-    intent<RW_S>(
-        launcher,
-        {A.geometries, A.localData, A.lrNonzerosInRow,
-         A.lrMtxIndG, A.lrMtxIndL, A.lrMatrixValues,
-         A.lrMatrixDiagonal, A.lrLocalToGlobalMap,
-         A.lrGlobalToLocalMap, A.lrElementsToSend,
-         A.lrNeighbors, A.lrReceiveLength, A.lrSendLength,
-         A.synchronizersData, b}
-    );
-    //
-    MustEpochLauncher mel;
-    mel.add_index_task(launcher);
-    FutureMap fm = runtime->execute_must_epoch(ctx, mel);
-    fm.wait_all_results();
-#endif
     //
     cout << "*** Cleaning Up..." << endl;
     destroyLogicalStructures(
@@ -345,48 +319,6 @@ startSolveTask(
     const std::vector<PhysicalRegion> &regions,
     Context ctx, HighLevelRuntime *lrt
 ) {
-#if 0
-    const int nShards = getNumProcs();
-    const int taskID = getTaskID(task);
-    const int nSubRegionReqs = nShards;
-    // First n elements will be sub-region requirements for x.
-    SparseMatrix A(regions, nSubRegionReqs, ctx, lrt);
-    //
-    Array<floatType> x(regions[taskID], ctx, lrt);
-    //
-    const int yrid = nSubRegionReqs + A.nRegionEntries();
-    Array<floatType> y(regions[yrid], ctx, lrt);
-
-#if (DEBUG_PHASE_BARRIER_SERIALIZATION == 1) // Serialization debug
-    {
-        size_t dataSize = A.localData->sizeofSynchronizersBuffer;
-        Synchronizers syncs;
-        char *synchronizersDataP = A.pic.synchronizersData.data();
-        assert(synchronizersDataP);
-        Synchronizers::deserialize(synchronizersDataP, dataSize, syncs);
-        cout << "--> task " << taskID << " "
-             << syncs.myPhaseBarriers.done << endl;
-        sleep(taskID + 1);
-        if (taskID == 0) printf("--> ALL DATA=");
-        for (size_t i = 0; i < dataSize; ++i) {
-            printf("%02hhX", (unsigned char)synchronizersDataP[i]);
-            fflush(stdout);
-        }
-        if (taskID == nShards - 1) printf("\n");
-    }
-#endif
-
-    // Test access
-    LogicalRegion *lrTest = A.pic.matrixValues.data();
-    assert(lrTest);
-    sleep(taskID + 1);
-    cout << taskID << ": -----> " << (*lrTest) << endl;
-    // Now "dereference" the LogicalRegion.
-    LogicalItem<floatType> lifTest(
-       *lrTest, ctx, lrt
-    );
-    PhysicalRegion prTest = lifTest.mapRegion(RO_E, ctx, lrt);
-#endif
 }
 
 /**
