@@ -76,13 +76,9 @@ public:
         const auto globalXYZ = getGlobalXYZ(geom);
 
         r.allocate(globalXYZ, ctx, lrt);
-#if 0
 #warning "Misallocation of structure..."
-#endif
         z.allocate(globalXYZ, ctx, lrt);
-#if 0
 #warning "Misallocation of structure..."
-#endif
         p.allocate(globalXYZ, ctx, lrt);
         Ap.allocate(globalXYZ, ctx, lrt);
     }
@@ -117,9 +113,70 @@ public:
     }
 };
 
-struct CGData {
-    Array<floatType> r;  //!< residual vector
-    Array<floatType> z;  //!< preconditioned residual vector
-    Array<floatType> p;  //!< direction vector
-    Array<floatType> Ap; //!< Krylov vector
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+struct CGData : public PhysicalMultiBase {
+    //
+    floatType *r = nullptr;
+    //
+    floatType *z = nullptr;
+    //
+    floatType *p = nullptr;
+    //
+    floatType *Ap = nullptr;
+
+    /**
+     *
+     */
+    CGData(void) = default;
+
+    /**
+     *
+     */
+    CGData(
+        const std::vector<PhysicalRegion> &regions,
+        size_t baseRID,
+        Context ctx,
+        HighLevelRuntime *runtime
+    ) {
+        mUnpack(regions, baseRID, ctx, runtime);
+        mVerifyUnpack();
+    }
+
+protected:
+    /**
+     * MUST MATCH PACK ORDER IN mPopulateRegionList!
+     */
+    void
+    mUnpack(
+        const std::vector<PhysicalRegion> &regions,
+        size_t baseRID,
+        Context ctx,
+        HighLevelRuntime *rt
+    ) {
+        size_t cid = baseRID;
+        // Populate members from physical regions.
+        r = Array<floatType>(regions[cid++], ctx, rt).data();
+        //
+        z = Array<floatType>(regions[cid++], ctx, rt).data();
+        //
+        p = Array<floatType>(regions[cid++], ctx, rt).data();
+        //
+        Ap = Array<floatType>(regions[cid++], ctx, rt).data();
+        // Calculate number of region entries for this structure.
+        mNRegionEntries = cid - baseRID;
+    }
+
+    /**
+     *
+     */
+    void
+    mVerifyUnpack(void) {
+        assert(r);
+        assert(z);
+        assert(p);
+        assert(Ap);
+    }
 };

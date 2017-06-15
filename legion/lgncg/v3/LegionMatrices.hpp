@@ -249,7 +249,7 @@ public:
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
-struct SparseMatrix {
+struct SparseMatrix : public PhysicalMultiBase {
     // Geometry info for this instance.
     Geometry *geom = nullptr;
     // Container for all scalar values.
@@ -266,10 +266,6 @@ struct SparseMatrix {
     floatType *matrixDiagonal = nullptr;
     //
     global_int_t *localToGlobalMap = nullptr;
-
-protected:
-    // Number of region entries.
-    size_t mNRegionEntries = 0;
 
 public:
 
@@ -291,13 +287,7 @@ public:
         mVerifyUnpack();
     }
 
-    /**
-     *
-     */
-    size_t
-    nRegionEntries(void) { return mNRegionEntries; }
 protected:
-
     /**
      * MUST MATCH PACK ORDER IN mPopulateRegionList!
      */

@@ -388,3 +388,37 @@ public:
     TYPE *
     data(void) { return mData; }
 };
+
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+struct PhysicalMultiBase {
+protected:
+    // Number of region entries.
+    size_t mNRegionEntries = 0;
+
+    /**
+     * MUST MATCH PACK ORDER IN mPopulateRegionList!
+     */
+    virtual void
+    mUnpack(
+        const std::vector<PhysicalRegion> &regions,
+        size_t baseRID,
+        Context ctx,
+        HighLevelRuntime *rt
+    ) = 0;
+
+    /**
+     *
+     */
+    virtual void
+    mVerifyUnpack(void) = 0;
+
+public:
+    /**
+     *
+     */
+    size_t
+    nRegionEntries(void) { return mNRegionEntries; }
+};

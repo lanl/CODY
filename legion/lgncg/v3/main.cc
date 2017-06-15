@@ -113,8 +113,6 @@ genProblemTask(
     // Use this array for collecting timing information
     std::vector<double> times(10, 0.0);
     //
-    double setup_time = mytimer();
-    //
     GenerateProblem(A, &b, &x, &xexact, ctx, runtime);
 }
 
@@ -295,6 +293,7 @@ mainTask(
         b.intent(RW_E, launcher);
         x.intent(RW_E, launcher);
         xexact.intent(RW_E, launcher);
+        data.intent(RW_E, launcher);
         //
         MustEpochLauncher mel;
         mel.add_index_task(launcher);
@@ -328,10 +327,13 @@ startSolveTask(
     HPCG_Params params = *(HPCG_Params *)task->args;
     //
     size_t rid = 0;
-    SparseMatrix     A(regions, rid, ctx, lrt); rid += A.nRegionEntries();
+    SparseMatrix     A     (regions, rid, ctx, lrt);
+    rid += A.nRegionEntries();
     Array<floatType> b     (regions[rid++], ctx, lrt);
     Array<floatType> x     (regions[rid++], ctx, lrt);
     Array<floatType> xexact(regions[rid++], ctx, lrt);
+    CGData           data  (regions, rid,  ctx, lrt);
+    rid += data.nRegionEntries();
 
     const int refMaxIters  = 50;
     const int optMaxIters  = 10 * refMaxIters;
