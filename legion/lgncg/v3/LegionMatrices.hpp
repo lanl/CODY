@@ -134,9 +134,7 @@ struct Synchronizers {
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
-struct LogicalSparseMatrix {
-    // Launch domain
-    LegionRuntime::HighLevel::Domain launchDomain;
+struct LogicalSparseMatrix : public LogicalMultiBase {
     //
     LogicalArray<Geometry> geoms;
     //
@@ -155,8 +153,6 @@ struct LogicalSparseMatrix {
     LogicalArray<global_int_t> localToGlobalMap;
 
 protected:
-    std::deque<LogicalItemBase *> mLogicalItems;
-
     /**
      * Order matters here. If you update this, also update unpack.
      */
@@ -248,34 +244,6 @@ public:
         localToGlobalMap.deallocate(ctx, lrt);
     }
 
-protected:
-    /**
-     *
-     */
-    void
-    mIntent(
-        Legion::PrivilegeMode privMode,
-        Legion::CoherenceProperty cohProp,
-        const std::deque<LogicalItemBase *> &targetArrays,
-        Legion::IndexLauncher &launcher
-    ) {
-        for (auto &a : targetArrays) {
-            a->intent(privMode, cohProp, launcher);
-        }
-    }
-
-public:
-    /**
-     *
-     */
-    void
-    intent(
-        Legion::PrivilegeMode privMode,
-        Legion::CoherenceProperty cohProp,
-        Legion::IndexLauncher &launcher
-    ) {
-        mIntent(privMode, cohProp, mLogicalItems, launcher);
-    }
 };
 
 ////////////////////////////////////////////////////////////////////////////////

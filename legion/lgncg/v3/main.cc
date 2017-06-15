@@ -339,28 +339,40 @@ startSolveTask(
     int niters             = 0;
     double normr           = 0.0;
     double normr0          = 0.0;
-    int err_count          = 0;
-    int tolerance_failures = 0;
-    double opt_worst_time  = 0.0;
+    int errCount           = 0;
+    int toleranceFailures  = 0;
+    double optWorstTime    = 0.0;
+    // Set tolerance to zero to make all runs do maxIters iterations
+    double tolerance = 0.0;
 
-    std::vector<double> opt_times(9, 0.0);
-
+    std::vector<double> optTimes(9, 0.0);
+#if 0
     // Compute the residual reduction and residual count for the user ordering and optimized kernels.
     for (int i = 0; i < numberOfCalls; ++i) {
         ZeroVector(x); // start x at all zeros
-        double last_cummulative_time = opt_times[0];
-#if 0
-        ierr = CG( A, data, b, x, optMaxIters, refTolerance, niters, normr, normr0, &opt_times[0], true);
-        if (ierr) ++err_count; // count the number of errors in CG
-        if (normr / normr0 > refTolerance) ++tolerance_failures; // the number of failures to reduce residual
+        double lastCummulativeTime = optTimes[0];
+        int ierr = CG(A,
+                      data,
+                      b,
+                      x,
+                      optMaxIters,
+                      tolerance,
+                      niters,
+                      normr,
+                      normr0,
+                      &optTimes[0],
+                      true
+                   );
+        if (ierr) ++errCount; // count the number of errors in CG
+        if (normr / normr0 > refTolerance) ++toleranceFailures; // the number of failures to reduce residual
 
         // pick the largest number of iterations to guarantee convergence
         if (niters > optNiters) optNiters = niters;
 
-        double current_time = opt_times[0] - last_cummulative_time;
-        if (current_time > opt_worst_time) opt_worst_time = current_time;
-#endif
+        double current_time = optTimes[0] - last_cummulative_time;
+        if (current_time > optWorstTime) optWorstTime = current_time;
     }
+#endif
 }
 
 /**

@@ -71,16 +71,24 @@
   Reference routine to compute an approximate solution to Ax = b
 
   @param[inout] A    The known system matrix
-  @param[inout] data The data structure with all necessary CG vectors preallocated
+  @param[inout] data The data structure with all necessary CG vectors
+                     preallocated
   @param[in]    b    The known right hand side vector
-  @param[inout] x    On entry: the initial guess; on exit: the new approximate solution
-  @param[in]    max_iter  The maximum number of iterations to perform, even if tolerance is not met.
-  @param[in]    tolerance The stopping criterion to assert convergence: if norm of residual is <= to tolerance.
+  @param[inout] x    On entry: the initial guess; on exit: the new approximate
+                     solution
+  @param[in]    max_iter  The maximum number of iterations to perform, even if
+                tolerance is not met.
+  @param[in]    tolerance The stopping criterion to assert convergence: if norm
+                of residual is <= to tolerance.
   @param[out]   niters    The number of iterations actually performed.
-  @param[out]   normr     The 2-norm of the residual vector after the last iteration.
-  @param[out]   normr0    The 2-norm of the residual vector before the first iteration.
-  @param[out]   times     The 7-element vector of the timing information accumulated during all of the iterations.
-  @param[in]    doPreconditioning The flag to indicate whether the preconditioner should be invoked at each iteration.
+  @param[out]   normr     The 2-norm of the residual vector after the last
+                          iteration.
+  @param[out]   normr0    The 2-norm of the residual vector before the first
+                          iteration.
+  @param[out]   times     The 7-element vector of the timing information
+                          accumulated during all of the iterations.
+  @param[in]    doPreconditioning The flag to indicate whether the
+                preconditioner should be invoked at each iteration.
 
   @return Returns zero on success and a non-zero value otherwise.
 
@@ -113,7 +121,7 @@ CG(const SparseMatrix &A,
     Vector &Ap = data.Ap;
 
     if (!doPreconditioning && A.geom->rank==0) {
-        HPCG_fout << "WARNING: PERFORMING UNPRECONDITIONED ITERATIONS" << std::endl;
+        std::cout << "WARNING: PERFORMING UNPRECONDITIONED ITERATIONS" << std::endl;
     }
 
 #ifdef HPCG_DEBUG
@@ -168,16 +176,14 @@ CG(const SparseMatrix &A,
     niters = k;
   }
 
-  // Store times
-  times[1] += t1; // dot product time
-  times[2] += t2; // WAXPBY time
-  times[3] += t3; // SPMV time
-  times[4] += t4; // AllReduce time
-  times[5] += t5; // preconditioner apply time
-//#ifndef HPCG_NO_MPI
-//  times[6] += t6; // exchange halo time
-//#endif
-  times[0] += mytimer() - t_begin;  // Total time. All done...
-  return 0;
+    // Store times
+    times[1] += t1; // dot product time
+    times[2] += t2; // WAXPBY time
+    times[3] += t3; // SPMV time
+    times[4] += t4; // AllReduce time
+    times[5] += t5; // preconditioner apply time
+    times[6] += t6; // exchange halo time
+    times[0] += mytimer() - t_begin;  // Total time. All done...
+    return 0;
 }
 
