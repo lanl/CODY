@@ -50,6 +50,7 @@
 #if 0
 #include "SetupHalo.hpp"
 #endif
+#include "CG.hpp"
 
 #include "LegionStuff.hpp"
 #include "LegionArrays.hpp"
@@ -322,8 +323,6 @@ startSolveTask(
     const std::vector<PhysicalRegion> &regions,
     Context ctx, HighLevelRuntime *lrt
 ) {
-    const int taskID = getTaskID(task);
-    //
     HPCG_Params params = *(HPCG_Params *)task->args;
     //
     size_t rid = 0;
@@ -337,27 +336,29 @@ startSolveTask(
 
     const int refMaxIters  = 50;
     const int optMaxIters  = 10 * refMaxIters;
-    const int optNiters    = refMaxIters;
     //
+#if 0 // FIXME
     int numberOfCalls = 10;
+#else
+    int numberOfCalls = 1;
+#endif
     // Check if QuickPath option is enabled.  If the running time is set to
     // zero, we minimize all paths through the program
     bool quickPath = (params.runningTime == 0);
     //QuickPath means we do on one call of each block of repetitive code
     if (quickPath) numberOfCalls = 1;
     //
-    int niters             = 0;
-    double normr           = 0.0;
-    double normr0          = 0.0;
-    int errCount           = 0;
-    int toleranceFailures  = 0;
-    double optWorstTime    = 0.0;
+    int niters          = 0;
+    double normr        = 0.0;
+    double normr0       = 0.0;
+    int errCount        = 0;
+    double optWorstTime = 0.0;
     // Set tolerance to zero to make all runs do maxIters iterations
-    double tolerance = 0.0;
+    double tolerance    = 0.0;
 
     std::vector<double> optTimes(9, 0.0);
-#if 0
-    // Compute the residual reduction and residual count for the user ordering and optimized kernels.
+    // Compute the residual reduction and residual count for the user ordering
+    // and optimized kernels.
     for (int i = 0; i < numberOfCalls; ++i) {
         ZeroVector(x); // start x at all zeros
         double lastCummulativeTime = optTimes[0];
@@ -371,18 +372,18 @@ startSolveTask(
                       normr,
                       normr0,
                       &optTimes[0],
-                      true
+                      false // TODO FIXME
                    );
         if (ierr) ++errCount; // count the number of errors in CG
-        if (normr / normr0 > refTolerance) ++toleranceFailures; // the number of failures to reduce residual
-
+#if 0
+        // the number of failures to reduce residual
+        if (normr / normr0 > refTolerance) ++toleranceFailures;
         // pick the largest number of iterations to guarantee convergence
         if (niters > optNiters) optNiters = niters;
-
-        double current_time = optTimes[0] - last_cummulative_time;
+#endif
+        double current_time = optTimes[0] - lastCummulativeTime;
         if (current_time > optWorstTime) optWorstTime = current_time;
     }
-#endif
 }
 
 /**

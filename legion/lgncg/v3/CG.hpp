@@ -50,12 +50,13 @@
 #include <cmath>
 
 #include "hpcg.hpp"
-
-#include "LegionMatrices.hpp"
 #include "mytimer.hpp"
 
+#include "LegionArrays.hpp"
+#include "LegionMatrices.hpp"
+#include "LegionCGData.hpp"
+
 #if 0
-#include "CG_ref.hpp"
 #include "ComputeSPMV_ref.hpp"
 #include "ComputeMG_ref.hpp"
 #include "ComputeDotProduct_ref.hpp"
@@ -95,19 +96,19 @@
   @see CG()
 */
 inline int
-CG(const SparseMatrix &A,
-   CGData &data,
-   const Vector &b,
-   Vector &x,
-   const int max_iter,
-   const double tolerance,
-   int &niters,
-   double &normr,
-   double &normr0,
-   double *times,
-   bool doPreconditioning
+CG(
+    const SparseMatrix &A,
+    CGData &data,
+    const Array<floatType> &b,
+    Array<floatType> &x,
+    const int max_iter,
+    const double tolerance,
+    int &niters,
+    double &normr,
+    double &normr0,
+    double *times,
+    bool doPreconditioning
 ) {
-
     double t_begin = mytimer();  // Start timing right away
     normr = 0.0;
     double rtz = 0.0, oldrtz = 0.0, alpha = 0.0, beta = 0.0, pAp = 0.0;
@@ -115,22 +116,18 @@ CG(const SparseMatrix &A,
 
     local_int_t nrow = A.sclrs->localNumberOfRows;
 
-    Vector &r  = data.r; // Residual vector
-    Vector &z  = data.z; // Preconditioned residual vector
-    Vector &p  = data.p; // Direction vector (in MPI mode ncol>=nrow)
-    Vector &Ap = data.Ap;
+    floatType *r  = data.r; // Residual vector
+    floatType *z  = data.z; // Preconditioned residual vector
+    floatType *p  = data.p; // Direction vector (in MPI mode ncol>=nrow)
+    floatType *Ap = data.Ap;
 
-    if (!doPreconditioning && A.geom->rank==0) {
+    if (!doPreconditioning && A.geom->rank == 0) {
         std::cout << "WARNING: PERFORMING UNPRECONDITIONED ITERATIONS" << std::endl;
     }
 
-#ifdef HPCG_DEBUG
-  int print_freq = 1;
-  if (print_freq>50) print_freq=50;
-  if (print_freq<1)  print_freq=1;
-#endif
-  // p is of length ncols, copy x to p for sparse MV operation
-  CopyVector(x, p);
+#if 0
+    // p is of length ncols, copy x to p for sparse MV operation
+    CopyVector(x, p);
   TICK(); ComputeSPMV_ref(A, p, Ap);  TOCK(t3); // Ap = A*p
   TICK(); ComputeWAXPBY_ref(nrow, 1.0, b, -1.0, Ap, r); TOCK(t2); // r = b - Ax (x stored in p)
   TICK(); ComputeDotProduct_ref(nrow, r, r, normr, t4);  TOCK(t1);
@@ -185,5 +182,5 @@ CG(const SparseMatrix &A,
     times[6] += t6; // exchange halo time
     times[0] += mytimer() - t_begin;  // Total time. All done...
     return 0;
+#endif
 }
-

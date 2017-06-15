@@ -260,11 +260,4 @@ GenerateProblem(
     // Will eventually be updated to reflect 'external' values.
     A.sclrs->localNumberOfColumns  = localNumberOfRows;
     A.sclrs->localNumberOfNonzeros = localNumberOfNonzeros;
-#if 0 // Not required.
-    A.nonzerosInRow = nonzerosInRow;
-    A.mtxIndG = mtxIndG;
-    A.mtxIndL = mtxIndL;
-    A.matrixValues = matrixValues;
-    A.matrixDiagonal = matrixDiagonal;
-#endif
 }
