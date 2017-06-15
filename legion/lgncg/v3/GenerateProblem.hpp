@@ -257,6 +257,7 @@ GenerateProblem(
     A.sclrs->totalNumberOfRows     = totalNumberOfRows;
     A.sclrs->totalNumberOfNonzeros = totalNumberOfNonzeros;
     A.sclrs->localNumberOfRows     = localNumberOfRows;
+    // Will eventually be updated to reflect 'external' values.
     A.sclrs->localNumberOfColumns  = localNumberOfRows;
     A.sclrs->localNumberOfNonzeros = localNumberOfNonzeros;
 #if 0 // Not required.

@@ -31,6 +31,7 @@
 #include "Geometry.hpp"
 
 #include <cassert>
+#include <deque>
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -75,6 +76,90 @@ public:
                 logicalRegion
             )
         ).add_field(fid);
+    }
+};
+
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+/**
+ * Base class for logical structures that contain multiple logical structures.
+ */
+struct LogicalMultiBase {
+    // Launch domain
+    LegionRuntime::HighLevel::Domain launchDomain;
+
+protected:
+
+    std::deque<LogicalItemBase *> mLogicalItems;
+
+    /**
+     *
+     */
+    LogicalMultiBase(void) = default;
+
+    /**
+     *
+     */
+    virtual void
+    mPopulateRegionList(void) = 0;
+
+    /**
+     *
+     */
+    void
+    mIntent(
+        Legion::PrivilegeMode privMode,
+        Legion::CoherenceProperty cohProp,
+        const std::deque<LogicalItemBase *> &targetArrays,
+        Legion::IndexLauncher &launcher
+    ) {
+        for (auto &a : targetArrays) {
+            a->intent(privMode, cohProp, launcher);
+        }
+    }
+
+public:
+    /**
+     *
+     */
+    virtual void
+    allocate(
+        const Geometry &geom,
+        LegionRuntime::HighLevel::Context &ctx,
+        LegionRuntime::HighLevel::HighLevelRuntime *lrt
+    ) { ; }
+
+    /**
+     *
+     */
+    virtual void
+    partition(
+        int64_t nParts,
+        LegionRuntime::HighLevel::Context &ctx,
+        LegionRuntime::HighLevel::HighLevelRuntime *lrt
+    ) = 0;
+
+    /**
+     * Cleans up and returns all allocated resources.
+     */
+    virtual void
+    deallocate(
+        LegionRuntime::HighLevel::Context &ctx,
+        LegionRuntime::HighLevel::HighLevelRuntime *lrt
+    ) = 0;
+
+    /**
+     *
+     */
+    virtual void
+    intent(
+        Legion::PrivilegeMode privMode,
+        Legion::CoherenceProperty cohProp,
+        Legion::IndexLauncher &launcher
+    ) {
+        mIntent(privMode, cohProp, mLogicalItems, launcher);
     }
 };
 
@@ -302,83 +387,4 @@ public:
      */
     TYPE *
     data(void) { return mData; }
-};
-
-////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-/**
- * Base class for logical structures that contain multiple logical structures.
- */
-struct LogicalMultiBase {
-    // Launch domain
-    LegionRuntime::HighLevel::Domain launchDomain;
-
-protected:
-    std::deque<LogicalItemBase *> mLogicalItems;
-
-    /**
-     *
-     */
-    virtual void
-    mPopulateRegionList(void) = 0;
-
-public:
-    /**
-     *
-     */
-    virtual void
-    allocate(
-        const Geometry &geom,
-        LegionRuntime::HighLevel::Context &ctx,
-        LegionRuntime::HighLevel::HighLevelRuntime *lrt
-    ) = 0;
-
-    /**
-     *
-     */
-    virtual void
-    partition(
-        int64_t nParts,
-        LegionRuntime::HighLevel::Context &ctx,
-        LegionRuntime::HighLevel::HighLevelRuntime *lrt
-    ) = 0;
-
-    /**
-     * Cleans up and returns all allocated resources.
-     */
-    virtual void
-    deallocate(
-        LegionRuntime::HighLevel::Context &ctx,
-        LegionRuntime::HighLevel::HighLevelRuntime *lrt
-    ) = 0;
-
-    /**
-     *
-     */
-    virtual void
-    intent(
-        Legion::PrivilegeMode privMode,
-        Legion::CoherenceProperty cohProp,
-        Legion::IndexLauncher &launcher
-    ) {
-        mIntent(privMode, cohProp, mLogicalItems, launcher);
-    }
-
-protected:
-    /**
-     *
-     */
-    void
-    mIntent(
-        Legion::PrivilegeMode privMode,
-        Legion::CoherenceProperty cohProp,
-        const std::deque<LogicalItemBase *> &targetArrays,
-        Legion::IndexLauncher &launcher
-    ) {
-        for (auto &a : targetArrays) {
-            a->intent(privMode, cohProp, launcher);
-        }
-    }
 };

@@ -54,6 +54,7 @@
 #include "LegionStuff.hpp"
 #include "LegionArrays.hpp"
 #include "LegionMatrices.hpp"
+#include "LegionCGData.hpp"
 
 #include <iostream>
 #include <cstdlib>
@@ -174,10 +175,11 @@ createLogicalStructures(
  */
 static void
 destroyLogicalStructures(
-    LogicalSparseMatrix &A,
+    LogicalSparseMatrix     &A,
     LogicalArray<floatType> &x,
     LogicalArray<floatType> &y,
     LogicalArray<floatType> &xexact,
+    LogicalCGData           &data,
     Context ctx, HighLevelRuntime *runtime
 ) {
     cout << "*** Destroying Logical Structures..." << endl;
@@ -186,6 +188,7 @@ destroyLogicalStructures(
     x.deallocate(ctx, runtime);
     y.deallocate(ctx, runtime);
     xexact.deallocate(ctx, runtime);
+    data.deallocate(ctx, runtime);
     const double initEnd = mytimer();
     const double initTime = initEnd - initStart;
     cout << "--> Time=" << initTime << "s" << endl;
@@ -273,6 +276,10 @@ mainTask(
     SetupHaloTopLevel(A, initGeom, ctx, runtime);
 #endif
 
+    LogicalCGData data;
+    data.allocate(initGeom, ctx, runtime);
+    data.partition(initGeom.size, ctx, runtime);
+
     ////////////////////////////////////////////////////////////////////////////
     // Launch the tasks to begin the solve.
     ////////////////////////////////////////////////////////////////////////////
@@ -301,6 +308,7 @@ mainTask(
         b,
         x,
         xexact,
+        data,
         ctx,
         runtime
     );

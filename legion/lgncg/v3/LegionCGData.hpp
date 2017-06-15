@@ -27,41 +27,26 @@
  * LA-CC 10-123
  */
 
-//@HEADER
-// ***************************************************
-//
-// HPCG: High Performance Conjugate Gradient Benchmark
-//
-// Contact:
-// Michael A. Heroux ( maherou@sandia.gov)
-// Jack Dongarra     (dongarra@eecs.utk.edu)
-// Piotr Luszczek    (luszczek@eecs.utk.edu)
-//
-// ***************************************************
-//@HEADER
-
-/*!
- @file CGData.hpp
-
- HPCG data structure
- */
-
 #pragma once
 
-#include "LegionMatrices.hpp"
 #include "LegionArrays.hpp"
+#include "LegionMatrices.hpp"
 
-struct LogicalCGData {
-    // Launch domain
-    LegionRuntime::HighLevel::Domain launchDomain;
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+struct LogicalCGData : public LogicalMultiBase {
     //
     LogicalArray<floatType> r;  //!< residual vector
+    //
     LogicalArray<floatType> z;  //!< preconditioned residual vector
+    //
     LogicalArray<floatType> p;  //!< direction vector
+    //
     LogicalArray<floatType> Ap; //!< Krylov vector
 
 protected:
-    std::deque<LogicalItemBase *> mLogicalItems;
 
     /**
      * Order matters here. If you update this, also update unpack.
@@ -69,6 +54,66 @@ protected:
     void
     mPopulateRegionList(void) {
         mLogicalItems = {&r, &z, &p, &Ap};
+    }
+
+public:
+    /**
+     *
+     */
+    LogicalCGData(void) {
+        mPopulateRegionList();
+    }
+
+    /**
+     *
+     */
+    void
+    allocate(
+        const Geometry &geom,
+        LegionRuntime::HighLevel::Context &ctx,
+        LegionRuntime::HighLevel::HighLevelRuntime *lrt
+    ) {
+        const auto globalXYZ = getGlobalXYZ(geom);
+
+        r.allocate(globalXYZ, ctx, lrt);
+#if 0
+#warning "Misallocation of structure..."
+#endif
+        z.allocate(globalXYZ, ctx, lrt);
+#if 0
+#warning "Misallocation of structure..."
+#endif
+        p.allocate(globalXYZ, ctx, lrt);
+        Ap.allocate(globalXYZ, ctx, lrt);
+    }
+
+    /**
+     *
+     */
+    void
+    partition(
+        int64_t nParts,
+        LegionRuntime::HighLevel::Context &ctx,
+        LegionRuntime::HighLevel::HighLevelRuntime *lrt
+    ) {
+        r.partition(nParts, ctx, lrt);
+        z.partition(nParts, ctx, lrt);
+        p.partition(nParts, ctx, lrt);
+        Ap.partition(nParts, ctx, lrt);
+    }
+
+    /**
+     * Cleans up and returns all allocated resources.
+     */
+    void
+    deallocate(
+        LegionRuntime::HighLevel::Context &ctx,
+        LegionRuntime::HighLevel::HighLevelRuntime *lrt
+    ) {
+        r.deallocate(ctx, lrt);
+        z.deallocate(ctx, lrt);
+        p.deallocate(ctx, lrt);
+        Ap.deallocate(ctx, lrt);
     }
 };
 
@@ -78,39 +123,3 @@ struct CGData {
     Array<floatType> p;  //!< direction vector
     Array<floatType> Ap; //!< Krylov vector
 };
-
-/*!
- Constructor for the data structure of CG vectors.
-
-    @param[in]  A    the data structure that describes the problem matrix and
-                     its structure
-    @param[out] data the data structure for CG vectors that will be allocated to
-                     get it ready for use in CG iterations
- */
-inline void
-InitializeSparseCGData(
-    SparseMatrix &A,
-    CGData &data)
-{
-  local_int_t nrow = A.localNumberOfRows;
-  local_int_t ncol = A.localNumberOfColumns;
-  InitializeVector(data.r, nrow);
-  InitializeVector(data.z, ncol);
-  InitializeVector(data.p, ncol);
-  InitializeVector(data.Ap, nrow);
-  return;
-}
-
-/*!
- Destructor for the CG vectors data.
-
- @param[inout] data the CG vectors data structure whose storage is deallocated
- */
-inline void DeleteCGData(CGData & data) {
-
-  DeleteVector (data.r);
-  DeleteVector (data.z);
-  DeleteVector (data.p);
-  DeleteVector (data.Ap);
-  return;
-}

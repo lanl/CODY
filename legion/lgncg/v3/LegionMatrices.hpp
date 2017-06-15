@@ -46,7 +46,6 @@
 
 #include "hpcg.hpp"
 #include "Geometry.hpp"
-#include "MGData.hpp"
 
 #include <vector>
 #include <map>
