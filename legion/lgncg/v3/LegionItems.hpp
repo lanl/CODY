@@ -387,6 +387,12 @@ public:
      */
     TYPE *
     data(void) { return mData; }
+
+    /**
+     *
+     */
+    const TYPE *
+    data(void) const { return mData; }
 };
 
 ////////////////////////////////////////////////////////////////////////////////

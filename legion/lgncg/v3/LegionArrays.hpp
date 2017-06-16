@@ -268,6 +268,15 @@ public:
     {
         return mBasePtr[(row*mNCols)+col];
     }
+
+    /**
+     *
+     */
+    TYPE *
+    operator()(size_t row)
+    {
+        return (mBasePtr + (row * mNCols));
+    }
 };
 
 ////////////////////////////////////////////////////////////////////////////////

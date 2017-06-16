@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2016      Los Alamos National Security, LLC
+ * Copyright (c) 2016-2017 Los Alamos National Security, LLC
  *                         All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -44,12 +44,12 @@
 
 #include <cassert>
 
+#include "LegionArrays.hpp"
+#include "LegionMatrices.hpp"
+
 /*!
     Routine to compute matrix vector product y = Ax where: Precondition: First
     call exchange_externals to get off-processor values of x
-
-    This is the reference SPMV implementation.  It CANNOT be modified for the
-    purposes of this benchmark.
 
     @param[in]  A the known system matrix
     @param[in]  x the known vector
@@ -62,29 +62,42 @@
 inline int
 ComputeSPMV(
     const SparseMatrix &A,
-    Vector &x,
-    Vector &y
+    Array<floatType> &x,
+    Array<floatType> &y
 ) {
-    assert(x.localLength>=A.localNumberOfColumns); // Test vector lengths
-    assert(y.localLength>=A.localNumberOfRows);
+    const SparseMatrixScalars *Asclrs = A.sclrs->data();
+    // Test vector lengths
+    assert(x.length() >= Asclrs->localNumberOfColumns);
+    assert(y.length() >= Asclrs->localNumberOfRows);
 
 #if 0
     ExchangeHalo(A,x);
 #endif
-    const double *const xv = x.values;
-    double *const yv = y.values;
-    const local_int_t nrow = A.localNumberOfRows;
+    const floatType *const xv = x.data();
+    floatType *const yv       = y.data();
+    const local_int_t nrow    = Asclrs->localNumberOfRows;
+    // Number of non-zeros per row.
+    const local_int_t nzpr    = A.geom->data()->stencilSize;
+    //
+    Array2D<floatType> AmatrixValues(Asclrs->localNumberOfRows,
+                                     nzpr, A.matrixValues->data());
+    //
+    Array2D<local_int_t> AmtxIndL(Asclrs->localNumberOfRows,
+                                  nzpr, A.mtxIndL->data());
+    //
+    const char *const AnonzerosInRow = A.nonzerosInRow->data();
     //
     for (local_int_t i = 0; i < nrow; i++) {
         double sum = 0.0;
-        const double *const cur_vals = A.matrixValues[i];
-        const local_int_t *const cur_inds = A.mtxIndL[i];
-        const int cur_nnz = A.nonzerosInRow[i];
+        const floatType *const cur_vals = AmatrixValues(i);
+        const local_int_t *const cur_inds = AmtxIndL(i);
+        const int cur_nnz = AnonzerosInRow[i];
         //
         for (int j = 0; j < cur_nnz; j++) {
             sum += cur_vals[j] * xv[cur_inds[j]];
         }
         yv[i] = sum;
     }
+
     return 0;
 }

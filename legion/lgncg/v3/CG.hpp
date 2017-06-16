@@ -58,8 +58,8 @@
 #include "LegionCGData.hpp"
 #include "VectorOps.hpp"
 
+#include "ComputeSPMV.hpp"
 #if 0
-#include "ComputeSPMV_ref.hpp"
 #include "ComputeMG_ref.hpp"
 #include "ComputeDotProduct_ref.hpp"
 #include "ComputeWAXPBY_ref.hpp"
@@ -129,8 +129,14 @@ CG(
     // p is of length ncols, copy x to p for sparse MV operation
     CopyVector(x, p);
 
+    sleep(A.geom->data()->rank);
+    PrintVector(Ap);
+
+    TICK(); ComputeSPMV(A, p, Ap);  TOCK(t3); // Ap = A*p
+
+    sleep(A.geom->data()->rank);
+    PrintVector(Ap);
 #if 0
-  TICK(); ComputeSPMV_ref(A, p, Ap);  TOCK(t3); // Ap = A*p
   TICK(); ComputeWAXPBY_ref(nrow, 1.0, b, -1.0, Ap, r); TOCK(t2); // r = b - Ax (x stored in p)
   TICK(); ComputeDotProduct_ref(nrow, r, r, normr, t4);  TOCK(t1);
   normr = sqrt(normr);
