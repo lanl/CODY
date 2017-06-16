@@ -114,14 +114,14 @@ CG(
     double rtz = 0.0, oldrtz = 0.0, alpha = 0.0, beta = 0.0, pAp = 0.0;
     double t0 = 0.0, t1 = 0.0, t2 = 0.0, t3 = 0.0, t4 = 0.0, t5 = 0.0, t6 = 0.0;
 
-    local_int_t nrow = A.sclrs->localNumberOfRows;
+    local_int_t nrow = A.sclrs->data()->localNumberOfRows;
 
-    floatType *r  = data.r; // Residual vector
-    floatType *z  = data.z; // Preconditioned residual vector
-    floatType *p  = data.p; // Direction vector (in MPI mode ncol>=nrow)
-    floatType *Ap = data.Ap;
+    Array<floatType> *r  = data.r; // Residual vector
+    Array<floatType> *z  = data.z; // Preconditioned residual vector
+    Array<floatType> *p  = data.p; // Direction vector (in MPI mode ncol>=nrow)
+    Array<floatType> *Ap = data.Ap;
 
-    if (!doPreconditioning && A.geom->rank == 0) {
+    if (!doPreconditioning && A.geom->data()->rank == 0) {
         std::cout << "WARNING: PERFORMING UNPRECONDITIONED ITERATIONS" << std::endl;
     }
 

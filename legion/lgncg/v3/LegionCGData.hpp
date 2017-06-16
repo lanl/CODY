@@ -119,18 +119,29 @@ public:
 ////////////////////////////////////////////////////////////////////////////////
 struct CGData : public PhysicalMultiBase {
     //
-    floatType *r = nullptr;
+    Array<floatType> *r = nullptr;
     //
-    floatType *z = nullptr;
+    Array<floatType> *z = nullptr;
     //
-    floatType *p = nullptr;
+    Array<floatType> *p = nullptr;
     //
-    floatType *Ap = nullptr;
+    Array<floatType> *Ap = nullptr;
 
     /**
      *
      */
     CGData(void) = default;
+
+    /**
+     *
+     */
+    virtual
+    ~CGData(void) {
+        delete r;
+        delete z;
+        delete p;
+        delete Ap;
+    }
 
     /**
      *
@@ -158,13 +169,13 @@ protected:
     ) {
         size_t cid = baseRID;
         // Populate members from physical regions.
-        r = Array<floatType>(regions[cid++], ctx, rt).data();
+        r = new Array<floatType>(regions[cid++], ctx, rt);
         //
-        z = Array<floatType>(regions[cid++], ctx, rt).data();
+        z = new Array<floatType>(regions[cid++], ctx, rt);
         //
-        p = Array<floatType>(regions[cid++], ctx, rt).data();
+        p = new Array<floatType>(regions[cid++], ctx, rt);
         //
-        Ap = Array<floatType>(regions[cid++], ctx, rt).data();
+        Ap = new Array<floatType>(regions[cid++], ctx, rt);
         // Calculate number of region entries for this structure.
         mNRegionEntries = cid - baseRID;
     }
@@ -174,9 +185,9 @@ protected:
      */
     void
     mVerifyUnpack(void) {
-        assert(r);
-        assert(z);
-        assert(p);
-        assert(Ap);
+        assert(r->data());
+        assert(z->data());
+        assert(p->data());
+        assert(Ap->data());
     }
 };

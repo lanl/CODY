@@ -85,15 +85,15 @@ GenerateProblem(
     using namespace std;
     // Make local copies of geometry information.  Use global_int_t since the
     // RHS products in the calculations below may result in global range values.
-    global_int_t nx  = A.geom->nx;
-    global_int_t ny  = A.geom->ny;
-    global_int_t nz  = A.geom->nz;
-    global_int_t npx = A.geom->npx;
-    global_int_t npy = A.geom->npy;
-    global_int_t npz = A.geom->npz;
-    global_int_t ipx = A.geom->ipx;
-    global_int_t ipy = A.geom->ipy;
-    global_int_t ipz = A.geom->ipz;
+    global_int_t nx  = A.geom->data()->nx;
+    global_int_t ny  = A.geom->data()->ny;
+    global_int_t nz  = A.geom->data()->nz;
+    global_int_t npx = A.geom->data()->npx;
+    global_int_t npy = A.geom->data()->npy;
+    global_int_t npz = A.geom->data()->npz;
+    global_int_t ipx = A.geom->data()->ipx;
+    global_int_t ipy = A.geom->data()->ipy;
+    global_int_t ipz = A.geom->data()->ipz;
     global_int_t gnx = nx*npx;
     global_int_t gny = ny*npy;
     global_int_t gnz = nz*npz;
@@ -105,11 +105,11 @@ GenerateProblem(
     assert(localNumberOfRows > 0);
     // We are approximating a 27-point finite element/volume/difference 3D
     // stencil
-    local_int_t numberOfNonzerosPerRow = A.geom->stencilSize;
+    local_int_t numberOfNonzerosPerRow = A.geom->data()->stencilSize;
 
     // Total number of grid points in mesh
     global_int_t totalNumberOfRows = ((global_int_t)localNumberOfRows)
-                                   * ((global_int_t)A.geom->size);
+                                   * ((global_int_t)A.geom->data()->size);
     // If this assert fails, it most likely means that the global_int_t is set
     // to int and should be set to long long
     assert(totalNumberOfRows > 0);
@@ -117,7 +117,7 @@ GenerateProblem(
     // Allocate arrays
     ////////////////////////////////////////////////////////////////////////////
     // TODO add vector stats
-    if (A.geom->rank == 0) {
+    if (A.geom->data()->rank == 0) {
         const size_t mn = localNumberOfRows * numberOfNonzerosPerRow;
         const size_t sparseMatMemInB = (
             sizeof(char)         * localNumberOfRows //nonzerosInRow
@@ -126,37 +126,37 @@ GenerateProblem(
           + sizeof(floatType)    * mn                //matrixValues
           + sizeof(floatType)    * localNumberOfRows //matrixDiagonal
           + sizeof(global_int_t) * localNumberOfRows //localToGlobalMap
-        ) * A.geom->size;
+        ) * A.geom->data()->size;
         //
         const size_t vectorsMemInB = (
             (b      ? sizeof(floatType) * localNumberOfRows : 0)
           + (x      ? sizeof(floatType) * localNumberOfRows : 0)
           + (xexact ? sizeof(floatType) * localNumberOfRows : 0)
-        ) * A.geom->size;
+        ) * A.geom->data()->size;
         //
         const size_t pMemInB = sparseMatMemInB + vectorsMemInB;
         const double pMemInMB = pMemInB/1024.0/1024.0;
         cout << "--> Approximate Generate Problem Memory Footprint="
              << pMemInMB << " MB" << endl;
     }
-    char *nonzerosInRow = A.nonzerosInRow;
+    char *nonzerosInRow = A.nonzerosInRow->data();
     assert(nonzerosInRow);
     // Interpreted as 2D array
     Array2D<global_int_t> mtxIndG(
-        localNumberOfRows, numberOfNonzerosPerRow, A.mtxIndG
+        localNumberOfRows, numberOfNonzerosPerRow, A.mtxIndG->data()
     );
     // Interpreted as 2D array
     Array2D<local_int_t> mtxIndL(
-        localNumberOfRows, numberOfNonzerosPerRow, A.mtxIndL
+        localNumberOfRows, numberOfNonzerosPerRow, A.mtxIndL->data()
     );
     // Interpreted as 2D array
     Array2D<floatType> matrixValues(
-        localNumberOfRows, numberOfNonzerosPerRow, A.matrixValues
+        localNumberOfRows, numberOfNonzerosPerRow, A.matrixValues->data()
     );
     //
-    floatType *matrixDiagonal = A.matrixDiagonal;
+    floatType *matrixDiagonal = A.matrixDiagonal->data();
     //
-    global_int_t *localToGlobalMap = A.localToGlobalMap;
+    global_int_t *localToGlobalMap = A.localToGlobalMap->data();
     //
     floatType *bv      = nullptr;
     floatType *xv      = nullptr;
@@ -254,10 +254,10 @@ GenerateProblem(
     // overflow)
     assert(totalNumberOfNonzeros>0);
 
-    A.sclrs->totalNumberOfRows     = totalNumberOfRows;
-    A.sclrs->totalNumberOfNonzeros = totalNumberOfNonzeros;
-    A.sclrs->localNumberOfRows     = localNumberOfRows;
+    A.sclrs->data()->totalNumberOfRows     = totalNumberOfRows;
+    A.sclrs->data()->totalNumberOfNonzeros = totalNumberOfNonzeros;
+    A.sclrs->data()->localNumberOfRows     = localNumberOfRows;
     // Will eventually be updated to reflect 'external' values.
-    A.sclrs->localNumberOfColumns  = localNumberOfRows;
-    A.sclrs->localNumberOfNonzeros = localNumberOfNonzeros;
+    A.sclrs->data()->localNumberOfColumns  = localNumberOfRows;
+    A.sclrs->data()->localNumberOfNonzeros = localNumberOfNonzeros;
 }

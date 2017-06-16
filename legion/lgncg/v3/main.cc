@@ -104,7 +104,7 @@ genProblemTask(
     Array<floatType> x     (regions[rid++], ctx, runtime);
     Array<floatType> xexact(regions[rid++], ctx, runtime);
     //
-    Geometry *geom = A.geom;
+    Geometry *geom = A.geom->data();
     GenerateGeometry(size, rank, params.numThreads,
                      nx, ny, nz, params.stencilSize, geom);
     //

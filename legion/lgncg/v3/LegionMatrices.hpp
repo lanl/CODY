@@ -251,21 +251,21 @@ public:
 ////////////////////////////////////////////////////////////////////////////////
 struct SparseMatrix : public PhysicalMultiBase {
     // Geometry info for this instance.
-    Geometry *geom = nullptr;
+    Item<Geometry> *geom = nullptr;
     // Container for all scalar values.
-    SparseMatrixScalars *sclrs = nullptr;
+    Item<SparseMatrixScalars> *sclrs = nullptr;
     //
-    char *nonzerosInRow = nullptr;
+    Array<char> *nonzerosInRow = nullptr;
     // Flattened to 1D from 2D.
-    global_int_t *mtxIndG = nullptr;
+    Array<global_int_t> *mtxIndG = nullptr;
     // Flattened to 1D from 2D.
-    local_int_t *mtxIndL = nullptr;
+    Array<local_int_t> *mtxIndL = nullptr;
     // Flattened to 1D from 2D.
-    floatType *matrixValues = nullptr;
+    Array<floatType> *matrixValues = nullptr;
     //
-    floatType *matrixDiagonal = nullptr;
+    Array<floatType> *matrixDiagonal = nullptr;
     //
-    global_int_t *localToGlobalMap = nullptr;
+    Array<global_int_t> *localToGlobalMap = nullptr;
 
 public:
 
@@ -273,6 +273,21 @@ public:
      *
      */
     SparseMatrix(void) = default;
+
+    /**
+     *
+     */
+    virtual
+    ~SparseMatrix(void) {
+        delete geom;
+        delete sclrs;
+        delete nonzerosInRow;
+        delete mtxIndG;
+        delete mtxIndL;
+        delete matrixValues;
+        delete matrixDiagonal;
+        delete localToGlobalMap;
+    }
 
     /**
      *
@@ -300,21 +315,21 @@ protected:
     ) {
         size_t cid = baseRID;
         // Populate members from physical regions.
-        geom = Item<Geometry>(regions[cid++], ctx, rt).data();
+        geom = new Item<Geometry>(regions[cid++], ctx, rt);
         //
-        sclrs = Item<SparseMatrixScalars>(regions[cid++], ctx, rt).data();
+        sclrs = new Item<SparseMatrixScalars>(regions[cid++], ctx, rt);
         //
-        nonzerosInRow = Array<char>(regions[cid++], ctx, rt).data();
+        nonzerosInRow = new Array<char>(regions[cid++], ctx, rt);
         //
-        mtxIndG = Array<global_int_t>(regions[cid++], ctx, rt).data();
+        mtxIndG = new Array<global_int_t>(regions[cid++], ctx, rt);
         //
-        mtxIndL = Array<local_int_t>(regions[cid++], ctx, rt).data();
+        mtxIndL = new Array<local_int_t>(regions[cid++], ctx, rt);
         //
-        matrixValues = Array<floatType>(regions[cid++], ctx, rt).data();
+        matrixValues = new Array<floatType>(regions[cid++], ctx, rt);
         //
-        matrixDiagonal = Array<floatType>(regions[cid++], ctx, rt).data();
+        matrixDiagonal = new Array<floatType>(regions[cid++], ctx, rt);
         //
-        localToGlobalMap = Array<global_int_t>(regions[cid++], ctx, rt).data();
+        localToGlobalMap = new Array<global_int_t>(regions[cid++], ctx, rt);
         // Calculate number of region entries for this structure.
         mNRegionEntries = cid - baseRID;
     }
@@ -324,13 +339,13 @@ protected:
      */
     void
     mVerifyUnpack(void) {
-        assert(geom);
-        assert(sclrs);
-        assert(nonzerosInRow);
-        assert(mtxIndG);
-        assert(mtxIndL);
-        assert(matrixValues);
-        assert(matrixDiagonal);
-        assert(localToGlobalMap);
+        assert(geom->data());
+        assert(sclrs->data());
+        assert(nonzerosInRow->data());
+        assert(mtxIndG->data());
+        assert(mtxIndL->data());
+        assert(matrixValues->data());
+        assert(matrixDiagonal->data());
+        assert(localToGlobalMap->data());
     }
 };
