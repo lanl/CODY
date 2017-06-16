@@ -95,15 +95,14 @@ void
 PrintVector(Array<floatType> &v)
 {
     using namespace std;
-    const decltype(v.length()) w = 2;
+    const decltype(v.length()) w = 8;
     const decltype(v.length()) brk = 80;
 
     floatType *vd = v.data();
 
     for (decltype(v.length()) i = 0; i < v.length(); ++i) {
         if (0 == i % (brk / w)) cout << endl;
-        cout << fixed << setw(w - 1) << setprecision(w - 1)
-             << setfill('0') << vd[i] << " ";
+        cout << scientific << setprecision(1) << vd[i] << " ";
     }
 }
 

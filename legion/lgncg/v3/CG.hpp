@@ -48,6 +48,7 @@
 
 #include <fstream>
 #include <cmath>
+#include <unistd.h>
 
 #include "hpcg.hpp"
 #include "mytimer.hpp"
