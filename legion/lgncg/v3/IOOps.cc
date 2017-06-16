@@ -29,6 +29,7 @@
 
 #include "hpcg.hpp"
 #include "Geometry.hpp"
+#include "LegionArrays.hpp"
 
 /**
  *
@@ -46,6 +47,9 @@ operator<<(std::ostream &os, const HPCG_Params &params) {
     return os;
 }
 
+/**
+ *
+ */
 std::ostream &
 operator<<(std::ostream &os, const Geometry &geom) {
     using namespace std;

@@ -55,6 +55,7 @@
 #include "LegionArrays.hpp"
 #include "LegionMatrices.hpp"
 #include "LegionCGData.hpp"
+#include "VectorOps.hpp"
 
 #if 0
 #include "ComputeSPMV_ref.hpp"
@@ -116,18 +117,18 @@ CG(
 
     local_int_t nrow = A.sclrs->data()->localNumberOfRows;
 
-    Array<floatType> *r  = data.r; // Residual vector
-    Array<floatType> *z  = data.z; // Preconditioned residual vector
-    Array<floatType> *p  = data.p; // Direction vector (in MPI mode ncol>=nrow)
-    Array<floatType> *Ap = data.Ap;
+    Array<floatType> &r  = *(data.r); // Residual vector
+    Array<floatType> &z  = *(data.z); // Preconditioned residual vector
+    Array<floatType> &p  = *(data.p); // Direction vector (in MPI mode ncol>=nrow)
+    Array<floatType> &Ap = *(data.Ap);
 
     if (!doPreconditioning && A.geom->data()->rank == 0) {
         std::cout << "WARNING: PERFORMING UNPRECONDITIONED ITERATIONS" << std::endl;
     }
-
-#if 0
     // p is of length ncols, copy x to p for sparse MV operation
     CopyVector(x, p);
+
+#if 0
   TICK(); ComputeSPMV_ref(A, p, Ap);  TOCK(t3); // Ap = A*p
   TICK(); ComputeWAXPBY_ref(nrow, 1.0, b, -1.0, Ap, r); TOCK(t2); // r = b - Ax (x stored in p)
   TICK(); ComputeDotProduct_ref(nrow, r, r, normr, t4);  TOCK(t1);

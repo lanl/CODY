@@ -50,6 +50,7 @@
 
 #include <cassert>
 #include <cstdlib>
+#include <iomanip>
 
 #include "Geometry.hpp"
 #include "hpcg.hpp"
@@ -68,6 +69,44 @@ ZeroVector(Array<floatType> &v)
     for (int i=0; i<localLength; ++i) vv[i] = 0.0;
     return;
 }
+
+/*!
+  Copy input vector to output vector.
+
+  @param[in] v Input vector
+  @param[in] w Output vector
+ */
+inline void
+CopyVector(
+    Array<floatType> &v,
+    Array<floatType> &w
+) {
+    local_int_t localLength = v.length();
+    assert(w.length() >= localLength);
+    floatType *vv = v.data();
+    double *wv = w.data();
+    for (int i = 0; i < localLength; ++i) wv[i] = vv[i];
+}
+
+/**
+ *
+ */
+void
+PrintVector(Array<floatType> &v)
+{
+    using namespace std;
+    const decltype(v.length()) w = 2;
+    const decltype(v.length()) brk = 80;
+
+    floatType *vd = v.data();
+
+    for (decltype(v.length()) i = 0; i < v.length(); ++i) {
+        if (0 == i % (brk / w)) cout << endl;
+        cout << fixed << setw(w - 1) << setprecision(w - 1)
+             << setfill('0') << vd[i] << " ";
+    }
+}
+
 #if 0
 /*!
   Multiply (scale) a specific vector entry by a given value.
@@ -91,20 +130,6 @@ inline void FillRandomVector(Vector & v) {
   local_int_t localLength = v.localLength;
   double * vv = v.values;
   for (int i=0; i<localLength; ++i) vv[i] = rand() / (double)(RAND_MAX) + 1.0;
-  return;
-}
-/*!
-  Copy input vector to output vector.
-
-  @param[in] v Input vector
-  @param[in] w Output vector
- */
-inline void CopyVector(const Vector & v, Vector & w) {
-  local_int_t localLength = v.localLength;
-  assert(w.localLength >= localLength);
-  double * vv = v.values;
-  double * wv = w.values;
-  for (int i=0; i<localLength; ++i) wv[i] = vv[i];
   return;
 }
 

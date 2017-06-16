@@ -205,7 +205,7 @@ public:
      *
      */
     size_t
-    length(void) { return this->mLength; }
+    length(void) const { return this->mLength; }
 };
 
 ////////////////////////////////////////////////////////////////////////////////
