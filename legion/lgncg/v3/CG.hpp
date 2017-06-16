@@ -59,10 +59,11 @@
 #include "VectorOps.hpp"
 
 #include "ComputeSPMV.hpp"
+#include "ComputeWAXPBY.hpp"
+
 #if 0
 #include "ComputeMG_ref.hpp"
 #include "ComputeDotProduct_ref.hpp"
-#include "ComputeWAXPBY_ref.hpp"
 #endif
 
 
@@ -128,16 +129,12 @@ CG(
     }
     // p is of length ncols, copy x to p for sparse MV operation
     CopyVector(x, p);
-
-    sleep(A.geom->data()->rank);
-    PrintVector(Ap);
-
+    //
     TICK(); ComputeSPMV(A, p, Ap);  TOCK(t3); // Ap = A*p
-
-    sleep(A.geom->data()->rank);
-    PrintVector(Ap);
+    // r = b - Ax (x stored in p)
+    TICK(); ComputeWAXPBY(nrow, 1.0, b, -1.0, Ap, r); TOCK(t2);
+    PrintVector(r);
 #if 0
-  TICK(); ComputeWAXPBY_ref(nrow, 1.0, b, -1.0, Ap, r); TOCK(t2); // r = b - Ax (x stored in p)
   TICK(); ComputeDotProduct_ref(nrow, r, r, normr, t4);  TOCK(t1);
   normr = sqrt(normr);
 #ifdef HPCG_DEBUG

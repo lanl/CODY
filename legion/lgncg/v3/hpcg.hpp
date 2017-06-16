@@ -46,9 +46,4 @@ typedef HPCG_Params_STRUCT HPCG_Params;
 extern int HPCG_Init(HPCG_Params &params, const SPMDMeta &spmdMeta);
 extern int HPCG_Finalize(void);
 
-/**
- * Floating point type used for calculations.
- */
-using floatType = double;
-
 #endif // HPCG_HPP

@@ -49,27 +49,9 @@
 #ifndef GEOMETRY_HPP
 #define GEOMETRY_HPP
 
+#include "Types.hpp"
+
 #include <ostream>
-
-/*!
-  This defines the type for integers that have local subdomain dimension.
-
-  Define as "long long" when local problem dimension is > 2^31
-*/
-typedef int local_int_t;
-//typedef long long local_int_t;
-
-/*!
-  This defines the type for integers that have global dimension
-
-  Define as "long long" when global problem dimension is > 2^31
-*/
-//typedef int global_int_t;
-typedef long long global_int_t;
-
-// This macro should be defined if the global_int_t is not long long
-// in order to stop complaints from non-C++11 compliant compilers.
-//#define HPCG_NO_LONG_LONG
 
 /*!
   This is a data structure to contain all processor geometry information

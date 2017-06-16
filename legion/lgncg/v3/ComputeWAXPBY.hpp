@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2016-2017 Los Alamos National Security, LLC
+ * Copyright (c)      2017 Los Alamos National Security, LLC
  *                         All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -26,7 +26,6 @@
  *
  * LA-CC 10-123
  */
-
 //@HEADER
 // ***************************************************
 //
@@ -40,62 +39,58 @@
 // ***************************************************
 //@HEADER
 
+/*!
+ @file ComputeWAXPBY_ref.cpp
+
+ HPCG routine
+ */
+
 #pragma once
 
 #include <cassert>
 
 #include "LegionArrays.hpp"
-#include "LegionMatrices.hpp"
 
 /*!
-    Routine to compute matrix vector product y = Ax where: Precondition: First
-    call exchange_externals to get off-processor values of x
+    Routine to compute the update of a vector with the sum of two
+    scaled vectors where: w = alpha*x + beta*y
 
-    @param[in]  A the known system matrix
-    @param[in]  x the known vector
-    @param[out] y the On exit contains the result: Ax.
+    This is the reference WAXPBY impmentation.  It CANNOT be modified for the
+    purposes of this benchmark.
+
+    @param[in] n the number of vector elements (on this processor)
+    @param[in] alpha, beta the scalars applied to x and y respectively.
+    @param[in] x, y the input vectors
+    @param[out] w the output vector.
 
     @return returns 0 upon success and non-zero otherwise
 
-    @see ComputeSPMV
+    @see ComputeWAXPBY
 */
-inline int
-ComputeSPMV(
-    const SparseMatrix &A,
-    Array<floatType> &x,
-    Array<floatType> &y
-) {
-    const SparseMatrixScalars *Asclrs = A.sclrs->data();
-    // Test vector lengths
-    assert(x.length() >= Asclrs->localNumberOfColumns);
-    assert(y.length() >= Asclrs->localNumberOfRows);
 
-#if 0
-    ExchangeHalo(A,x);
-#endif
-    const floatType *const xv = x.data();
-    floatType *const yv       = y.data();
-    // Number of rows.
-    const local_int_t nrow    = Asclrs->localNumberOfRows;
-    // Number of non-zeros per row.
-    const local_int_t nzpr    = A.geom->data()->stencilSize;
-    //
-    Array2D<floatType> AmatrixValues(nrow, nzpr, A.matrixValues->data());
-    //
-    Array2D<local_int_t> AmtxIndL(nrow, nzpr, A.mtxIndL->data());
-    //
-    const char *const AnonzerosInRow = A.nonzerosInRow->data();
-    //
-    for (local_int_t i = 0; i < nrow; i++) {
-        double sum = 0.0;
-        const floatType *const cur_vals = AmatrixValues(i);
-        const local_int_t *const cur_inds = AmtxIndL(i);
-        const int cur_nnz = AnonzerosInRow[i];
-        //
-        for (int j = 0; j < cur_nnz; j++) {
-            sum += cur_vals[j] * xv[cur_inds[j]];
-        }
-        yv[i] = sum;
+inline int
+ComputeWAXPBY(
+    const local_int_t n,
+    const floatType alpha,
+    const Array<floatType> &x,
+    const floatType beta,
+    const Array<floatType> &y,
+    Array<floatType> &w
+) {
+	// Test vector lengths
+	assert(x.length() >= n);
+	assert(y.length() >=n);
+
+	const floatType *const xv = x.data();
+	const floatType *const yv = y.data();
+	double *const wv          = w.data();
+
+    if (alpha == 1.0) {
+        for (local_int_t i = 0; i<n; i++) wv[i] = xv[i] + beta * yv[i];
+    } else if (beta == 1.0) {
+        for (local_int_t i = 0; i<n; i++) wv[i] = alpha * xv[i] + yv[i];
+    } else  {
+        for (local_int_t i = 0; i<n; i++) wv[i] = alpha * xv[i] + beta * yv[i];
     }
 
     return 0;
