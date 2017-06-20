@@ -60,25 +60,25 @@
 struct SparseMatrixScalars {
     //Max number of non-zero elements in any row
     local_int_t maxNonzerosPerRow = 0;
-    //total number of matrix rows across all processes
+    //Total number of matrix rows across all processes
     global_int_t totalNumberOfRows = 0;
-    //total number of matrix nonzeros across all processes
+    //Total number of matrix nonzeros across all processes
     global_int_t totalNumberOfNonzeros = 0;
-    //number of rows local to this process
+    //Number of rows local to this process
     local_int_t localNumberOfRows = 0;
-    //number of columns local to this process
+    //Number of columns local to this process
     local_int_t localNumberOfColumns = 0;
-    //number of nonzeros local to this process
+    //Number of nonzeros local to this process
     local_int_t localNumberOfNonzeros = 0;
-    //number of entries that are external to this process
+    //Number of entries that are external to this process
     local_int_t numberOfExternalValues = 0;
-    //number of neighboring processes that will be send local data
+    //Number of neighboring processes that will be send local data
     int numberOfSendNeighbors = 0;
-    //number of neighboring processes that i'll get data from
+    //Number of neighboring processes that i'll get data from
     int numberOfRecvNeighbors = 0;
-    //total number of entries to be sent
+    //Total number of entries to be sent
     local_int_t totalToBeSent = 0;
-    // size of serialized buffer used for Synchronizers.
+    //Size of serialized buffer used for Synchronizers.
     size_t sizeofSynchronizersBuffer = 0;
 };
 
@@ -150,6 +150,7 @@ struct LogicalSparseMatrix : public LogicalMultiBase {
     LogicalArray<floatType> matrixDiagonal;
     //
     LogicalArray<global_int_t> localToGlobalMap;
+    //
 
 protected:
     /**

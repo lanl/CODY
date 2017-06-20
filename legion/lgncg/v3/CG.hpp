@@ -113,6 +113,7 @@ CG(
     bool doPreconditioning
 ) {
     double t_begin = mytimer();  // Start timing right away
+    const int rank = A.geom->data()->rank;
     normr = 0.0;
     double rtz = 0.0, oldrtz = 0.0, alpha = 0.0, beta = 0.0, pAp = 0.0;
     double t0 = 0.0, t1 = 0.0, t2 = 0.0, t3 = 0.0, t4 = 0.0, t5 = 0.0, t6 = 0.0;
@@ -124,7 +125,7 @@ CG(
     Array<floatType> &p  = *(data.p); // Direction vector (in MPI mode ncol>=nrow)
     Array<floatType> &Ap = *(data.Ap);
 
-    if (!doPreconditioning && A.geom->data()->rank == 0) {
+    if (!doPreconditioning && rank == 0) {
         std::cout << "WARNING: PERFORMING UNPRECONDITIONED ITERATIONS" << std::endl;
     }
     // p is of length ncols, copy x to p for sparse MV operation
@@ -133,7 +134,6 @@ CG(
     TICK(); ComputeSPMV(A, p, Ap);  TOCK(t3); // Ap = A*p
     // r = b - Ax (x stored in p)
     TICK(); ComputeWAXPBY(nrow, 1.0, b, -1.0, Ap, r); TOCK(t2);
-    PrintVector(r);
 #if 0
   TICK(); ComputeDotProduct_ref(nrow, r, r, normr, t4);  TOCK(t1);
   normr = sqrt(normr);
