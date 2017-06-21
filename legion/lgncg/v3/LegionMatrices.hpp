@@ -69,7 +69,7 @@ struct SparseMatrixScalars {
     //Number of columns local to this process
     local_int_t localNumberOfColumns = 0;
     //Number of nonzeros local to this process
-    local_int_t localNumberOfNonzeros = 0;
+    global_int_t localNumberOfNonzeros = 0;
     //Number of entries that are external to this process
     local_int_t numberOfExternalValues = 0;
     //Number of neighboring processes that will be send local data
@@ -232,11 +232,11 @@ public:
             Array<DynamicCollective> dcs(
                 dcAllreduceSum.mapRegion(RW_E, ctx, lrt), ctx, lrt
             );
-            double dummy = 0.0;
+            global_int_t dummy = 0;
             DynamicCollective dc = lrt->create_dynamic_collective(
                 ctx,
                 nParts /* Number of arrivals. */,
-                ALLREDUCE_SUM_ACCUMULATE_TID,
+                INT_REDUCE_SUM_ACCUMULATE_TID,
                 &dummy,
                 sizeof(dummy)
             );
@@ -381,3 +381,16 @@ protected:
         assert(dcAllreduceSum);
     }
 };
+
+/**
+ *
+ */
+inline global_int_t
+localNonzerosTask(
+    const Task *task,
+    const std::vector<PhysicalRegion> &regions,
+    Context ctx, HighLevelRuntime *runtime
+) {
+    Item<SparseMatrixScalars> sms(regions[0], ctx, runtime);
+    return sms.data()->localNumberOfNonzeros;
+}

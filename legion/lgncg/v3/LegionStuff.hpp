@@ -65,8 +65,9 @@ enum {
     MAIN_TID = 0,
     GEN_PROB_TID,
     START_SOLVE_TID,
-    ALLREDUCE_TID,
-    ALLREDUCE_SUM_ACCUMULATE_TID,
+    LOCAL_NONZEROS_TID,
+    FLOAT_REDUCE_SUM_ACCUMULATE_TID,
+    INT_REDUCE_SUM_ACCUMULATE_TID,
     TEST_TID
 };
 
@@ -162,8 +163,8 @@ startSolveTask(
     Context ctx, HighLevelRuntime *runtime
 );
 
-floatType
-allreduceSumTask(
+global_int_t
+localNonzerosTask(
     const Task *task,
     const std::vector<PhysicalRegion> &regions,
     Context ctx, HighLevelRuntime *runtime
@@ -209,17 +210,20 @@ registerTasks(void) {
         TaskConfigOptions(false /* leaf task */),
         "startSolveTask"
     );
-    HighLevelRuntime::register_legion_task<floatType, allreduceSumTask>(
-        ALLREDUCE_TID /* task id */,
+    HighLevelRuntime::register_legion_task<global_int_t, localNonzerosTask>(
+        LOCAL_NONZEROS_TID /* task id */,
         Processor::LOC_PROC /* proc kind  */,
         true /* single */,
         true /* index */,
         AUTO_GENERATE_ID,
         TaskConfigOptions(true /* leaf task */),
-        "allreduceSumTask"
+        "localNonzerosTask"
     );
-    HighLevelRuntime::register_reduction_op<AllreduceSumAccumulate>(
-        ALLREDUCE_SUM_ACCUMULATE_TID
+    HighLevelRuntime::register_reduction_op<FloatReduceSumAccumulate>(
+        FLOAT_REDUCE_SUM_ACCUMULATE_TID
+    );
+    HighLevelRuntime::register_reduction_op<IntReduceSumAccumulate>(
+        INT_REDUCE_SUM_ACCUMULATE_TID
     );
     HighLevelRuntime::register_legion_task<testTask>(
         TEST_TID /* task id */,

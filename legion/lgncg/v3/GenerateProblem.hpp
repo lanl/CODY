@@ -60,6 +60,32 @@
 #include <sstream>
 #include <cassert>
 
+/**
+ * Tally total number of non-zeros in simulation.
+ */
+static inline global_int_t
+getTotalNumberOfNonZeros(
+    SparseMatrix &A,
+    LegionRuntime::HighLevel::Context ctx,
+    LegionRuntime::HighLevel::Runtime *runtime
+) {
+    DynamicCollective dcAllreduceSum = *A.dcAllreduceSum->data();
+    //
+    TaskLauncher tlLocalNZ(LOCAL_NONZEROS_TID, TaskArgument(NULL, 0));
+    tlLocalNZ.add_region_requirement(
+        RegionRequirement(A.sclrs->logicalRegion, RO_E, A.sclrs->logicalRegion)
+    ).add_field(0, 0);
+    //
+    Future future = runtime->execute_task(ctx, tlLocalNZ);
+    //
+    runtime->defer_dynamic_collective_arrival(ctx, dcAllreduceSum, future);
+    dcAllreduceSum = runtime->advance_dynamic_collective(ctx, dcAllreduceSum);
+    //
+    Future fSum = runtime->get_dynamic_collective_result(ctx, dcAllreduceSum);
+
+    return fSum.get<global_int_t>();
+}
+
 /*!
     Reference version of GenerateProblem to generate the sparse matrix, right
     hand side, initial guess, and exact solution.
@@ -180,7 +206,7 @@ GenerateProblem(
     auto &globalToLocalMap = A.globalToLocalMap;
 #endif
     //
-    local_int_t localNumberOfNonzeros = 0;
+    global_int_t localNumberOfNonzeros = 0;
     //
     for (local_int_t iz=0; iz<nz; iz++) {
         global_int_t giz = ipz*nz+iz;
@@ -238,16 +264,16 @@ GenerateProblem(
         } // end iy loop
     } // end iz loop
 
-    // Tally total number of non-zeros in simulation.
-    floatType totalNumberOfNonzeros = 0.0;
-    DynamicCollective dcAllreduceSum = *A.dcAllreduceSum->data();
-
-    SparseMatrixScalars * Asclrs = A.sclrs->data();
+    SparseMatrixScalars *Asclrs   = A.sclrs->data();
     Asclrs->totalNumberOfRows     = totalNumberOfRows;
-    // FIXME
-    Asclrs->totalNumberOfNonzeros = 0.0;
     Asclrs->localNumberOfRows     = localNumberOfRows;
-    // Will eventually be updated to reflect 'external' values.
     Asclrs->localNumberOfColumns  = localNumberOfRows;
     Asclrs->localNumberOfNonzeros = localNumberOfNonzeros;
+    Asclrs->totalNumberOfNonzeros = getTotalNumberOfNonZeros(A, ctx, runtime);
+    // If this assert fails, it most likely means that the global_int_t is
+    // set to int and should be set to long long This assert is usually the
+    // first to fail as problem size increases beyond the 32-bit integer
+    // range.  Throw an exception of the number of nonzeros is less than
+    // zero (can happen if int overflow)
+    assert(Asclrs->totalNumberOfNonzeros > 0);
 }

@@ -29,17 +29,17 @@
 
 #include "AllreduceSum.hpp"
 
-const floatType AllreduceSumAccumulate::identity = 0.0;
+const floatType FloatReduceSumAccumulate::identity = 0.0;
 
 template<>
 void
-AllreduceSumAccumulate::apply<true>(LHS &lhs, RHS rhs) {
+FloatReduceSumAccumulate::apply<true>(LHS &lhs, RHS rhs) {
     lhs += rhs;
 }
 
 template<>
 void
-AllreduceSumAccumulate::apply<false>(LHS &lhs, RHS rhs) {
+FloatReduceSumAccumulate::apply<false>(LHS &lhs, RHS rhs) {
     int64_t *target = (int64_t *)&lhs;
     union { int64_t as_int; double as_T; } oldval, newval;
     do {
@@ -50,15 +50,54 @@ AllreduceSumAccumulate::apply<false>(LHS &lhs, RHS rhs) {
 
 template<>
 void
-AllreduceSumAccumulate::fold<true>(RHS &rhs1, RHS rhs2) {
+FloatReduceSumAccumulate::fold<true>(RHS &rhs1, RHS rhs2) {
     rhs1 += rhs2;
 }
 
 template<>
 void
-AllreduceSumAccumulate::fold<false>(RHS &rhs1, RHS rhs2) {
+FloatReduceSumAccumulate::fold<false>(RHS &rhs1, RHS rhs2) {
     int64_t *target = (int64_t *)&rhs1;
     union { int64_t as_int; double as_T; } oldval, newval;
+    do {
+        oldval.as_int = *target;
+        newval.as_T = oldval.as_T + rhs2;
+    } while (!__sync_bool_compare_and_swap(target, oldval.as_int, newval.as_int));
+}
+
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+const global_int_t IntReduceSumAccumulate::identity = 0;
+
+template<>
+void
+IntReduceSumAccumulate::apply<true>(LHS &lhs, RHS rhs) {
+    lhs += rhs;
+}
+
+template<>
+void
+IntReduceSumAccumulate::apply<false>(LHS &lhs, RHS rhs) {
+    int64_t *target = (int64_t *)&lhs;
+    union { int64_t as_int; global_int_t as_T; } oldval, newval;
+    do {
+        oldval.as_int = *target;
+        newval.as_T = oldval.as_T + rhs;
+    } while (!__sync_bool_compare_and_swap(target, oldval.as_int, newval.as_int));
+}
+
+template<>
+void
+IntReduceSumAccumulate::fold<true>(RHS &rhs1, RHS rhs2) {
+    rhs1 += rhs2;
+}
+
+template<>
+void
+IntReduceSumAccumulate::fold<false>(RHS &rhs1, RHS rhs2) {
+    int64_t *target = (int64_t *)&rhs1;
+    union { int64_t as_int; global_int_t as_T; } oldval, newval;
     do {
         oldval.as_int = *target;
         newval.as_T = oldval.as_T + rhs2;

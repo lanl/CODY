@@ -37,7 +37,7 @@ using namespace LegionRuntime::HighLevel;
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
-class AllreduceSumAccumulate {
+class FloatReduceSumAccumulate {
 public:
     typedef floatType LHS;
     typedef floatType RHS;
@@ -50,14 +50,18 @@ public:
     static void fold(RHS &rhs1, RHS rhs2);
 };
 
-/**
- *
- */
-inline floatType
-allreduceSumTask(
-    const Task *task,
-    const std::vector<PhysicalRegion> &regions,
-    Context ctx, HighLevelRuntime *runtime
-) {
-    return 1.0;
-}
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+class IntReduceSumAccumulate {
+public:
+    typedef global_int_t LHS;
+    typedef global_int_t RHS;
+    static const global_int_t identity;
+
+    template <bool EXCLUSIVE>
+    static void apply(LHS &lhs, RHS rhs);
+
+    template <bool EXCLUSIVE>
+    static void fold(RHS &rhs1, RHS rhs2);
+};
