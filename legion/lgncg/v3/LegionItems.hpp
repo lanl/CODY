@@ -393,6 +393,12 @@ public:
      */
     const TYPE *
     data(void) const { return mData; }
+
+    /**
+     *
+     */
+    FieldID
+    getFieldID(void) { return 0; }
 };
 
 ////////////////////////////////////////////////////////////////////////////////

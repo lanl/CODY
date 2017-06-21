@@ -74,7 +74,7 @@ getTotalNumberOfNonZeros(
     TaskLauncher tlLocalNZ(LOCAL_NONZEROS_TID, TaskArgument(NULL, 0));
     tlLocalNZ.add_region_requirement(
         RegionRequirement(A.sclrs->logicalRegion, RO_E, A.sclrs->logicalRegion)
-    ).add_field(0, 0);
+    ).add_field(A.sclrs->getFieldID());
     //
     Future future = runtime->execute_task(ctx, tlLocalNZ);
     //
