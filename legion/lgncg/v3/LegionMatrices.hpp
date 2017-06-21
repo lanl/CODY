@@ -305,6 +305,9 @@ struct SparseMatrix : public PhysicalMultiBase {
     Array<global_int_t> *localToGlobalMap = nullptr;
     //
     Item<DynamicCollective> *dcAllreduceSum = nullptr;
+    // Global to local mapping. NOTE: only valid after a call to
+    // PopulateGlobalToLocalMap.
+    std::map< global_int_t, local_int_t > globalToLocalMap;
 
 public:
 
