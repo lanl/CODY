@@ -47,9 +47,7 @@
 #include "GenerateGeometry.hpp"
 #include "GenerateProblem.hpp"
 #include "VectorOps.hpp"
-#if 0
 #include "SetupHalo.hpp"
-#endif
 #include "CG.hpp"
 
 #include "LegionStuff.hpp"
@@ -111,6 +109,8 @@ genProblemTask(
     std::vector<double> times(10, 0.0);
     //
     GenerateProblem(A, &b, &x, &xexact, ctx, runtime);
+    //
+    SetupHalo(A);
 }
 
 /**
@@ -251,10 +251,10 @@ mainTask(
             TaskArgument(&params, sizeof(params)),
             ArgumentMap()
         );
-        A.intent(WO_E, launcher);
-        b.intent(WO_E, launcher);
-        x.intent(WO_E, launcher);
-        xexact.intent(WO_E, launcher);
+        A.intent(RW_E, launcher);
+        b.intent(RW_E, launcher);
+        x.intent(RW_E, launcher);
+        xexact.intent(RW_E, launcher);
         //
         auto futureMap = runtime->execute_index_space(ctx, launcher);
         cout << "*** Waiting for Initialization Tasks" << endl;

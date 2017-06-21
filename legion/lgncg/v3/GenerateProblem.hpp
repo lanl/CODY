@@ -304,4 +304,6 @@ GenerateProblem(
     // range.  Throw an exception of the number of nonzeros is less than
     // zero (can happen if int overflow)
     assert(Asclrs->totalNumberOfNonzeros > 0);
+    //
+    PopulateGlobalToLocalMap(A, ctx, runtime);
 }
