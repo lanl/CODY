@@ -236,10 +236,6 @@ GenerateProblem(
         xexactv = xexact->data(); // Only compute exact solution if requested
         assert(xexactv);
     }
-#if 0 // TODO
-    //!< global-to-local mapping
-    auto &globalToLocalMap = A.globalToLocalMap;
-#endif
     //
     global_int_t localNumberOfNonzeros = 0;
     //
@@ -251,9 +247,6 @@ GenerateProblem(
                 global_int_t gix = ipx*nx+ix;
                 local_int_t currentLocalRow = iz*nx*ny+iy*nx+ix;
                 global_int_t currentGlobalRow = giz*gnx*gny+giy*gnx+gix;
-#if 0 // TODO
-                globalToLocalMap[currentGlobalRow] = currentLocalRow;
-#endif
                 localToGlobalMap[currentLocalRow] = currentGlobalRow;
                 char numberOfNonzerosInRow = 0;
                 // Current index in current row
