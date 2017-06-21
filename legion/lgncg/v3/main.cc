@@ -268,6 +268,38 @@ mainTask(
         double initTime = initEnd - initStart;
         cout << "--> Time=" << initTime << "s" << endl;
     }
+    {
+        cout << "*** Calculating total number of non-zeros..." << endl;;
+        const double initStart = mytimer();
+
+        Array<SparseMatrixScalars> sms(A.sclrs.mapRegion(RW_E, ctx, runtime),
+                                       ctx, runtime);
+        SparseMatrixScalars *Asclrs = sms.data();
+
+        global_int_t total = 0;
+        for (int i = 0; i < nShards; ++i) {
+            total += Asclrs[i].localNumberOfNonzeros;
+        }
+        // Update values in mapped regions.
+        for (int i = 0; i < nShards; ++i) {
+            Asclrs[i].totalNumberOfNonzeros = total;
+        }
+        // Done. Unmap region.
+        A.sclrs.unmapRegion(ctx, runtime);
+
+        // If this assert fails, it most likely means that the global_int_t is
+        // set to int and should be set to long long This assert is usually the
+        // first to fail as problem size increases beyond the 32-bit integer
+        // range.  Throw an exception of the number of nonzeros is less than
+        // zero (can happen if int overflow)
+        assert(total > 0);
+
+        cout << "--> totalNumberOfNonzeros=" << total << endl;;
+
+        const double initEnd = mytimer();
+        double initTime = initEnd - initStart;
+        cout << "--> Time=" << initTime << "s" << endl;
+    }
 #if 0
     // Now that we have all the setup information stored in LogicalRegions,
     // perform the top-level setup required for inter-task synchronization using

@@ -237,23 +237,6 @@ GenerateProblem(
         } // end iy loop
     } // end iz loop
     //
-    global_int_t totalNumberOfNonzeros = 0;
-#if 0
-    // SKG TODO calculate totalNumberOfNonzeros
-    // Use MPI's reduce function to sum all nonzeros
-    // convert to 64 bit for MPI call
-    long long lnnz = localNumberOfNonzeros, gnnz = 0;
-    MPI_Allreduce(&lnnz, &gnnz, 1, MPI_LONG_LONG_INT, MPI_SUM, MPI_COMM_WORLD);
-    totalNumberOfNonzeros = gnnz; // Copy back
-#else
-    totalNumberOfNonzeros = localNumberOfNonzeros;
-#endif
-    // If this assert fails, it most likely means that the global_int_t is set
-    // to int and should be set to long long This assert is usually the first to
-    // fail as problem size increases beyond the 32-bit integer range.  Throw an
-    // exception of the number of nonzeros is less than zero (can happen if int
-    // overflow)
-    assert(totalNumberOfNonzeros > 0);
 
     SparseMatrixScalars * Asclrs = A.sclrs->data();
     Asclrs->totalNumberOfRows     = totalNumberOfRows;
