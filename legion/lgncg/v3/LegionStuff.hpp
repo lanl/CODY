@@ -33,7 +33,7 @@
 
 #include "legion.h"
 #include "Types.hpp"
-#include "AllreduceSum.hpp"
+#include "ReduceSum.hpp"
 
 // For serialization.
 #include "cereal/cereal.hpp"
@@ -66,8 +66,8 @@ enum {
     GEN_PROB_TID,
     START_SOLVE_TID,
     LOCAL_NONZEROS_TID,
-    FLOAT_REDUCE_SUM_ACCUMULATE_TID,
-    INT_REDUCE_SUM_ACCUMULATE_TID,
+    FLOAT_REDUCE_SUM_TID,
+    INT_REDUCE_SUM_TID,
     TEST_TID
 };
 
@@ -220,10 +220,10 @@ registerTasks(void) {
         "localNonzerosTask"
     );
     HighLevelRuntime::register_reduction_op<FloatReduceSumAccumulate>(
-        FLOAT_REDUCE_SUM_ACCUMULATE_TID
+        FLOAT_REDUCE_SUM_TID
     );
     HighLevelRuntime::register_reduction_op<IntReduceSumAccumulate>(
-        INT_REDUCE_SUM_ACCUMULATE_TID
+        INT_REDUCE_SUM_TID
     );
     HighLevelRuntime::register_legion_task<testTask>(
         TEST_TID /* task id */,

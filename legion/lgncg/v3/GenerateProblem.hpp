@@ -54,7 +54,7 @@
 #include "LegionItems.hpp"
 #include "LegionArrays.hpp"
 #include "LegionMatrices.hpp"
-#include "AllreduceSum.hpp"
+#include "ReduceSum.hpp"
 
 #include <map>
 #include <sstream>

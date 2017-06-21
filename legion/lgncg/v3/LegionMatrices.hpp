@@ -236,7 +236,7 @@ public:
             DynamicCollective dc = lrt->create_dynamic_collective(
                 ctx,
                 nParts /* Number of arrivals. */,
-                INT_REDUCE_SUM_ACCUMULATE_TID,
+                INT_REDUCE_SUM_TID,
                 &dummy,
                 sizeof(dummy)
             );
