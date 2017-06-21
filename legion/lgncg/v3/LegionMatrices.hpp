@@ -227,27 +227,10 @@ public:
         matrixValues.partition(nParts, ctx, lrt);
         matrixDiagonal.partition(nParts, ctx, lrt);
         localToGlobalMap.partition(nParts, ctx, lrt);
+        // For the DynamicCollectives we need partition info before population.
         dcAllreduceSum.partition(nParts, ctx, lrt);
-        { // Ugly here, but ...
-            Array<DynamicCollective> dcs(
-                dcAllreduceSum.mapRegion(RW_E, ctx, lrt), ctx, lrt
-            );
-            global_int_t dummy = 0;
-            DynamicCollective dc = lrt->create_dynamic_collective(
-                ctx,
-                nParts /* Number of arrivals. */,
-                INT_REDUCE_SUM_TID,
-                &dummy,
-                sizeof(dummy)
-            );
-            // Replicate
-            DynamicCollective *dcsd = dcs.data();
-            for (int64_t i = 0; i < nParts; ++i) {
-                dcsd[i] = dc;
-            }
-            // Done, so unmap.
-            dcAllreduceSum.unmapRegion(ctx, lrt);
-        }
+        // Really out of place here, but it works, folks...
+        mPopulateDynamicCollectives(nParts, ctx, lrt);
         // Just pick a structure that has a representative launch domain.
         launchDomain = geoms.launchDomain;
     }
@@ -268,6 +251,34 @@ public:
         matrixValues.deallocate(ctx, lrt);
         matrixDiagonal.deallocate(ctx, lrt);
         localToGlobalMap.deallocate(ctx, lrt);
+        dcAllreduceSum.deallocate(ctx, lrt);
+    }
+
+private:
+    void
+    mPopulateDynamicCollectives(
+        int64_t nArrivals,
+        LegionRuntime::HighLevel::Context &ctx,
+        LegionRuntime::HighLevel::HighLevelRuntime *lrt
+    ) {
+        Array<DynamicCollective> dcs(
+            dcAllreduceSum.mapRegion(RW_E, ctx, lrt), ctx, lrt
+        );
+        global_int_t dummy = 0;
+        DynamicCollective dc = lrt->create_dynamic_collective(
+            ctx,
+            nArrivals /* Number of arrivals. */,
+            INT_REDUCE_SUM_TID,
+            &dummy,
+            sizeof(dummy)
+        );
+        // Replicate
+        DynamicCollective *dcsd = dcs.data();
+        for (int64_t i = 0; i < nArrivals; ++i) {
+            dcsd[i] = dc;
+        }
+        // Done, so unmap.
+        dcAllreduceSum.unmapRegion(ctx, lrt);
     }
 };
 

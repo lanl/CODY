@@ -125,7 +125,7 @@ GenerateProblem(
     const global_int_t gnx = nx * npx;
     const global_int_t gny = ny * npy;
     const global_int_t gnz = nz * npz;
-    // This is the size of our subblock
+    // This is the size of our subblock.
     const local_int_t localNumberOfRows = nx * ny * nz;
     // If this assert fails, it most likely means that the local_int_t is set to
     // int and should be set to.  Throw an exception of the number of rows is
@@ -144,7 +144,6 @@ GenerateProblem(
     ////////////////////////////////////////////////////////////////////////////
     // Allocate arrays
     ////////////////////////////////////////////////////////////////////////////
-    // TODO add vector stats
     if (Ageom->rank == 0) {
         const size_t mn = localNumberOfRows * numberOfNonzerosPerRow;
         const size_t sparseMatMemInB = (
