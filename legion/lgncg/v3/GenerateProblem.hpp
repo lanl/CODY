@@ -54,6 +54,7 @@
 #include "LegionItems.hpp"
 #include "LegionArrays.hpp"
 #include "LegionMatrices.hpp"
+#include "AllreduceSum.hpp"
 
 #include <map>
 #include <sstream>
@@ -236,11 +237,15 @@ GenerateProblem(
             } // end ix loop
         } // end iy loop
     } // end iz loop
-    //
+
+    // Tally total number of non-zeros in simulation.
+    floatType totalNumberOfNonzeros = 0.0;
+    DynamicCollective dcAllreduceSum = *A.dcAllreduceSum->data();
 
     SparseMatrixScalars * Asclrs = A.sclrs->data();
     Asclrs->totalNumberOfRows     = totalNumberOfRows;
-    Asclrs->totalNumberOfNonzeros = totalNumberOfNonzeros;
+    // FIXME
+    Asclrs->totalNumberOfNonzeros = 0.0;
     Asclrs->localNumberOfRows     = localNumberOfRows;
     // Will eventually be updated to reflect 'external' values.
     Asclrs->localNumberOfColumns  = localNumberOfRows;

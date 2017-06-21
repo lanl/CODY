@@ -150,7 +150,9 @@ struct LogicalSparseMatrix : public LogicalMultiBase {
     LogicalArray<floatType> matrixDiagonal;
     //
     LogicalArray<global_int_t> localToGlobalMap;
-    //
+    // The SAME dynamic collective instance replicated because
+    // IndexLauncher will be unhappy with different launch domains :-(
+    LogicalArray<DynamicCollective> dcAllreduceSum;
 
 protected:
     /**
@@ -165,7 +167,8 @@ protected:
                          &mtxIndL,
                          &matrixValues,
                          &matrixDiagonal,
-                         &localToGlobalMap
+                         &localToGlobalMap,
+                         &dcAllreduceSum
         };
     }
 
@@ -186,8 +189,8 @@ public:
         LegionRuntime::HighLevel::Context &ctx,
         LegionRuntime::HighLevel::HighLevelRuntime *lrt
     ) {
-        const auto size = geom.size;
-        const auto globalXYZ = getGlobalXYZ(geom);
+        const int size         = geom.size;
+        const auto globalXYZ   = getGlobalXYZ(geom);
         const auto stencilSize = geom.stencilSize;
 
         geoms.allocate(size, ctx, lrt);
@@ -203,6 +206,8 @@ public:
         matrixDiagonal.allocate(globalXYZ, ctx, lrt);
         //
         localToGlobalMap.allocate(globalXYZ, ctx, lrt);
+        //
+        dcAllreduceSum.allocate(size, ctx, lrt);
     }
 
     /**
@@ -222,6 +227,27 @@ public:
         matrixValues.partition(nParts, ctx, lrt);
         matrixDiagonal.partition(nParts, ctx, lrt);
         localToGlobalMap.partition(nParts, ctx, lrt);
+        dcAllreduceSum.partition(nParts, ctx, lrt);
+        { // Ugly here, but ...
+            Array<DynamicCollective> dcs(
+                dcAllreduceSum.mapRegion(RW_E, ctx, lrt), ctx, lrt
+            );
+            double dummy = 0.0;
+            DynamicCollective dc = lrt->create_dynamic_collective(
+                ctx,
+                nParts /* Number of arrivals. */,
+                ALLREDUCE_SUM_ACCUMULATE_TID,
+                &dummy,
+                sizeof(dummy)
+            );
+            // Replicate
+            DynamicCollective *dcsd = dcs.data();
+            for (int64_t i = 0; i < nParts; ++i) {
+                dcsd[i] = dc;
+            }
+            // Done, so unmap.
+            dcAllreduceSum.unmapRegion(ctx, lrt);
+        }
         // Just pick a structure that has a representative launch domain.
         launchDomain = geoms.launchDomain;
     }
@@ -243,7 +269,6 @@ public:
         matrixDiagonal.deallocate(ctx, lrt);
         localToGlobalMap.deallocate(ctx, lrt);
     }
-
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -267,6 +292,8 @@ struct SparseMatrix : public PhysicalMultiBase {
     Array<floatType> *matrixDiagonal = nullptr;
     //
     Array<global_int_t> *localToGlobalMap = nullptr;
+    //
+    Item<DynamicCollective> *dcAllreduceSum = nullptr;
 
 public:
 
@@ -288,6 +315,7 @@ public:
         delete matrixValues;
         delete matrixDiagonal;
         delete localToGlobalMap;
+        delete dcAllreduceSum;
     }
 
     /**
@@ -331,6 +359,8 @@ protected:
         matrixDiagonal = new Array<floatType>(regions[cid++], ctx, rt);
         //
         localToGlobalMap = new Array<global_int_t>(regions[cid++], ctx, rt);
+        //
+        dcAllreduceSum = new Item<DynamicCollective>(regions[cid++], ctx, rt);
         // Calculate number of region entries for this structure.
         mNRegionEntries = cid - baseRID;
     }
@@ -348,5 +378,6 @@ protected:
         assert(matrixValues->data());
         assert(matrixDiagonal->data());
         assert(localToGlobalMap->data());
+        assert(dcAllreduceSum);
     }
 };

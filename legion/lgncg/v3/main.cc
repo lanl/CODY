@@ -317,7 +317,7 @@ mainTask(
     {
         cout << "*** Starting Solve..." << endl;
         IndexLauncher launcher(
-            START_SOLVE,
+            START_SOLVE_TID,
             A.launchDomain,
             TaskArgument(&params, sizeof(params)),
             ArgumentMap()

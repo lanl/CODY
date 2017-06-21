@@ -32,6 +32,8 @@
 #pragma once
 
 #include "legion.h"
+#include "Types.hpp"
+#include "AllreduceSum.hpp"
 
 // For serialization.
 #include "cereal/cereal.hpp"
@@ -55,6 +57,18 @@ using namespace LegionRuntime::Accessor;
 
 // Set to 1 for debug.
 #define DEBUG_PHASE_BARRIER_SERIALIZATION 0
+
+////////////////////////////////////////////////////////////////////////////////
+// Task IDs
+////////////////////////////////////////////////////////////////////////////////
+enum {
+    MAIN_TID = 0,
+    GEN_PROB_TID,
+    START_SOLVE_TID,
+    ALLREDUCE_TID,
+    ALLREDUCE_SUM_ACCUMULATE_TID,
+    TEST_TID
+};
 
 namespace cereal {
     /**
@@ -106,16 +120,6 @@ struct PhaseBarriers {
 };
 
 ////////////////////////////////////////////////////////////////////////////////
-// Task IDs
-////////////////////////////////////////////////////////////////////////////////
-enum {
-    MAIN_TID = 0,
-    GEN_PROB_TID,
-    START_SOLVE,
-    TEST_TID
-};
-
-////////////////////////////////////////////////////////////////////////////////
 // SPMD metadata.
 ////////////////////////////////////////////////////////////////////////////////
 struct SPMDMeta {
@@ -158,6 +162,13 @@ startSolveTask(
     Context ctx, HighLevelRuntime *runtime
 );
 
+floatType
+allreduceSumTask(
+    const Task *task,
+    const std::vector<PhysicalRegion> &regions,
+    Context ctx, HighLevelRuntime *runtime
+);
+
 inline void
 testTask(
     const Task *task,
@@ -190,13 +201,25 @@ registerTasks(void) {
         "genProblemTask"
     );
     HighLevelRuntime::register_legion_task<startSolveTask>(
-        START_SOLVE /* task id */,
+        START_SOLVE_TID /* task id */,
         Processor::LOC_PROC /* proc kind  */,
         true /* single */,
         true /* index */,
         AUTO_GENERATE_ID,
         TaskConfigOptions(false /* leaf task */),
         "startSolveTask"
+    );
+    HighLevelRuntime::register_legion_task<floatType, allreduceSumTask>(
+        ALLREDUCE_TID /* task id */,
+        Processor::LOC_PROC /* proc kind  */,
+        true /* single */,
+        true /* index */,
+        AUTO_GENERATE_ID,
+        TaskConfigOptions(true /* leaf task */),
+        "allreduceSumTask"
+    );
+    HighLevelRuntime::register_reduction_op<AllreduceSumAccumulate>(
+        ALLREDUCE_SUM_ACCUMULATE_TID
     );
     HighLevelRuntime::register_legion_task<testTask>(
         TEST_TID /* task id */,

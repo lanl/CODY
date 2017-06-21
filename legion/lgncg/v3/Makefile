@@ -32,7 +32,8 @@ OUTFILE		?= legion-hpcg
 GEN_SRC		?= \
 main.cc init.cc mytimer.cc IOOps.cc \
 ReadHpcgDat.cc CheckAspectRatio.cc \
-MixedBaseCounter.cc ComputeOptimalShapeXYZ.cc
+MixedBaseCounter.cc ComputeOptimalShapeXYZ.cc \
+AllreduceSum.cc
 
 GEN_GPU_SRC	?= 					# .cu files
 

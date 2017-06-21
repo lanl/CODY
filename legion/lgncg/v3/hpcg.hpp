@@ -28,9 +28,6 @@ extern LegionRuntime::Logger::Category Logger;
 
 struct HPCG_Params_STRUCT {
   int comm_size; //!< Number of MPI processes in MPI_COMM_WORLD
-#if 0
-  int comm_rank; //!< This process' MPI rank in the range [0 to comm_size - 1]
-#endif
   int numThreads; //!< This process' number of threads
   int nx; //!< Number of x-direction grid points for each local subdomain
   int ny; //!< Number of y-direction grid points for each local subdomain
