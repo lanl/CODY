@@ -46,6 +46,7 @@
 
 using namespace LegionRuntime::HighLevel;
 using namespace LegionRuntime::Accessor;
+using namespace LegionRuntime::HighLevel;
 
 #define RW_E READ_WRITE, EXCLUSIVE
 #define RO_E READ_ONLY , EXCLUSIVE

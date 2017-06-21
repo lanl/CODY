@@ -61,13 +61,9 @@
 #include <cstdlib>
 #include <iomanip>
 
-#include <unistd.h>
-
 using namespace std;
 
 LegionRuntime::Logger::Category Logger("LGNCG");
-
-using namespace LegionRuntime::HighLevel;
 
 /**
  * Generate Problem Task ///////////////////////////////////////////////////////
