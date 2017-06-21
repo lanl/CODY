@@ -399,6 +399,22 @@ public:
      */
     FieldID
     getFieldID(void) { return 0; }
+
+    /**
+     *
+     */
+    int64_t
+    getGlobalIdxZero(
+        Context ctx,
+        HighLevelRuntime *lrt
+    ) {
+        Rect<1> rect = lrt->get_index_space_domain(
+            ctx,
+            logicalRegion.get_index_space()
+        ).template get_rect<1>();
+        //
+        return rect.lo.x[0];
+    }
 };
 
 ////////////////////////////////////////////////////////////////////////////////
