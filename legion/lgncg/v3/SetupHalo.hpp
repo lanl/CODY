@@ -221,3 +221,60 @@ SetupHalo(
     }
 #endif
 }
+
+/**
+ *
+ */
+inline void
+SetupHaloTopLevel(
+    LogicalSparseMatrix &A,
+    const Geometry &geom,
+    LegionRuntime::HighLevel::Context ctx,
+    LegionRuntime::HighLevel::Runtime *lrt
+) {
+    using namespace std;
+    //
+    cout << "*** Setting Up Structures for SPMD Exchanges..." << endl;
+    const double startTime = mytimer();
+    const int nShards = geom.size;
+    // Extract required info from logical structures.
+    //
+    cout << "--> Memory for SparseMatrixScalars="
+         << (sizeof(SparseMatrixScalars) * nShards) / 1024.0 / 1024.0
+         << " MB" << endl;
+    Array<SparseMatrixScalars> aSparseMatrixScalars(
+        A.sclrs.mapRegion(RW_E, ctx, lrt), ctx, lrt
+    );
+    SparseMatrixScalars *smScalars = aSparseMatrixScalars.data();
+    assert(smScalars);
+    //
+    const int maxNumNeighbors = geom.stencilSize - 1;
+    cout << "--> Memory for Neighbors="
+         << (sizeof(int) * nShards * maxNumNeighbors) / 1024.0 / 1024.0
+         << "MB" << endl;
+    Array<int> aNeighbors(
+        A.neighbors.mapRegion(RO_E, ctx, lrt), ctx, lrt
+    );
+    // For convenience we'll interpret this as a 2D array.
+    Array2D<int> neighbors(geom.size, maxNumNeighbors, aNeighbors.data());
+    // Iterate over all shards
+    for (int shard = 0; shard < nShards; ++shard) {
+        // Get total number of neighbors this shard has
+        const SparseMatrixScalars &myScalars = smScalars[shard];
+        const int nNeighbors = myScalars.numberOfSendNeighbors;
+#if 1 // Debug
+        cout << "Rank " << shard << " Has "
+             << nNeighbors << " Send Neighbors: " << endl;
+        for (int n = 0; n < nNeighbors; ++n) {
+            cout << neighbors(shard, n) << " ";
+        }
+        cout << endl;
+#endif
+    }
+
+    A.sclrs.unmapRegion(ctx, lrt);
+    A.neighbors.unmapRegion(ctx, lrt);
+    const double initEnd = mytimer();
+    const double initTime = initEnd - startTime;
+    cout << "--> Time=" << initTime << "s" << endl;
+}

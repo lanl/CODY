@@ -51,7 +51,6 @@
 #include <map>
 #include <cassert>
 #include <deque>
-#include <utility> // For pair
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -74,8 +73,6 @@ struct SparseMatrixScalars {
     local_int_t numberOfExternalValues = 0;
     //Number of neighboring processes that will be send local data.
     int numberOfSendNeighbors = 0;
-    //Number of neighboring processes that I'll get data from.
-    int numberOfRecvNeighbors = 0;
     //Total number of entries to be sent.
     local_int_t totalToBeSent = 0;
 };
