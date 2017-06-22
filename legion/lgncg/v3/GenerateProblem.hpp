@@ -295,6 +295,7 @@ GenerateProblem(
     SparseMatrixScalars *Asclrs   = A.sclrs->data();
     Asclrs->totalNumberOfRows     = totalNumberOfRows;
     Asclrs->localNumberOfRows     = localNumberOfRows;
+    // Will be updated later to include external values in SetupHalo.
     Asclrs->localNumberOfColumns  = localNumberOfRows;
     Asclrs->localNumberOfNonzeros = localNumberOfNonzeros;
     Asclrs->totalNumberOfNonzeros = getTotalNumberOfNonZeros(A, ctx, runtime);

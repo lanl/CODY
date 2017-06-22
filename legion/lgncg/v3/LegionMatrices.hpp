@@ -58,28 +58,26 @@
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 struct SparseMatrixScalars {
-    //Max number of non-zero elements in any row
+    //Max number of non-zero elements in any row.
     local_int_t maxNonzerosPerRow = 0;
-    //Total number of matrix rows across all processes
+    //Total number of matrix rows across all processes.
     global_int_t totalNumberOfRows = 0;
-    //Total number of matrix nonzeros across all processes
+    //Total number of matrix non-zeros across all processes.
     global_int_t totalNumberOfNonzeros = 0;
-    //Number of rows local to this process
+    //Number of rows local to this process.
     local_int_t localNumberOfRows = 0;
-    //Number of columns local to this process
+    //Number of columns local to this process.
     local_int_t localNumberOfColumns = 0;
-    //Number of nonzeros local to this process
+    //Number of non-zeros local to this process.
     global_int_t localNumberOfNonzeros = 0;
-    //Number of entries that are external to this process
+    //Number of entries that are external to this process.
     local_int_t numberOfExternalValues = 0;
-    //Number of neighboring processes that will be send local data
+    //Number of neighboring processes that will be send local data.
     int numberOfSendNeighbors = 0;
-    //Number of neighboring processes that i'll get data from
+    //Number of neighboring processes that I'll get data from.
     int numberOfRecvNeighbors = 0;
-    //Total number of entries to be sent
+    //Total number of entries to be sent.
     local_int_t totalToBeSent = 0;
-    //Size of serialized buffer used for Synchronizers.
-    size_t sizeofSynchronizersBuffer = 0;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -153,6 +151,8 @@ struct LogicalSparseMatrix : public LogicalMultiBase {
     // The SAME dynamic collective instance replicated because
     // IndexLauncher will be unhappy with different launch domains :-(
     LogicalArray<DynamicCollective> dcAllreduceSum;
+    // Neighboring processes.
+    LogicalArray<int> neighbors;
 
 protected:
     /**
@@ -168,7 +168,8 @@ protected:
                          &matrixValues,
                          &matrixDiagonal,
                          &localToGlobalMap,
-                         &dcAllreduceSum
+                         &dcAllreduceSum,
+                         &neighbors
         };
     }
 
@@ -208,6 +209,10 @@ public:
         localToGlobalMap.allocate(globalXYZ, ctx, lrt);
         //
         dcAllreduceSum.allocate(size, ctx, lrt);
+        //
+        const int maxNumNeighbors = geom.stencilSize - 1;
+        // Each task will have at most 26 neighbors.
+        neighbors.allocate(size * maxNumNeighbors, ctx, lrt);
     }
 
     /**
@@ -231,6 +236,7 @@ public:
         dcAllreduceSum.partition(nParts, ctx, lrt);
         // Really out of place here, but it works, folks...
         mPopulateDynamicCollectives(nParts, ctx, lrt);
+        neighbors.partition(nParts, ctx, lrt);
         // Just pick a structure that has a representative launch domain.
         launchDomain = geoms.launchDomain;
     }
@@ -252,6 +258,7 @@ public:
         matrixDiagonal.deallocate(ctx, lrt);
         localToGlobalMap.deallocate(ctx, lrt);
         dcAllreduceSum.deallocate(ctx, lrt);
+        neighbors.deallocate(ctx, lrt);
     }
 
 private:
@@ -305,6 +312,8 @@ struct SparseMatrix : public PhysicalMultiBase {
     Array<global_int_t> *localToGlobalMap = nullptr;
     //
     Item<DynamicCollective> *dcAllreduceSum = nullptr;
+    //
+    Array<int> *neighbors = nullptr;
     // Global to local mapping. NOTE: only valid after a call to
     // PopulateGlobalToLocalMap.
     std::map< global_int_t, local_int_t > globalToLocalMap;
@@ -330,6 +339,7 @@ public:
         delete matrixDiagonal;
         delete localToGlobalMap;
         delete dcAllreduceSum;
+        delete neighbors;
     }
 
     /**
@@ -375,6 +385,8 @@ protected:
         localToGlobalMap = new Array<global_int_t>(regions[cid++], ctx, rt);
         //
         dcAllreduceSum = new Item<DynamicCollective>(regions[cid++], ctx, rt);
+        //
+        neighbors = new Array<int>(regions[cid++], ctx, rt);
         // Calculate number of region entries for this structure.
         mNRegionEntries = cid - baseRID;
     }

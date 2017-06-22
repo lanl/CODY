@@ -269,7 +269,7 @@ mainTask(
     // PhaseBarriers.
     SetupHaloTopLevel(A, initGeom, ctx, runtime);
 #endif
-
+    //
     LogicalCGData data;
     data.allocate(initGeom, ctx, runtime);
     data.partition(initGeom.size, ctx, runtime);

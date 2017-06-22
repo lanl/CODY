@@ -153,7 +153,7 @@ SetupHalo(
         // store rank ID of current neighbor
         neighbors[neighborCount] = neighborId;
         receiveLength[neighborCount] = receiveList[neighborId].size();
-        // Get count if sends/receives
+        // Get count of sends/receives
         sendLength[neighborCount] = sendList[neighborId].size();
         for (set_iter i = receiveList[neighborId].begin();
              i != receiveList[neighborId].end();
@@ -185,15 +185,22 @@ SetupHalo(
             }
         }
     }
-    // Store contents in our matrix struct
+    // Store contents in our matrix struct.
     Asclrs->numberOfExternalValues = externalToLocalMap.size();
+    //
+#if 0 // FIXME
     Asclrs->localNumberOfColumns = Asclrs->localNumberOfRows
                                  + Asclrs->numberOfExternalValues;
+#endif
+    //
     Asclrs->numberOfSendNeighbors = sendList.size();
     Asclrs->totalToBeSent = totalToBeSent;
+    //
+    for (int i = 0; i < Asclrs->numberOfSendNeighbors; ++i) {
+        A.neighbors->data()[i] = neighbors[i];
+    }
 #if 0
     A.elementsToSend = elementsToSend;
-    A.neighbors = neighbors;
     A.receiveLength = receiveLength;
     A.sendLength = sendLength;
     A.sendBuffer = sendBuffer;
