@@ -51,6 +51,7 @@
 
 #include <map>
 #include <set>
+#include <vector>
 #include <cassert>
 
 /*!
@@ -251,29 +252,85 @@ SetupHaloTopLevel(
     const int maxNumNeighbors = geom.stencilSize - 1;
     cout << "--> Memory for Neighbors="
          << (sizeof(int) * nShards * maxNumNeighbors) / 1024.0 / 1024.0
-         << "MB" << endl;
+         << " MB" << endl;
+    //
     Array<int> aNeighbors(
         A.neighbors.mapRegion(RO_E, ctx, lrt), ctx, lrt
     );
+    //
+    cout << "--> Memory for Synchronizers="
+         << (sizeof(Synchronizers) * nShards) / 1024.0 / 1024.0
+         << " MB" << endl;
+    Array<Synchronizers> aSynchronizers(
+            A.synchronizers.mapRegion(RW_E, ctx, lrt), ctx, lrt
+    );
+    Synchronizers *synchronizers = aSynchronizers.data();
+    assert(synchronizers);
     // For convenience we'll interpret this as a 2D array.
     Array2D<int> neighbors(geom.size, maxNumNeighbors, aNeighbors.data());
-    // Iterate over all shards
+    // Iterate over all shards and populate table that maps task IDs to their
+    // index into the neighbor list.
+    vector<map<int, int> > tidToNIdx(nShards);
     for (int shard = 0; shard < nShards; ++shard) {
         // Get total number of neighbors this shard has
         const SparseMatrixScalars &myScalars = smScalars[shard];
         const int nNeighbors = myScalars.numberOfSendNeighbors;
-#if 1 // Debug
+        //
+        for (int n = 0; n < nNeighbors; ++n) {
+            int tid = neighbors(shard, n);
+            tidToNIdx[shard][tid] = n;
+        }
+    }
+    // Iterate over all the shards and populate the synchronization structures.
+    for (int shard = 0; shard < nShards; ++shard) {
+        // Get total number of neighbors this shard has
+        const SparseMatrixScalars &myScalars = smScalars[shard];
+        const int nNeighbors = myScalars.numberOfSendNeighbors;
+#if 0 // Debug
         cout << "Rank " << shard << " Has "
              << nNeighbors << " Send Neighbors: " << endl;
         for (int n = 0; n < nNeighbors; ++n) {
             cout << neighbors(shard, n) << " ";
         }
         cout << endl;
-#endif
+#endif // Debug
+        // Create PhaseBarriers for shard.
+        PhaseBarriers pbs = {
+            // Means I am ready for neighboring tasks to PUSH values.
+            .ready = lrt->create_phase_barrier(ctx, 1),
+            // Means All pushes done and I can safely consume ghost values.
+            .done  = lrt->create_phase_barrier(ctx, nNeighbors)
+        };
+        //
+        Synchronizers &mySync = synchronizers[shard];
+        // This one is mine.
+        mySync.mine = pbs;
+        // Share mine with my all neighbors.
+        for (int n = 0; n < nNeighbors; ++n) {
+            // Get nth neighbor ID.
+            const int myn = neighbors(shard, n);
+            // Share my Synchronizers with that neighbor.
+            synchronizers[myn].neighbors[tidToNIdx[myn][shard]] = pbs;
+        }
     }
-
+#if 0 // Debug
+    for (int shard = 0; shard < nShards; ++shard) {
+        const SparseMatrixScalars &myScalars = smScalars[shard];
+        const int nNeighbors = myScalars.numberOfSendNeighbors;
+        const Synchronizers &mySync = synchronizers[shard];
+        cout << "task=" << shard << " sync data: " << endl;
+        cout << "--------> mine.ready=" << mySync.mine.ready << endl;
+        cout << "--------> mine.done =" << mySync.mine.done << endl;
+        for (int n = 0; n < nNeighbors; ++n) {
+            cout << "--------> .ready=" << mySync.neighbors[n].ready << endl;
+            cout << "--------> .done =" << mySync.neighbors[n].done<< endl;
+        }
+    }
+#endif
+    // Cleanup and reporting.
     A.sclrs.unmapRegion(ctx, lrt);
     A.neighbors.unmapRegion(ctx, lrt);
+    A.synchronizers.unmapRegion(ctx, lrt);
     const double initEnd = mytimer();
     const double initTime = initEnd - startTime;
     cout << "--> Time=" << initTime << "s" << endl;

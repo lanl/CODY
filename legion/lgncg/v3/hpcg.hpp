@@ -23,6 +23,8 @@
 
 #include "LegionStuff.hpp"
 
+#define HPCG_STENCIL 27
+
 extern LegionRuntime::Logger::Category Logger;
 #define HPCG_fout Logger.print()
 

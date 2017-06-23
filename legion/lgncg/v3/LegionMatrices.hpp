@@ -85,43 +85,13 @@ struct SparseMatrixScalars {
  * Holds structures required for task synchronization.
  */
 struct Synchronizers {
-    //
-    PhaseBarriers myPhaseBarriers;
-    //
-    std::map< int, std::vector<PhaseBarriers> > neighborPhaseBarriers;
-
-    /**
-     *
-     */
-    Synchronizers(void) = default;
-
-    /**
-     *
-     */
-    template <class Archive>
-    void
-    serialize(Archive &ar)
-    {
-        ar(myPhaseBarriers, neighborPhaseBarriers);
-    }
-
-    /**
-     *
-     */
-    static void
-    deserialize(
-        char *rawData,
-        size_t rawDataSizeInB,
-        Synchronizers &outRes
-    ) {
-        // Deserialize argument data
-        std::stringstream solvArgsSS;
-        solvArgsSS.write(rawData, rawDataSizeInB);
-        {   // Scoped to guarantee flushing, etc.
-            cereal::BinaryInputArchive ia(solvArgsSS);
-            ia(outRes);
-        }
-    }
+    // The PhaseBarriers that I own.
+    PhaseBarriers mine;
+    // Dense array of neighbor PhaseBarriers that will only have the first
+    // nNeighbors - 1 entries populated, so BE CAREFUL ;). Wasteful, but done
+    // this way for convenience. At most a task will have HPCG_STENCIL -1
+    // neighbors.
+    PhaseBarriers neighbors[HPCG_STENCIL - 1];
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -150,6 +120,8 @@ struct LogicalSparseMatrix : public LogicalMultiBase {
     LogicalArray<DynamicCollective> dcAllreduceSum;
     // Neighboring processes.
     LogicalArray<int> neighbors;
+    // Synchronization structures.
+    LogicalArray<Synchronizers> synchronizers;
 
 protected:
     /**
@@ -166,7 +138,8 @@ protected:
                          &matrixDiagonal,
                          &localToGlobalMap,
                          &dcAllreduceSum,
-                         &neighbors
+                         &neighbors,
+                         &synchronizers
         };
     }
 
@@ -210,6 +183,8 @@ public:
         const int maxNumNeighbors = geom.stencilSize - 1;
         // Each task will have at most 26 neighbors.
         neighbors.allocate(size * maxNumNeighbors, ctx, lrt);
+        //
+        synchronizers.allocate(size, ctx, lrt);
     }
 
     /**
@@ -234,6 +209,7 @@ public:
         // Really out of place here, but it works, folks...
         mPopulateDynamicCollectives(nParts, ctx, lrt);
         neighbors.partition(nParts, ctx, lrt);
+        synchronizers.partition(nParts, ctx, lrt);
         // Just pick a structure that has a representative launch domain.
         launchDomain = geoms.launchDomain;
     }
@@ -256,6 +232,7 @@ public:
         localToGlobalMap.deallocate(ctx, lrt);
         dcAllreduceSum.deallocate(ctx, lrt);
         neighbors.deallocate(ctx, lrt);
+        synchronizers.deallocate(ctx, lrt);
     }
 
 private:
@@ -311,6 +288,8 @@ struct SparseMatrix : public PhysicalMultiBase {
     Item<DynamicCollective> *dcAllreduceSum = nullptr;
     //
     Array<int> *neighbors = nullptr;
+    //
+    Item<Synchronizers> *synchronizers = nullptr;
     // Global to local mapping. NOTE: only valid after a call to
     // PopulateGlobalToLocalMap.
     std::map< global_int_t, local_int_t > globalToLocalMap;
@@ -337,6 +316,7 @@ public:
         delete localToGlobalMap;
         delete dcAllreduceSum;
         delete neighbors;
+        delete synchronizers;
     }
 
     /**
@@ -384,6 +364,8 @@ protected:
         dcAllreduceSum = new Item<DynamicCollective>(regions[cid++], ctx, rt);
         //
         neighbors = new Array<int>(regions[cid++], ctx, rt);
+        //
+        synchronizers = new Item<Synchronizers>(regions[cid++], ctx, rt);
         // Calculate number of region entries for this structure.
         mNRegionEntries = cid - baseRID;
     }
@@ -401,7 +383,9 @@ protected:
         assert(matrixValues->data());
         assert(matrixDiagonal->data());
         assert(localToGlobalMap->data());
-        assert(dcAllreduceSum);
+        assert(dcAllreduceSum->data());
+        assert(neighbors->data());
+        assert(synchronizers->data());
     }
 };
 

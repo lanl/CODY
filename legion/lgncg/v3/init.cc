@@ -88,7 +88,7 @@ HPCG_Init(
     //
     params.numThreads = 1;
     //
-    params.stencilSize = 27;
+    params.stencilSize = HPCG_STENCIL;
     //
     return 0;
 }
