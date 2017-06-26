@@ -120,6 +120,8 @@ struct LogicalSparseMatrix : public LogicalMultiBase {
     LogicalArray<DynamicCollective> dcAllreduceSum;
     // Neighboring processes.
     LogicalArray<int> neighbors;
+    // Number of items that will be sent on a per neighbor basis.
+    LogicalArray<local_int_t> sendLength;
     // Synchronization structures.
     LogicalArray<Synchronizers> synchronizers;
 
@@ -139,6 +141,7 @@ protected:
                          &localToGlobalMap,
                          &dcAllreduceSum,
                          &neighbors,
+                         &sendLength,
                          &synchronizers
         };
     }
@@ -184,6 +187,8 @@ public:
         // Each task will have at most 26 neighbors.
         neighbors.allocate(size * maxNumNeighbors, ctx, lrt);
         //
+        sendLength.allocate(size * maxNumNeighbors, ctx, lrt);
+        //
         synchronizers.allocate(size, ctx, lrt);
     }
 
@@ -204,12 +209,12 @@ public:
         matrixValues.partition(nParts, ctx, lrt);
         matrixDiagonal.partition(nParts, ctx, lrt);
         localToGlobalMap.partition(nParts, ctx, lrt);
-        // For the DynamicCollectives we need partition info before population.
         dcAllreduceSum.partition(nParts, ctx, lrt);
-        // Really out of place here, but it works, folks...
-        mPopulateDynamicCollectives(nParts, ctx, lrt);
         neighbors.partition(nParts, ctx, lrt);
+        sendLength.partition(nParts, ctx, lrt);
         synchronizers.partition(nParts, ctx, lrt);
+        // For the DynamicCollectives we need partition info before population.
+        mPopulateDynamicCollectives(nParts, ctx, lrt);
         // Just pick a structure that has a representative launch domain.
         launchDomain = geoms.launchDomain;
     }
@@ -232,6 +237,7 @@ public:
         localToGlobalMap.deallocate(ctx, lrt);
         dcAllreduceSum.deallocate(ctx, lrt);
         neighbors.deallocate(ctx, lrt);
+        sendLength.deallocate(ctx, lrt);
         synchronizers.deallocate(ctx, lrt);
     }
 
@@ -289,6 +295,8 @@ struct SparseMatrix : public PhysicalMultiBase {
     //
     Array<int> *neighbors = nullptr;
     //
+    Array<local_int_t> *sendLength = nullptr;
+    //
     Item<Synchronizers> *synchronizers = nullptr;
     // Global to local mapping. NOTE: only valid after a call to
     // PopulateGlobalToLocalMap.
@@ -316,6 +324,7 @@ public:
         delete localToGlobalMap;
         delete dcAllreduceSum;
         delete neighbors;
+        delete sendLength;
         delete synchronizers;
     }
 
@@ -365,6 +374,8 @@ protected:
         //
         neighbors = new Array<int>(regions[cid++], ctx, rt);
         //
+        sendLength = new Array<local_int_t>(regions[cid++], ctx, rt);
+        //
         synchronizers = new Item<Synchronizers>(regions[cid++], ctx, rt);
         // Calculate number of region entries for this structure.
         mNRegionEntries = cid - baseRID;
@@ -385,6 +396,7 @@ protected:
         assert(localToGlobalMap->data());
         assert(dcAllreduceSum->data());
         assert(neighbors->data());
+        assert(sendLength->data());
         assert(synchronizers->data());
     }
 };

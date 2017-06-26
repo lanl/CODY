@@ -54,6 +54,76 @@
 #include <vector>
 #include <cassert>
 
+inline void
+GetNeighborInfo(
+    SparseMatrix &A
+) {
+    using namespace std;
+    // Extract Matrix pieces
+    SparseMatrixScalars *Asclrs = A.sclrs->data();
+    Geometry *Ageom = A.geom->data();
+    //
+    const local_int_t numberOfNonzerosPerRow = Ageom->stencilSize;
+    //
+    local_int_t localNumberOfRows = Asclrs->localNumberOfRows;
+    //
+    char *nonzerosInRow = A.nonzerosInRow->data();
+    // Interpreted as 2D array
+    Array2D<global_int_t> mtxIndG(
+        localNumberOfRows, numberOfNonzerosPerRow, A.mtxIndG->data()
+    );
+    //
+    global_int_t *AlocalToGlobalMap = A.localToGlobalMap->data();
+    std::map< int, std::set< global_int_t> > sendList;
+    typedef std::map< int, std::set< global_int_t> >::iterator map_iter;
+    //
+    for (local_int_t i = 0; i < localNumberOfRows; i++) {
+        global_int_t currentGlobalRow = AlocalToGlobalMap[i];
+        for (int j = 0; j < nonzerosInRow[i]; j++) {
+            global_int_t curIndex = mtxIndG(i, j);
+            int rankIdOfColumnEntry = ComputeRankOfMatrixRow(*(Ageom), curIndex);
+            // If column index is not a row index, then it comes from another
+            // processor
+            if (Ageom->rank != rankIdOfColumnEntry) {
+                sendList[rankIdOfColumnEntry].insert(currentGlobalRow);
+            }
+        }
+    }
+    // Count number of matrix entries to send and receive.
+    local_int_t totalToBeSent = 0;
+    for (map_iter curNeighbor = sendList.begin();
+         curNeighbor != sendList.end(); ++curNeighbor)
+    {
+        totalToBeSent += (curNeighbor->second).size();
+    }
+    // Build the arrays and lists needed by the ExchangeHalo function.
+    int *neighbors = new int[sendList.size()];
+    local_int_t *sendLength = new local_int_t[sendList.size()];
+    int neighborCount = 0;
+    for (map_iter curNeighbor = sendList.begin();
+         curNeighbor != sendList.end();
+         ++curNeighbor, ++neighborCount)
+    {
+        // rank of current neighbor we are processing
+        int neighborId = curNeighbor->first;
+        // store rank ID of current neighbor
+        neighbors[neighborCount] = neighborId;
+        // Get count of sends/receives
+        sendLength[neighborCount] = sendList[neighborId].size();
+    }
+    //
+    Asclrs->numberOfSendNeighbors = sendList.size();
+    Asclrs->totalToBeSent = totalToBeSent;
+    // Copy into regions.
+    for (int i = 0; i < Asclrs->numberOfSendNeighbors; ++i) {
+        A.neighbors->data()[i] = neighbors[i];
+        A.sendLength->data()[i] = sendLength[i];
+    }
+    // Copy complete. Time for some cleanup.
+    delete[] sendLength;
+    delete[] neighbors;
+}
+
 /*!
   Reference version of SetupHalo that prepares system matrix data structure and
   creates data necessary for communication of boundary values of this process.
@@ -62,9 +132,9 @@
 
   @see ExchangeHalo
 */
-void
+inline void
 SetupHalo(
-    SparseMatrix & A
+    SparseMatrix &A
 ) {
     using namespace std;
     // Extract Matrix pieces
@@ -97,15 +167,17 @@ SetupHalo(
         for (int j=0; j<nonzerosInRow[i]; j++) {
             global_int_t curIndex = mtxIndG(i, j);
             int rankIdOfColumnEntry = ComputeRankOfMatrixRow(*(Ageom), curIndex);
-            // If column index is not a row index, then it comes from another processor
+            // If column index is not a row index, then it comes from another
+            // processor
             if (Ageom->rank!=rankIdOfColumnEntry) {
                 receiveList[rankIdOfColumnEntry].insert(curIndex);
-                // Matrix symmetry means we know the neighbor process wants my value
+                // Matrix symmetry means we know the neighbor process wants my
+                // value
                 sendList[rankIdOfColumnEntry].insert(currentGlobalRow);
             }
         }
     }
-    // Count number of matrix entries to send and receive
+    // Count number of matrix entries to send and receive.
     local_int_t totalToBeSent = 0;
     for (map_iter curNeighbor = sendList.begin();
          curNeighbor != sendList.end(); ++curNeighbor)
@@ -118,26 +190,7 @@ SetupHalo(
     {
         totalToBeReceived += (curNeighbor->second).size();
     }
-#ifdef HPCG_DETAILED_DEBUG
-    // These are all attributes that should be true, due to symmetry
-    HPCG_fout << "totalToBeSent = " << totalToBeSent
-              << " totalToBeReceived = " << totalToBeReceived << endl;
-    // Number of sent entry should equal number of received
-    assert(totalToBeSent == totalToBeReceived);
-    // Number of send-to neighbors should equal number of receive-from
-    assert(sendList.size()==receiveList.size());
-    // Each receive-from neighbor should be a send-to neighbor, and send the
-    // same number of entries
-    for (map_iter curNeighbor = receiveList.begin();
-         curNeighbor != receiveList.end(); ++curNeighbor)
-    {
-        assert(sendList.find(curNeighbor->first) != sendList.end());
-        assert(sendList[curNeighbor->first].size() ==
-               receiveList[curNeighbor->first].size());
-    }
-#endif
     // Build the arrays and lists needed by the ExchangeHalo function.
-    double *sendBuffer = new double[totalToBeSent];
     local_int_t *elementsToSend = new local_int_t[totalToBeSent];
     int *neighbors = new int[sendList.size()];
     local_int_t *receiveLength = new local_int_t[receiveList.size()];
@@ -204,7 +257,6 @@ SetupHalo(
     A.elementsToSend = elementsToSend;
     A.receiveLength = receiveLength;
     A.sendLength = sendLength;
-    A.sendBuffer = sendBuffer;
 #endif
 
 #ifdef HPCG_DETAILED_DEBUG
@@ -286,7 +338,7 @@ SetupHaloTopLevel(
         // Get total number of neighbors this shard has
         const SparseMatrixScalars &myScalars = smScalars[shard];
         const int nNeighbors = myScalars.numberOfSendNeighbors;
-#if 0 // Debug
+#if 1 // Debug
         cout << "Rank " << shard << " Has "
              << nNeighbors << " Send Neighbors: " << endl;
         for (int n = 0; n < nNeighbors; ++n) {
@@ -313,7 +365,7 @@ SetupHaloTopLevel(
             synchronizers[myn].neighbors[tidToNIdx[myn][shard]] = pbs;
         }
     }
-#if 0 // Debug
+#if 1 // Debug
     for (int shard = 0; shard < nShards; ++shard) {
         const SparseMatrixScalars &myScalars = smScalars[shard];
         const int nNeighbors = myScalars.numberOfSendNeighbors;

@@ -110,7 +110,7 @@ genProblemTask(
     //
     GenerateProblem(A, &b, &x, &xexact, ctx, runtime);
     //
-    SetupHalo(A);
+    GetNeighborInfo(A);
 }
 
 /**
