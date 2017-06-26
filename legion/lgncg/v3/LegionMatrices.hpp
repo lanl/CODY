@@ -186,7 +186,7 @@ public:
         const int maxNumNeighbors = geom.stencilSize - 1;
         // Each task will have at most 26 neighbors.
         neighbors.allocate(size * maxNumNeighbors, ctx, lrt);
-        //
+        // Each task will have at most 26 neighbors.
         sendLength.allocate(size * maxNumNeighbors, ctx, lrt);
         //
         synchronizers.allocate(size, ctx, lrt);

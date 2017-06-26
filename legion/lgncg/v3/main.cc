@@ -105,8 +105,6 @@ genProblemTask(
     ierr = CheckAspectRatio(0.125, geom->npx, geom->npy, geom->npz,
                             "process grid", rank == 0);
     if (ierr) exit(ierr);
-    // Use this array for collecting timing information
-    std::vector<double> times(10, 0.0);
     //
     GenerateProblem(A, &b, &x, &xexact, ctx, runtime);
     //
@@ -174,7 +172,6 @@ destroyLogicalStructures(
     LogicalArray<floatType> &x,
     LogicalArray<floatType> &y,
     LogicalArray<floatType> &xexact,
-    LogicalCGData           &data,
     Context ctx, HighLevelRuntime *runtime
 ) {
     cout << "*** Destroying Logical Structures..." << endl;
@@ -183,7 +180,6 @@ destroyLogicalStructures(
     x.deallocate(ctx, runtime);
     y.deallocate(ctx, runtime);
     xexact.deallocate(ctx, runtime);
-    data.deallocate(ctx, runtime);
     const double initEnd = mytimer();
     const double initTime = initEnd - initStart;
     cout << "--> Time=" << initTime << "s" << endl;
@@ -267,10 +263,6 @@ mainTask(
     // perform the top-level setup required for inter-task synchronization using
     // PhaseBarriers.
     SetupHaloTopLevel(A, initGeom, ctx, runtime);
-    //
-    LogicalCGData data;
-    data.allocate(initGeom, ctx, runtime);
-    data.partition(initGeom.size, ctx, runtime);
 
     ////////////////////////////////////////////////////////////////////////////
     // Launch the tasks to begin the solve.
@@ -287,7 +279,6 @@ mainTask(
         b.intent(RW_E, launcher);
         x.intent(RW_E, launcher);
         xexact.intent(RW_E, launcher);
-        data.intent(RW_E, launcher);
         //
         MustEpochLauncher mel;
         mel.add_index_task(launcher);
@@ -301,7 +292,6 @@ mainTask(
         b,
         x,
         xexact,
-        data,
         ctx,
         runtime
     );
@@ -324,8 +314,17 @@ startSolveTask(
     Array<floatType> b     (regions[rid++], ctx, lrt);
     Array<floatType> x     (regions[rid++], ctx, lrt);
     Array<floatType> xexact(regions[rid++], ctx, lrt);
-    CGData           data  (regions, rid,  ctx, lrt);
-    rid += data.nRegionEntries();
+    // Private data for this task.
+    LogicalCGData lData;
+    lData.allocateLocal(A, ctx, lrt);
+    // Map CG data locally.
+    vector<PhysicalRegion> cgRegions;
+    // TODO check permissions here.
+    cgRegions.push_back(lData.r.mapRegion(RW_E, ctx, lrt));
+    cgRegions.push_back(lData.z.mapRegion(RW_E, ctx, lrt));
+    cgRegions.push_back(lData.p.mapRegion(RW_E, ctx, lrt));
+    cgRegions.push_back(lData.Ap.mapRegion(RW_E, ctx, lrt));
+    CGData data(cgRegions, 0, ctx, lrt);
 
     const int refMaxIters  = 50;
     const int optMaxIters  = 10 * refMaxIters;
@@ -377,6 +376,11 @@ startSolveTask(
         double current_time = optTimes[0] - lastCummulativeTime;
         if (current_time > optWorstTime) optWorstTime = current_time;
     }
+    //
+    lData.r.unmapRegion(ctx, lrt);
+    lData.z.unmapRegion(ctx, lrt);
+    lData.p.unmapRegion(ctx, lrt);
+    lData.Ap.unmapRegion(ctx, lrt);
 }
 
 /**

@@ -133,7 +133,7 @@ public:
      */
     void
     partition(
-        const std::vector<size_t> &partLens,
+        const std::vector<local_int_t> &partLens,
         Legion::Context &ctx,
         Legion::HighLevelRuntime *lrt
     ) {

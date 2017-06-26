@@ -74,9 +74,12 @@ GetNeighborInfo(
     );
     //
     global_int_t *AlocalToGlobalMap = A.localToGlobalMap->data();
-    std::map< int, std::set< global_int_t> > sendList;
+
+    std::map< int, std::set< global_int_t> > sendList, receiveList;
     typedef std::map< int, std::set< global_int_t> >::iterator map_iter;
-    //
+    typedef std::set<global_int_t>::iterator set_iter;
+    std::map< local_int_t, local_int_t > externalToLocalMap;
+
     for (local_int_t i = 0; i < localNumberOfRows; i++) {
         global_int_t currentGlobalRow = AlocalToGlobalMap[i];
         for (int j = 0; j < nonzerosInRow[i]; j++) {
@@ -84,7 +87,10 @@ GetNeighborInfo(
             int rankIdOfColumnEntry = ComputeRankOfMatrixRow(*(Ageom), curIndex);
             // If column index is not a row index, then it comes from another
             // processor
-            if (Ageom->rank != rankIdOfColumnEntry) {
+            if (Ageom->rank!=rankIdOfColumnEntry) {
+                receiveList[rankIdOfColumnEntry].insert(curIndex);
+                // Matrix symmetry means we know the neighbor process wants my
+                // value
                 sendList[rankIdOfColumnEntry].insert(currentGlobalRow);
             }
         }
@@ -97,31 +103,49 @@ GetNeighborInfo(
         totalToBeSent += (curNeighbor->second).size();
     }
     // Build the arrays and lists needed by the ExchangeHalo function.
+    local_int_t *elementsToSend = new local_int_t[totalToBeSent];
     int *neighbors = new int[sendList.size()];
+    local_int_t *receiveLength = new local_int_t[receiveList.size()];
     local_int_t *sendLength = new local_int_t[sendList.size()];
     int neighborCount = 0;
-    for (map_iter curNeighbor = sendList.begin();
-         curNeighbor != sendList.end();
+    local_int_t receiveEntryCount = 0;
+    for (map_iter curNeighbor = receiveList.begin();
+         curNeighbor != receiveList.end();
          ++curNeighbor, ++neighborCount)
     {
         // rank of current neighbor we are processing
         int neighborId = curNeighbor->first;
         // store rank ID of current neighbor
         neighbors[neighborCount] = neighborId;
+        receiveLength[neighborCount] = receiveList[neighborId].size();
         // Get count of sends/receives
         sendLength[neighborCount] = sendList[neighborId].size();
+        for (set_iter i = receiveList[neighborId].begin();
+             i != receiveList[neighborId].end();
+             ++i, ++receiveEntryCount)
+        {
+            // The remote columns are indexed at end of internals
+            externalToLocalMap[*i] = localNumberOfRows + receiveEntryCount;
+        }
     }
+    // Store contents in our matrix struct.
+    Asclrs->numberOfExternalValues = externalToLocalMap.size();
+    //
+    Asclrs->localNumberOfColumns = Asclrs->localNumberOfRows
+                                 + Asclrs->numberOfExternalValues;
     //
     Asclrs->numberOfSendNeighbors = sendList.size();
     Asclrs->totalToBeSent = totalToBeSent;
-    // Copy into regions.
+    //
     for (int i = 0; i < Asclrs->numberOfSendNeighbors; ++i) {
         A.neighbors->data()[i] = neighbors[i];
         A.sendLength->data()[i] = sendLength[i];
     }
-    // Copy complete. Time for some cleanup.
-    delete[] sendLength;
+    //
+    delete[] elementsToSend;
     delete[] neighbors;
+    delete[] receiveLength;
+    delete[] sendLength;
 }
 
 /*!
@@ -164,7 +188,7 @@ SetupHalo(
 
     for (local_int_t i = 0; i < localNumberOfRows; i++) {
         global_int_t currentGlobalRow = AlocalToGlobalMap[i];
-        for (int j=0; j<nonzerosInRow[i]; j++) {
+        for (int j = 0; j < nonzerosInRow[i]; j++) {
             global_int_t curIndex = mtxIndG(i, j);
             int rankIdOfColumnEntry = ComputeRankOfMatrixRow(*(Ageom), curIndex);
             // If column index is not a row index, then it comes from another
@@ -273,6 +297,10 @@ SetupHalo(
                       << endl;
     }
 #endif
+    delete[] elementsToSend;
+    delete[] neighbors;
+    delete[] receiveLength;
+    delete[] sendLength;
 }
 
 /**

@@ -68,19 +68,17 @@ public:
      *
      */
     void
-    allocate(
-        const Geometry &geom,
+    allocateLocal(
+        SparseMatrix &A,
         LegionRuntime::HighLevel::Context &ctx,
         LegionRuntime::HighLevel::HighLevelRuntime *lrt
     ) {
-        const auto globalXYZ = getGlobalXYZ(geom);
-
-        r.allocate(globalXYZ, ctx, lrt);
-#warning "Misallocation of structure..."
-        z.allocate(globalXYZ, ctx, lrt);
-#warning "Misallocation of structure..."
-        p.allocate(globalXYZ, ctx, lrt);
-        Ap.allocate(globalXYZ, ctx, lrt);
+        const local_int_t nrow = A.sclrs->data()->localNumberOfRows;
+        const local_int_t ncol = A.sclrs->data()->localNumberOfColumns;
+        r.allocate(nrow, ctx, lrt);
+        z.allocate(ncol, ctx, lrt);
+        p.allocate(ncol, ctx, lrt);
+        Ap.allocate(nrow, ctx, lrt);
     }
 
     /**
@@ -91,12 +89,7 @@ public:
         int64_t nParts,
         LegionRuntime::HighLevel::Context &ctx,
         LegionRuntime::HighLevel::HighLevelRuntime *lrt
-    ) {
-        r.partition(nParts, ctx, lrt);
-        z.partition(nParts, ctx, lrt);
-        p.partition(nParts, ctx, lrt);
-        Ap.partition(nParts, ctx, lrt);
-    }
+    ) { /* Nothing to do. */ }
 
     /**
      * Cleans up and returns all allocated resources.
