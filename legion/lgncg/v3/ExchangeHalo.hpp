@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2016      Los Alamos National Security, LLC
+ * Copyright (c) 2016-2017 Los Alamos National Security, LLC
  *                         All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -42,12 +42,10 @@
 
 #pragma once
 
-// Compile this routine only if running with MPI
-#define HPCG_NO_MPI
-#ifndef HPCG_NO_MPI
-#include <mpi.h>
+#include "LegionMatrices.hpp"
+#include "LegionArrays.hpp"
 #include "Geometry.hpp"
-#include "ExchangeHalo.hpp"
+
 #include <cstdlib>
 
 /*!
@@ -61,9 +59,10 @@
  */
 inline void
 ExchangeHalo(
-    const SparseMatrix & A,
-    Vector & x
+    const SparseMatrix &A,
+    Array<floatType> &x
 ) {
+#if 0
   // Extract Matrix pieces
 
   local_int_t localNumberOfRows = A.localNumberOfRows;
@@ -138,6 +137,5 @@ ExchangeHalo(
   delete [] request;
 
   return;
-}
 #endif
-// ifndef HPCG_NO_MPI
+}

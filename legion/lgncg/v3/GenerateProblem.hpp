@@ -162,7 +162,7 @@ GenerateProblem(
         ) * Ageom->size;
         //
         const size_t pMemInB = sparseMatMemInB + vectorsMemInB;
-        const double pMemInMB = pMemInB/1024.0/1024.0;
+        const double pMemInMB = pMemInB / 1024.0 / 1024.0;
         cout << "--> Approximate Generate Problem Memory Footprint="
              << pMemInMB << " MB" << endl;
     }
@@ -242,14 +242,14 @@ GenerateProblem(
                 } // end sz loop
                 nonzerosInRow[currentLocalRow] = numberOfNonzerosInRow;
                 localNumberOfNonzeros += numberOfNonzerosInRow;
-                if (b!=0) {
+                if (b != 0) {
                     bv[currentLocalRow] = 26.0
                                         - ((double)(numberOfNonzerosInRow-1));
                 }
-                if (x!=0) {
+                if (x != 0) {
                     xv[currentLocalRow] = 0.0;
                 }
-                if (xexact!=0) {
+                if (xexact != 0) {
                     xexactv[currentLocalRow] = 1.0;
                 }
             } // end ix loop
@@ -259,7 +259,7 @@ GenerateProblem(
     SparseMatrixScalars *Asclrs   = A.sclrs->data();
     Asclrs->totalNumberOfRows     = totalNumberOfRows;
     Asclrs->localNumberOfRows     = localNumberOfRows;
-    // Will be updated later to include external values in SetupHalo.
+    // Will be updated later to include external values in GetNeighborInfo.
     Asclrs->localNumberOfColumns  = localNumberOfRows;
     Asclrs->localNumberOfNonzeros = localNumberOfNonzeros;
     Asclrs->totalNumberOfNonzeros = getTotalNumberOfNonZeros(A, ctx, runtime);

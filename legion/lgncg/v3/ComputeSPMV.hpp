@@ -46,6 +46,7 @@
 
 #include "LegionArrays.hpp"
 #include "LegionMatrices.hpp"
+#include "ExchangeHalo.hpp"
 
 /*!
     Routine to compute matrix vector product y = Ax where: Precondition: First
@@ -70,9 +71,8 @@ ComputeSPMV(
     assert(x.length() >= Asclrs->localNumberOfColumns);
     assert(y.length() >= Asclrs->localNumberOfRows);
 
-#if 0
     ExchangeHalo(A,x);
-#endif
+    //
     const floatType *const xv = x.data();
     floatType *const yv       = y.data();
     // Number of rows.
