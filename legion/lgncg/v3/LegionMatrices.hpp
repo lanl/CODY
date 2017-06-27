@@ -301,6 +301,8 @@ struct SparseMatrix : public PhysicalMultiBase {
     // Global to local mapping. NOTE: only valid after a call to
     // PopulateGlobalToLocalMap.
     std::map< global_int_t, local_int_t > globalToLocalMap;
+    // Only valid after a call to SetupHalo. PERSISTS FOR A SINGLE LAUNCH.
+    local_int_t *elementsToSend = nullptr;
 
 public:
 
@@ -326,6 +328,8 @@ public:
         delete neighbors;
         delete sendLength;
         delete synchronizers;
+        // Task-local allocation of non-region memory.
+        if (elementsToSend) delete[] elementsToSend;
     }
 
     /**

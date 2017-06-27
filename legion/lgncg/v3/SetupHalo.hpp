@@ -268,8 +268,8 @@ SetupHalo(
         }
     }
     // Store contents in our matrix struct.
-#if 0
     A.elementsToSend = elementsToSend;
+#if 0
     A.receiveLength = receiveLength;
 #endif
 
@@ -287,7 +287,6 @@ SetupHalo(
                       << endl;
     }
 #endif
-    delete[] elementsToSend;
     delete[] neighbors;
     delete[] receiveLength;
     delete[] sendLength;
