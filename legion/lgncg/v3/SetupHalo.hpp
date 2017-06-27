@@ -279,7 +279,10 @@ SetupHalo(
         assert(f);
         for (int n = 0; n < Asclrs->numberOfSendNeighbors; ++n) {
             const local_int_t sendl = A.sendLength->data()[n];
-            fprintf(f, "Task %d Sending Following Items to %d\n", me, neighbors[n]);
+            fprintf(
+                f, "Task %d Sending Following Items to Task %d\n",
+                me, neighbors[n]
+            );
             for (int i = 0; i < sendl; ++i) {
                 fprintf(f, " elementsToSend[%d] = %d\n", i, elementsToSend[i]);
             }
@@ -293,20 +296,6 @@ SetupHalo(
     A.receiveLength = receiveLength;
 #endif
 
-#ifdef HPCG_DETAILED_DEBUG
-    HPCG_fout << " For rank " << A.geom->rank << " of " << A.geom->size
-              << ", number of neighbors = " << A.numberOfSendNeighbors << endl;
-    for (int i = 0; i < A.numberOfSendNeighbors; i++) {
-        HPCG_fout << "     rank " << A.geom->rank
-                  << " neighbor " << neighbors[i]
-                  << " send/recv length = " << sendLength[i]
-                  << "/" << receiveLength[i] << endl;
-        for (local_int_t j = 0; j<sendLength[i]; ++j)
-            HPCG_fout << "       rank " << A.geom->rank
-                      << " elementsToSend[" << j << "] = " << elementsToSend[j]
-                      << endl;
-    }
-#endif
     delete[] neighbors;
     delete[] receiveLength;
     delete[] sendLength;
@@ -358,9 +347,29 @@ SetupHaloTopLevel(
     assert(synchronizers);
     // For convenience we'll interpret this as a 2D array.
     Array2D<int> neighbors(geom.size, maxNumNeighbors, aNeighbors.data());
+    //
+    cout << "--> Memory for Send Lengths="
+         << (sizeof(local_int_t) * nShards * maxNumNeighbors) / 1024.0 / 1024.0
+         << " MB" << endl;
+    Array<local_int_t> aSendLengths(
+            A.sendLength.mapRegion(RO_E, ctx, lrt), ctx, lrt
+    );
+    Array2D<local_int_t> ASendLengths(
+        geom.size, maxNumNeighbors, aSendLengths.data()
+    );
+    //
+    cout << "--> Memory for Bases/Extents="
+         << (sizeof(BaseExtent) * nShards * maxNumNeighbors) / 1024.0 / 1024.0
+         << " MB" << endl;
+    Array<BaseExtent> aPullBEs(
+            A.pullBEs.mapRegion(RW_E, ctx, lrt), ctx, lrt
+    );
+    Array2D<BaseExtent> pullBEs(
+        geom.size, maxNumNeighbors, aPullBEs.data()
+    );
     // Iterate over all shards and populate table that maps task IDs to their
     // index into the neighbor list.
-    vector<map<int, int> > tidToNIdx(nShards);
+    vector< map<int, int> > tidToNIdx(nShards);
     for (int shard = 0; shard < nShards; ++shard) {
         // Get total number of neighbors this shard has
         const SparseMatrixScalars &myScalars = smScalars[shard];
@@ -402,8 +411,17 @@ SetupHaloTopLevel(
             // Share my Synchronizers with that neighbor.
             synchronizers[myn].neighbors[tidToNIdx[myn][shard]] = pbs;
         }
+        // Share base/extent (partitioning data) info with my neighbors.
+        int curBase = 0;
+        for (int n = 0; n < nNeighbors; ++n) {
+            // Get nth neighbor ID.
+            const int myn = neighbors(shard, n);
+            const local_int_t sendl = ASendLengths(shard, n);
+            pullBEs(myn, tidToNIdx[myn][shard]) = BaseExtent(curBase, sendl);
+            curBase += sendl;
+        }
     }
-#if 0 // Debug
+#if 0 // Debug Synchronizers
     for (int shard = 0; shard < nShards; ++shard) {
         const SparseMatrixScalars &myScalars = smScalars[shard];
         const int nNeighbors = myScalars.numberOfSendNeighbors;
@@ -417,10 +435,25 @@ SetupHaloTopLevel(
         }
     }
 #endif
+#if 0 // Debug BaseExtent
+    for (int shard = 0; shard < nShards; ++shard) {
+        const SparseMatrixScalars &myScalars = smScalars[shard];
+        const int nNeighbors = myScalars.numberOfSendNeighbors;
+        cout << "task=" << shard << " base/extent data: " << endl;
+        for (int n = 0; n < nNeighbors; ++n) {
+            BaseExtent be = pullBEs(shard, n);
+            cout << "nid=" << neighbors(shard, n) << endl;
+            cout << "--------> .base=" << be.base << endl;
+            cout << "--------> .xtnt=" << be.extent << endl;
+        }
+    }
+#endif
     // Cleanup and reporting.
     A.sclrs.unmapRegion(ctx, lrt);
     A.neighbors.unmapRegion(ctx, lrt);
     A.synchronizers.unmapRegion(ctx, lrt);
+    A.sendLength.unmapRegion(ctx, lrt);
+    A.pullBEs.unmapRegion(ctx, lrt);
     const double initEnd = mytimer();
     const double initTime = initEnd - startTime;
     cout << "--> Time=" << initTime << "s" << endl;

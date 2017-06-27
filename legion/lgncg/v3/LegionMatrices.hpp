@@ -98,6 +98,27 @@ struct Synchronizers {
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
+/**
+ * Holds base and extent information used to help with ghost partitioning.
+ */
+struct BaseExtent {
+    local_int_t base = 0;
+    local_int_t extent = 0;
+
+    BaseExtent(void) = default;
+
+    BaseExtent(
+        local_int_t base,
+        local_int_t extent
+    ) : base(base),
+        extent(extent)
+    { }
+};
+
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 struct LogicalSparseMatrix : public LogicalMultiBase {
     //
     LogicalArray<Geometry> geoms;
@@ -124,6 +145,8 @@ struct LogicalSparseMatrix : public LogicalMultiBase {
     LogicalArray<local_int_t> sendLength;
     // Synchronization structures.
     LogicalArray<Synchronizers> synchronizers;
+    //
+    LogicalArray<BaseExtent> pullBEs;
 
 protected:
     /**
@@ -142,7 +165,8 @@ protected:
                          &dcAllreduceSum,
                          &neighbors,
                          &sendLength,
-                         &synchronizers
+                         &synchronizers,
+                         &pullBEs
         };
     }
 
@@ -190,6 +214,8 @@ public:
         sendLength.allocate(size * maxNumNeighbors, ctx, lrt);
         //
         synchronizers.allocate(size, ctx, lrt);
+        //
+        pullBEs.allocate(size * maxNumNeighbors, ctx, lrt);
     }
 
     /**
@@ -213,6 +239,7 @@ public:
         neighbors.partition(nParts, ctx, lrt);
         sendLength.partition(nParts, ctx, lrt);
         synchronizers.partition(nParts, ctx, lrt);
+        pullBEs.partition(nParts, ctx, lrt);
         // For the DynamicCollectives we need partition info before population.
         mPopulateDynamicCollectives(nParts, ctx, lrt);
         // Just pick a structure that has a representative launch domain.
@@ -239,6 +266,7 @@ public:
         neighbors.deallocate(ctx, lrt);
         sendLength.deallocate(ctx, lrt);
         synchronizers.deallocate(ctx, lrt);
+        pullBEs.deallocate(ctx, lrt);
     }
 
 private:
@@ -298,6 +326,10 @@ struct SparseMatrix : public PhysicalMultiBase {
     Array<local_int_t> *sendLength = nullptr;
     //
     Item<Synchronizers> *synchronizers = nullptr;
+    // The bases and extents that I will be getting from my neighbors that let's
+    // me know which contiguous set of points will make up values I need to
+    // read.
+    Array<BaseExtent> *pullBEs = nullptr;
     // Global to local mapping. NOTE: only valid after a call to
     // PopulateGlobalToLocalMap.
     std::map< global_int_t, local_int_t > globalToLocalMap;
@@ -381,6 +413,8 @@ protected:
         sendLength = new Array<local_int_t>(regions[cid++], ctx, rt);
         //
         synchronizers = new Item<Synchronizers>(regions[cid++], ctx, rt);
+        //
+        pullBEs = new Array<BaseExtent>(regions[cid++], ctx, rt);
         // Calculate number of region entries for this structure.
         mNRegionEntries = cid - baseRID;
     }
@@ -402,6 +436,7 @@ protected:
         assert(neighbors->data());
         assert(sendLength->data());
         assert(synchronizers->data());
+        assert(pullBEs->data());
     }
 };
 
