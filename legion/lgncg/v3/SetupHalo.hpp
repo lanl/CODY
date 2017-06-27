@@ -253,8 +253,8 @@ SetupHalo(
         }
     }
     //
-    for (local_int_t i=0; i< localNumberOfRows; i++) {
-        for (int j=0; j<nonzerosInRow[i]; j++) {
+    for (local_int_t i = 0; i< localNumberOfRows; i++) {
+        for (int j = 0; j<nonzerosInRow[i]; j++) {
             global_int_t curIndex = mtxIndG(i, j);
             int rankIdOfColumnEntry = ComputeRankOfMatrixRow(*(Ageom), curIndex);
             // My column index, so convert to local index
@@ -269,6 +269,26 @@ SetupHalo(
     }
     // Store contents in our matrix struct.
     A.elementsToSend = elementsToSend;
+#if 0 // Debug
+    {
+        const int me = Ageom->rank;
+        local_int_t *neighbors = A.neighbors->data();
+        char fName[128];
+        sprintf(fName, "tx-list-%d.txt", Ageom->rank);
+        FILE *f = fopen(fName, "w+");
+        assert(f);
+        for (int n = 0; n < Asclrs->numberOfSendNeighbors; ++n) {
+            const local_int_t sendl = A.sendLength->data()[n];
+            fprintf(f, "Task %d Sending Following Items to %d\n", me, neighbors[n]);
+            for (int i = 0; i < sendl; ++i) {
+                fprintf(f, " elementsToSend[%d] = %d\n", i, elementsToSend[i]);
+            }
+            fprintf(f, "\n");
+        }
+        fclose(f);
+    }
+#endif
+
 #if 0
     A.receiveLength = receiveLength;
 #endif
@@ -290,6 +310,7 @@ SetupHalo(
     delete[] neighbors;
     delete[] receiveLength;
     delete[] sendLength;
+    // delete[] elementsToSend; Don't delete. Stored in sparse matrix.
 }
 
 /**

@@ -62,6 +62,7 @@ ExchangeHalo(
       const SparseMatrix &A,
       Array<floatType> &x
 ) {
+    using namespace std;
     // Extract Matrix pieces
     const SparseMatrixScalars *Asclrs = A.sclrs->data();
     const Geometry *Ageom = A.geom->data();
