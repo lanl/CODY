@@ -175,14 +175,14 @@ destroyLogicalStructures(
     Context ctx, HighLevelRuntime *runtime
 ) {
     cout << "*** Destroying Logical Structures..." << endl;
-    const double initStart = mytimer();
+    const double start = mytimer();
     A.deallocate(ctx, runtime);
     x.deallocate(ctx, runtime);
     y.deallocate(ctx, runtime);
     xexact.deallocate(ctx, runtime);
-    const double initEnd = mytimer();
-    const double initTime = initEnd - initStart;
-    cout << "--> Time=" << initTime << "s" << endl;
+    const double end = mytimer();
+    const double totalTime = end - start;
+    cout << "--> Time=" << totalTime << "s" << endl;
 }
 
 /**
@@ -269,6 +269,7 @@ mainTask(
     ////////////////////////////////////////////////////////////////////////////
     {
         cout << "*** Starting Solve..." << endl;
+        const double start = mytimer();
         IndexLauncher launcher(
             START_SOLVE_TID,
             A.launchDomain,
@@ -284,6 +285,10 @@ mainTask(
         mel.add_index_task(launcher);
         FutureMap fm = runtime->execute_must_epoch(ctx, mel);
         fm.wait_all_results();
+        //
+        const double end = mytimer();
+        const double totalTime = end - start;
+        cout << "--> Time=" << totalTime << "s" << endl;
     }
     //
     cout << "*** Cleaning Up..." << endl;
@@ -324,7 +329,13 @@ startSolveTask(
     cgRegions.push_back(lData.z.mapRegion(RW_E, ctx, lrt));
     cgRegions.push_back(lData.p.mapRegion(RW_E, ctx, lrt));
     cgRegions.push_back(lData.Ap.mapRegion(RW_E, ctx, lrt));
+    //
     CGData data(cgRegions, 0, ctx, lrt);
+
+    ////////////////////////////////////////////////////////////////////////////
+    // Setup halo information before we begin.
+    ////////////////////////////////////////////////////////////////////////////
+    SetupHalo(A, ctx, lrt);
 
     const int refMaxIters  = 50;
     const int optMaxIters  = 10 * refMaxIters;

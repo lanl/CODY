@@ -413,3 +413,42 @@ localNonzerosTask(
     Item<SparseMatrixScalars> sms(regions[0], ctx, runtime);
     return sms.data()->localNumberOfNonzeros;
 }
+
+/**
+ *
+ */
+inline void
+PopulateGlobalToLocalMap(
+    SparseMatrix &A,
+    LegionRuntime::HighLevel::Context ctx,
+    LegionRuntime::HighLevel::Runtime *runtime
+) {
+    const Geometry *const Ageom = A.geom->data();
+    // Make local copies of geometry information.  Use global_int_t since the
+    // RHS products in the calculations below may result in global range values.
+    const global_int_t nx  = Ageom->nx;
+    const global_int_t ny  = Ageom->ny;
+    const global_int_t nz  = Ageom->nz;
+    const global_int_t npx = Ageom->npx;
+    const global_int_t npy = Ageom->npy;
+    const global_int_t ipx = Ageom->ipx;
+    const global_int_t ipy = Ageom->ipy;
+    const global_int_t ipz = Ageom->ipz;
+    const global_int_t gnx = nx * npx;
+    const global_int_t gny = ny * npy;
+    //!< global-to-local mapping
+    auto &globalToLocalMap = A.globalToLocalMap;
+    //
+    for (local_int_t iz = 0; iz < nz; iz++) {
+        global_int_t giz = ipz*nz+iz;
+        for (local_int_t iy = 0; iy < ny; iy++) {
+            global_int_t giy = ipy*ny+iy;
+            for (local_int_t ix = 0; ix < nx; ix++) {
+                global_int_t gix = ipx*nx+ix;
+                local_int_t currentLocalRow = iz*nx*ny+iy*nx+ix;
+                global_int_t currentGlobalRow = giz*gnx*gny+giy*gnx+gix;
+                globalToLocalMap[currentGlobalRow] = currentLocalRow;
+            }
+        }
+    }
+}

@@ -158,9 +158,13 @@ GetNeighborInfo(
 */
 inline void
 SetupHalo(
-    SparseMatrix &A
+    SparseMatrix &A,
+    LegionRuntime::HighLevel::Context ctx,
+    LegionRuntime::HighLevel::Runtime *lrt
 ) {
     using namespace std;
+    //
+    PopulateGlobalToLocalMap(A, ctx, lrt);
     // Extract Matrix pieces
     SparseMatrixScalars *Asclrs = A.sclrs->data();
     Geometry *Ageom = A.geom->data();
@@ -264,23 +268,9 @@ SetupHalo(
         }
     }
     // Store contents in our matrix struct.
-    Asclrs->numberOfExternalValues = externalToLocalMap.size();
-    //
-#if 0 // FIXME
-    Asclrs->localNumberOfColumns = Asclrs->localNumberOfRows
-                                 + Asclrs->numberOfExternalValues;
-#endif
-    //
-    Asclrs->numberOfSendNeighbors = sendList.size();
-    Asclrs->totalToBeSent = totalToBeSent;
-    //
-    for (int i = 0; i < Asclrs->numberOfSendNeighbors; ++i) {
-        A.neighbors->data()[i] = neighbors[i];
-    }
 #if 0
     A.elementsToSend = elementsToSend;
     A.receiveLength = receiveLength;
-    A.sendLength = sendLength;
 #endif
 
 #ifdef HPCG_DETAILED_DEBUG
@@ -366,7 +356,7 @@ SetupHaloTopLevel(
         // Get total number of neighbors this shard has
         const SparseMatrixScalars &myScalars = smScalars[shard];
         const int nNeighbors = myScalars.numberOfSendNeighbors;
-#if 1 // Debug
+#if 0 // Debug
         cout << "Rank " << shard << " Has "
              << nNeighbors << " Send Neighbors: " << endl;
         for (int n = 0; n < nNeighbors; ++n) {
@@ -393,7 +383,7 @@ SetupHaloTopLevel(
             synchronizers[myn].neighbors[tidToNIdx[myn][shard]] = pbs;
         }
     }
-#if 1 // Debug
+#if 0 // Debug
     for (int shard = 0; shard < nShards; ++shard) {
         const SparseMatrixScalars &myScalars = smScalars[shard];
         const int nNeighbors = myScalars.numberOfSendNeighbors;
