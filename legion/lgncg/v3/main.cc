@@ -276,7 +276,7 @@ mainTask(
             TaskArgument(&params, sizeof(params)),
             ArgumentMap()
         );
-        A.intent(RW_E, IFLAG_W_GHOSTS, launcher);
+        A.intent(RW_E, IFLAG_W_GHOSTS, launcher, ctx, runtime);
         b.intent(RW_E, launcher);
         x.intent(RW_E, launcher);
         xexact.intent(RW_E, launcher);

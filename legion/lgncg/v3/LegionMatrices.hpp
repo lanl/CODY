@@ -155,7 +155,9 @@ struct LogicalSparseMatrix : public LogicalMultiBase {
     LogicalArray<floatType> pullBuffer;
 
 protected:
-
+    // Number of shards used for SparseMatrix decomposition.
+    int mSize = 0;
+    //
     std::deque<LogicalItemBase *> mLogicalItemsNoAccess;
 
     /**
@@ -186,6 +188,8 @@ public:
      *
      */
     LogicalSparseMatrix(void) {
+        // -1 signifies that regions have not yet been allocated.
+        mSize = -1;
         mPopulateRegionList();
     }
 
@@ -197,13 +201,34 @@ public:
         Legion::PrivilegeMode privMode,
         Legion::CoherenceProperty cohProp,
         ItemFlags iFlags,
-        Legion::IndexLauncher &launcher
+        Legion::IndexLauncher &launcher,
+        LegionRuntime::HighLevel::Context &ctx,
+        LegionRuntime::HighLevel::HighLevelRuntime *lrt
     ) {
         intent(privMode, cohProp, launcher);
         //
         if (withGhosts(iFlags)) {
             for (auto &a : mLogicalItemsNoAccess) {
-                a->intentNoAccess(privMode, cohProp, launcher);
+                // Share every sub-region with everyone. During task execution
+                // each task will pick only the regions that are required.
+                for (int color = 0; color < mSize; ++color) {
+                    auto lsr = lrt->get_logical_subregion_by_color(
+                                   ctx,
+                                   a->logicalPartition,
+                                   color
+                    );
+                    launcher.add_region_requirement(
+                        RegionRequirement(
+                            lsr,
+                            0,
+                            /* NOTE disregard for passed args here. */
+                            READ_WRITE,
+                            SIMULTANEOUS,
+                            a->logicalRegion
+                        )
+                    ).add_field(a->fid)
+                     .add_flags(NO_ACCESS_FLAG);
+                }
             }
         }
     }
@@ -217,12 +242,12 @@ public:
         LegionRuntime::HighLevel::Context &ctx,
         LegionRuntime::HighLevel::HighLevelRuntime *lrt
     ) {
-        const int size         = geom.size;
+        mSize = geom.size;
         const auto globalXYZ   = getGlobalXYZ(geom);
         const auto stencilSize = geom.stencilSize;
 
-        geoms.allocate(size, ctx, lrt);
-        sclrs.allocate(size, ctx, lrt);
+        geoms.allocate(mSize, ctx, lrt);
+        sclrs.allocate(mSize, ctx, lrt);
         nonzerosInRow.allocate(globalXYZ, ctx, lrt);
         // Flattened to 1D from 2D.
         mtxIndG.allocate(globalXYZ * stencilSize, ctx, lrt);
@@ -235,17 +260,17 @@ public:
         //
         localToGlobalMap.allocate(globalXYZ, ctx, lrt);
         //
-        dcAllreduceSum.allocate(size, ctx, lrt);
+        dcAllreduceSum.allocate(mSize, ctx, lrt);
         //
         const int maxNumNeighbors = geom.stencilSize - 1;
         // Each task will have at most 26 neighbors.
-        neighbors.allocate(size * maxNumNeighbors, ctx, lrt);
+        neighbors.allocate(mSize * maxNumNeighbors, ctx, lrt);
         // Each task will have at most 26 neighbors.
-        sendLength.allocate(size * maxNumNeighbors, ctx, lrt);
+        sendLength.allocate(mSize * maxNumNeighbors, ctx, lrt);
         //
-        synchronizers.allocate(size, ctx, lrt);
+        synchronizers.allocate(mSize, ctx, lrt);
         //
-        pullBEs.allocate(size * maxNumNeighbors, ctx, lrt);
+        pullBEs.allocate(mSize * maxNumNeighbors, ctx, lrt);
         ////////////////////////////////////////////////////////////////////////
         // IFLAG_W_GHOSTS structures.
         ////////////////////////////////////////////////////////////////////////
@@ -279,6 +304,7 @@ public:
         // IFLAG_W_GHOSTS structures.
         ////////////////////////////////////////////////////////////////////////
         pullBuffer.partition(nParts, ctx, lrt);
+        //
         // For the DynamicCollectives we need partition info before population.
         mPopulateDynamicCollectives(nParts, ctx, lrt);
         // Just pick a structure that has a representative launch domain.

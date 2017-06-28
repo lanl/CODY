@@ -84,21 +84,28 @@ public:
      *
      */
     void
-    intentNoAccess(
+    intent(
         Legion::PrivilegeMode privMode,
         Legion::CoherenceProperty cohProp,
+        ItemFlags iFlags,
         Legion::IndexLauncher &launcher
     ) {
+        legion_region_flags_t regFlags = NO_FLAG;
+
+        if (withGhosts(iFlags)) {
+            regFlags = legion_region_flags_t(regFlags | NO_ACCESS_FLAG);
+        }
+        //
         launcher.add_region_requirement(
             RegionRequirement(
-                logicalRegion, // NOTE USE OF logicalRegion HERE
+                logicalPartition,
                 0,
                 privMode,
                 cohProp,
                 logicalRegion
             )
         ).add_field(fid)
-         .add_flags(NO_ACCESS_FLAG);
+         .add_flags(regFlags);
     }
 };
 
@@ -239,17 +246,17 @@ protected:
         Legion::HighLevelRuntime *lrt
     ) {
         mLength = len;
-        // calculate the size of the logicalRegion vec (inclusive)
+        // Calculate the size of the logicalRegion vec (inclusive).
         size_t n = mLength - 1;
-        // vec rect
+        // Vector rect.
         mBounds = Rect<1>(Point<1>::ZEROES(), Point<1>(n));
-        // vector domain
+        // Vector domain.
         Domain dom(Domain::from_rect<1>(mBounds));
-        // vec index space
+        // VEctor index space.
         mIndexSpace = lrt->create_index_space(ctx, dom);
-        // vec field space
+        // Vector field space.
         mFS = lrt->create_field_space(ctx);
-        // vec field allocator
+        // Vector field allocator.
         FieldAllocator fa = lrt->create_field_allocator(ctx, mFS);
         // all elements are going to be of size T
         fa.allocate_field(sizeof(TYPE), fid);

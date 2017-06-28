@@ -39,7 +39,14 @@ using ItemFlags = uint16_t;
 #define IFLAG_NIL      0x0000
 #define IFLAG_W_GHOSTS 0x0001
 
-#define withGhosts(flags) ( (flags) & IFLAG_W_GHOSTS )
+/**
+ *
+ */
+inline bool
+withGhosts(ItemFlags flags)
+{
+    return (flags & IFLAG_W_GHOSTS);
+}
 
 /**
  * Floating point type used for calculations.
