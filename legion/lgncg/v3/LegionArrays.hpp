@@ -188,6 +188,51 @@ public:
         // launch domain
         this->launchDomain = colorDomain;
     }
+
+    /**
+     * Creates a single, contiguous partition from BaseExtent info.
+     */
+    void
+    partition(
+        BaseExtent be,
+        Legion::Context &ctx,
+        Legion::HighLevelRuntime *lrt
+    ) {
+        using namespace Legion;
+        using LegionRuntime::Arrays::Rect;
+        //
+        Rect<1> colorBounds(Point<1>(0), Point<1>(0));
+        Domain colorDomain = Domain::from_rect<1>(colorBounds);
+        //
+        size_t x0 = be.base, x1 = (be.base + be.extent) - 1;
+        DomainColoring disjointColoring;
+        Rect<1> subGridBounds;
+        //
+        Rect<1> subRect((Point<1>(x0)), (Point<1>(x1)));
+        // Cache the subgrid bounds.
+        subGridBounds = subRect;
+#if 0 // Debug.
+        printf("vec len=%ld\n", (long)be.extent);
+        printf("vec disjoint partition: (%ld) to (%ld)\n",
+                (long)subRect.lo.x[0], (long)subRect.hi.x[0]);
+#endif
+        //
+        disjointColoring[0] = Domain::from_rect<1>(subRect);
+        auto iPart = lrt->create_index_partition(
+                         ctx,
+                         this->mIndexSpace,
+                         colorDomain,
+                         disjointColoring,
+                         true /* disjoint */
+        );
+        // Logical partitions.
+        using Legion::LogicalPartition;
+        this->logicalPartition = lrt->get_logical_partition(
+                                     ctx, this->logicalRegion, iPart
+                                 );
+        // Launch domain -- one task per color.
+        this->launchDomain = colorDomain;
+    }
 };
 
 ////////////////////////////////////////////////////////////////////////////////

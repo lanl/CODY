@@ -298,7 +298,15 @@ SetupHalo(
 
         const int nNeighbors = Asclrs->numberOfSendNeighbors;
         for (int n = 0; n < nNeighbors; ++n) {
-            auto &reg = neighborToRegions[n];
+            auto it = neighborToRegions.find(neighbors[n]);
+            // Make sure we found it.
+            assert(it != neighborToRegions.end());
+            // Grab Logical Region from Physical.
+            LogicalRegion lr = it->second.get_logical_region();
+            // Create Array structure from LogicalRegion.
+            LogicalArray<floatType> la(lr, ctx, lrt);
+            // Extract my piece of the pull buffer.
+            la.partition(ApullBEs[n], ctx, lrt);
         }
     }
 
