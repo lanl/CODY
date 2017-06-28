@@ -67,14 +67,12 @@ ExchangeHalo(
     using namespace std;
     // Extract Matrix pieces
     const SparseMatrixScalars *Asclrs = A.sclrs->data();
-    const Geometry *Ageom = A.geom->data();
     Synchronizers *syncs = A.synchronizers->data();
     PhaseBarriers &myPBs = syncs->mine;
-    const local_int_t localNumberOfRows = Asclrs->localNumberOfRows;
-    const int num_neighbors = Asclrs->numberOfSendNeighbors;
+    const int nNeighbors = Asclrs->numberOfSendNeighbors;
     //local_int_t * receiveLength = A.receiveLength;
-    local_int_t *sendLength = A.sendLength->data();
-    int *neighbors = A.neighbors->data();
+    //local_int_t *sendLength = A.sendLength->data();
+    const int *const neighbors = A.neighbors->data();
     //double *sendBuffer = A.sendBuffer;
     const local_int_t totalToBeSent = Asclrs->totalToBeSent;
     // Non-region memory populated during SetupHalo().
@@ -83,11 +81,6 @@ ExchangeHalo(
 
     floatType *const xv = x.data();
     assert(xv);
-
-    // Number of Legion tasks.
-    const int size = Ageom->size;
-    // My task ID.
-    const int rank = Ageom->rank;
 
     floatType *pushBuffer = A.pushBuffer->data();
     assert(pushBuffer);
@@ -99,48 +92,23 @@ ExchangeHalo(
     // Local copy done.
     myPBs.ready = lrt->advance_phase_barrier(ctx, myPBs.ready);
 
-#if 0
-    // Post receives first
-    // TODO: Thread this loop
-    for (int i = 0; i < num_neighbors; i++) {
-      local_int_t n_recv = receiveLength[i];
-      MPI_Irecv(x_external, n_recv, MPI_DOUBLE, neighbors[i], MPI_MY_TAG, MPI_COMM_WORLD, request+i);
-      x_external += n_recv;
+    for (int n = 0; n < nNeighbors; ++n) {
+        //
+        const int nid = neighbors[n];
+        // Source
+        auto srcIt = A.ghostArrays.find(nid);
+        assert(srcIt != A.ghostArrays.end());
+        LogicalArray<floatType> &srcArray = srcIt->second;
+        RegionRequirement srcrr(
+            srcArray.logicalPartition,
+            0,
+            READ_ONLY,
+            EXCLUSIVE,
+            srcArray.logicalRegion
+        );
+        srcrr.add_field(srcArray.fid);
+
+        CopyLauncher cl;
+        //cl.add_copy_requirements(
     }
-
-
-    //
-    // Fill up send buffer
-    //
-
-    // TODO: Thread this loop
-    for (local_int_t i=0; i<totalToBeSent; i++) sendBuffer[i] = xv[elementsToSend[i]];
-
-    //
-    // Send to each neighbor
-    //
-
-    // TODO: Thread this loop
-    for (int i = 0; i < num_neighbors; i++) {
-      local_int_t n_send = sendLength[i];
-      MPI_Send(sendBuffer, n_send, MPI_DOUBLE, neighbors[i], MPI_MY_TAG, MPI_COMM_WORLD);
-      sendBuffer += n_send;
-    }
-
-    //
-    // Complete the reads issued above
-    //
-
-    MPI_Status status;
-    // TODO: Thread this loop
-    for (int i = 0; i < num_neighbors; i++) {
-      if ( MPI_Wait(request+i, &status) ) {
-        std::exit(-1); // TODO: have better error exit
-      }
-    }
-
-    delete [] request;
-
-    return;
-#endif
 }

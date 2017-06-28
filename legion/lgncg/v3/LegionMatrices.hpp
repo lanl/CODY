@@ -123,6 +123,8 @@ struct LogicalSparseMatrix : public LogicalMultiBase {
     LogicalArray<int> neighbors;
     // Number of items that will be sent on a per neighbor basis.
     LogicalArray<local_int_t> sendLength;
+    // Number of items that will be received on a per neighbor basis.
+    LogicalArray<local_int_t> recvLength;
     // Synchronization structures.
     LogicalArray<Synchronizers> synchronizers;
     //
@@ -155,6 +157,7 @@ protected:
                          &dcAllreduceSum,
                          &neighbors,
                          &sendLength,
+                         &recvLength,
                          &synchronizers,
                          &pullBEs
         };
@@ -246,6 +249,7 @@ public:
         neighbors.allocate(mSize * maxNumNeighbors, ctx, lrt);
         // Each task will have at most 26 neighbors.
         sendLength.allocate(mSize * maxNumNeighbors, ctx, lrt);
+        recvLength.allocate(mSize * maxNumNeighbors, ctx, lrt);
         //
         synchronizers.allocate(mSize, ctx, lrt);
         //
@@ -277,6 +281,7 @@ public:
         dcAllreduceSum.partition(nParts, ctx, lrt);
         neighbors.partition(nParts, ctx, lrt);
         sendLength.partition(nParts, ctx, lrt);
+        recvLength.partition(nParts, ctx, lrt);
         synchronizers.partition(nParts, ctx, lrt);
         pullBEs.partition(nParts, ctx, lrt);
         ////////////////////////////////////////////////////////////////////////
@@ -309,6 +314,7 @@ public:
         dcAllreduceSum.deallocate(ctx, lrt);
         neighbors.deallocate(ctx, lrt);
         sendLength.deallocate(ctx, lrt);
+        recvLength.deallocate(ctx, lrt);
         synchronizers.deallocate(ctx, lrt);
         pullBEs.deallocate(ctx, lrt);
         ////////////////////////////////////////////////////////////////////////
@@ -372,6 +378,8 @@ struct SparseMatrix : public PhysicalMultiBase {
     Array<int> *neighbors = nullptr;
     //
     Array<local_int_t> *sendLength = nullptr;
+    //
+    Array<local_int_t> *recvLength = nullptr;
     //
     Item<Synchronizers> *synchronizers = nullptr;
     // The bases and extents that I will be getting from my neighbors that lets
@@ -469,6 +477,7 @@ struct SparseMatrix : public PhysicalMultiBase {
         delete dcAllreduceSum;
         delete neighbors;
         delete sendLength;
+        delete recvLength;
         delete synchronizers;
         // Task-local allocation of non-region memory.
         if (elementsToSend) delete[] elementsToSend;
@@ -542,6 +551,9 @@ protected:
         //
         sendLength = new Array<local_int_t>(regions[cid++], ctx, rt);
         assert(sendLength->data());
+        //
+        recvLength = new Array<local_int_t>(regions[cid++], ctx, rt);
+        assert(recvLength->data());
         //
         synchronizers = new Item<Synchronizers>(regions[cid++], ctx, rt);
         assert(synchronizers->data());

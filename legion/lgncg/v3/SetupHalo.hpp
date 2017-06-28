@@ -138,8 +138,9 @@ GetNeighborInfo(
     Asclrs->totalToBeSent = totalToBeSent;
     //
     for (int i = 0; i < Asclrs->numberOfSendNeighbors; ++i) {
-        A.neighbors->data()[i] = neighbors[i];
+        A.neighbors->data()[i]  = neighbors[i];
         A.sendLength->data()[i] = sendLength[i];
+        A.recvLength->data()[i] = receiveLength[i];
     }
     //
     delete[] elementsToSend;
@@ -313,10 +314,6 @@ SetupHalo(
         }
     }
 
-#if 0
-    A.receiveLength = receiveLength;
-#endif
-
     delete[] neighbors;
     delete[] receiveLength;
     delete[] sendLength;
@@ -369,7 +366,7 @@ SetupHaloTopLevel(
     // For convenience we'll interpret this as a 2D array.
     Array2D<int> neighbors(geom.size, maxNumNeighbors, aNeighbors.data());
     //
-    cout << "--> Memory for Send Lengths="
+    cout << "--> Memory for Send/Recv Lengths="
          << (sizeof(local_int_t) * nShards * maxNumNeighbors) / 1024.0 / 1024.0
          << " MB" << endl;
     Array<local_int_t> aSendLengths(
