@@ -35,12 +35,6 @@
 #include "Types.hpp"
 #include "ReduceSum.hpp"
 
-// For serialization.
-#include "cereal/cereal.hpp"
-#include "cereal/types/vector.hpp"
-#include "cereal/types/map.hpp"
-#include "cereal/archives/binary.hpp"
-
 #include <vector>
 #include <map>
 
@@ -56,9 +50,6 @@ using namespace LegionRuntime::HighLevel;
 #define RO_S READ_ONLY , SIMULTANEOUS
 #define WO_S WRITE_ONLY, SIMULTANEOUS
 
-// Set to 1 for debug.
-#define DEBUG_PHASE_BARRIER_SERIALIZATION 0
-
 ////////////////////////////////////////////////////////////////////////////////
 // Task IDs
 ////////////////////////////////////////////////////////////////////////////////
@@ -71,31 +62,6 @@ enum {
     INT_REDUCE_SUM_TID,
     TEST_TID
 };
-
-namespace cereal {
-    /**
-     *
-     */
-    template<class Archive>
-    inline void
-    save(Archive &ar, PhaseBarrier const &pb)
-    {
-        PhaseBarrier copy = pb;
-        ar(cereal::binary_data(&copy, sizeof(PhaseBarrier)));
-    }
-
-    /**
-     *
-     */
-    template<class Archive>
-    inline void
-    load(Archive &ar, PhaseBarrier &pb)
-    {
-        PhaseBarrier newpb;
-        ar(cereal::binary_data(&newpb, sizeof(PhaseBarrier)));
-        pb = newpb;
-    }
-}
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////

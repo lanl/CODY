@@ -314,7 +314,8 @@ startSolveTask(
     HPCG_Params params = *(HPCG_Params *)task->args;
     //
     size_t rid = 0;
-    SparseMatrix     A     (regions, rid, ctx, lrt);
+    const ItemFlags AFlags = W_GHOSTS;
+    SparseMatrix     A     (regions, rid, AFlags, ctx, lrt);
     rid += A.nRegionEntries();
     Array<floatType> b     (regions[rid++], ctx, lrt);
     Array<floatType> x     (regions[rid++], ctx, lrt);

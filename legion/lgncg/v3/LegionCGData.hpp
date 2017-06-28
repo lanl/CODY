@@ -145,7 +145,7 @@ struct CGData : public PhysicalMultiBase {
         Context ctx,
         HighLevelRuntime *runtime
     ) {
-        mUnpack(regions, baseRID, ctx, runtime);
+        mUnpack(regions, baseRID, NADA, ctx, runtime);
         mVerifyUnpack();
     }
 
@@ -157,6 +157,7 @@ protected:
     mUnpack(
         const std::vector<PhysicalRegion> &regions,
         size_t baseRID,
+        ItemFlags iFlags,
         Context ctx,
         HighLevelRuntime *rt
     ) {

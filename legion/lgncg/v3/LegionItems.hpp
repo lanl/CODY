@@ -58,6 +58,7 @@ protected:
     }
 
 public:
+
     /**
      *
      */
@@ -77,6 +78,26 @@ public:
             )
         ).add_field(fid);
     }
+
+    /**
+     *
+     */
+    void
+    intentNoAccess(
+        Legion::PrivilegeMode privMode,
+        Legion::CoherenceProperty cohProp,
+        Legion::IndexLauncher &launcher
+    ) {
+        launcher.add_region_requirement(
+            RegionRequirement(
+                logicalRegion, // NOTE USE OF logicalRegion HERE
+                0,
+                privMode,
+                cohProp,
+                logicalRegion
+            ).add_flags(NO_ACCESS_FLAG)
+        ).add_field(fid);
+    }
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -94,6 +115,8 @@ protected:
 
     std::deque<LogicalItemBase *> mLogicalItems;
 
+    std::deque<LogicalItemBase *> mLogicalItemsNoAccess;
+
     /**
      *
      */
@@ -104,21 +127,6 @@ protected:
      */
     virtual void
     mPopulateRegionList(void) = 0;
-
-    /**
-     *
-     */
-    void
-    mIntent(
-        Legion::PrivilegeMode privMode,
-        Legion::CoherenceProperty cohProp,
-        const std::deque<LogicalItemBase *> &targetArrays,
-        Legion::IndexLauncher &launcher
-    ) {
-        for (auto &a : targetArrays) {
-            a->intent(privMode, cohProp, launcher);
-        }
-    }
 
 public:
     /**
@@ -151,15 +159,24 @@ public:
     ) = 0;
 
     /**
-     *
+     * FIXME: Ugly and hacky...
      */
     virtual void
     intent(
         Legion::PrivilegeMode privMode,
         Legion::CoherenceProperty cohProp,
-        Legion::IndexLauncher &launcher
+        Legion::IndexLauncher &launcher,
+        bool withNoAccess = false
     ) {
-        mIntent(privMode, cohProp, mLogicalItems, launcher);
+        for (auto &a : mLogicalItems) {
+            a->intent(privMode, cohProp, launcher);
+        }
+        //
+        if (withNoAccess) {
+            for (auto &a : mLogicalItemsNoAccess) {
+                a->intentNoAccess(privMode, cohProp, launcher);
+            }
+        }
     }
 };
 
@@ -425,6 +442,8 @@ struct PhysicalMultiBase {
 protected:
     // Number of region entries.
     size_t mNRegionEntries = 0;
+    //
+    ItemFlags mUnpackFlags = 0;
 
     /**
      * MUST MATCH PACK ORDER IN mPopulateRegionList!
@@ -433,6 +452,7 @@ protected:
     mUnpack(
         const std::vector<PhysicalRegion> &regions,
         size_t baseRID,
+        ItemFlags iFlags,
         Context ctx,
         HighLevelRuntime *rt
     ) = 0;

@@ -147,8 +147,14 @@ struct LogicalSparseMatrix : public LogicalMultiBase {
     LogicalArray<Synchronizers> synchronizers;
     //
     LogicalArray<BaseExtent> pullBEs;
+    ////////////////////////////////////////////////////////////////////////////
+    // NO_ACCESS
+    ////////////////////////////////////////////////////////////////////////////
+    // Buffer that will be used  to pull data from during ExchangeHalo.
+    LogicalArray<floatType> pullBuffer;
 
 protected:
+
     /**
      * Order matters here. If you update this, also update unpack.
      */
@@ -168,6 +174,8 @@ protected:
                          &synchronizers,
                          &pullBEs
         };
+        //
+        mLogicalItemsNoAccess = {&pullBuffer};
     }
 
 public:
@@ -216,6 +224,11 @@ public:
         synchronizers.allocate(size, ctx, lrt);
         //
         pullBEs.allocate(size * maxNumNeighbors, ctx, lrt);
+        ////////////////////////////////////////////////////////////////////////
+        // NO_ACCESS
+        ////////////////////////////////////////////////////////////////////////
+        // FIXME: A bit wasteful on storage.
+        pullBuffer.allocate(globalXYZ, ctx, lrt);
     }
 
     /**
@@ -240,6 +253,10 @@ public:
         sendLength.partition(nParts, ctx, lrt);
         synchronizers.partition(nParts, ctx, lrt);
         pullBEs.partition(nParts, ctx, lrt);
+        ////////////////////////////////////////////////////////////////////////
+        // NO_ACCESS
+        ////////////////////////////////////////////////////////////////////////
+        pullBuffer.partition(nParts, ctx, lrt);
         // For the DynamicCollectives we need partition info before population.
         mPopulateDynamicCollectives(nParts, ctx, lrt);
         // Just pick a structure that has a representative launch domain.
@@ -266,6 +283,10 @@ public:
         neighbors.deallocate(ctx, lrt);
         sendLength.deallocate(ctx, lrt);
         synchronizers.deallocate(ctx, lrt);
+        pullBEs.deallocate(ctx, lrt);
+        ////////////////////////////////////////////////////////////////////////
+        // NO_ACCESS
+        ////////////////////////////////////////////////////////////////////////
         pullBEs.deallocate(ctx, lrt);
     }
 
@@ -326,10 +347,13 @@ struct SparseMatrix : public PhysicalMultiBase {
     Array<local_int_t> *sendLength = nullptr;
     //
     Item<Synchronizers> *synchronizers = nullptr;
-    // The bases and extents that I will be getting from my neighbors that let's
+    // The bases and extents that I will be getting from my neighbors that lets
     // me know which contiguous set of points will make up values I need to
     // read.
     Array<BaseExtent> *pullBEs = nullptr;
+    ////////////////////////////////////////////////////////////////////////////
+    // NO_ACCESS (withGhosts)
+    ////////////////////////////////////////////////////////////////////////////
     // Global to local mapping. NOTE: only valid after a call to
     // PopulateGlobalToLocalMap.
     std::map< global_int_t, local_int_t > globalToLocalMap;
@@ -342,6 +366,33 @@ public:
      *
      */
     SparseMatrix(void) = default;
+
+    /**
+     *
+     */
+    SparseMatrix(
+        const std::vector<PhysicalRegion> &regions,
+        size_t baseRID,
+        Context ctx,
+        HighLevelRuntime *runtime
+    ) {
+        mUnpack(regions, baseRID, NADA, ctx, runtime);
+        mVerifyUnpack();
+    }
+
+    /**
+     *
+     */
+    SparseMatrix(
+        const std::vector<PhysicalRegion> &regions,
+        size_t baseRID,
+        ItemFlags iFlags,
+        Context ctx,
+        HighLevelRuntime *runtime
+    ) {
+        mUnpack(regions, baseRID, iFlags, ctx, runtime);
+        mVerifyUnpack();
+    }
 
     /**
      *
@@ -364,19 +415,6 @@ public:
         if (elementsToSend) delete[] elementsToSend;
     }
 
-    /**
-     *
-     */
-    SparseMatrix(
-        const std::vector<PhysicalRegion> &regions,
-        size_t baseRID,
-        Context ctx,
-        HighLevelRuntime *runtime
-    ) {
-        mUnpack(regions, baseRID, ctx, runtime);
-        mVerifyUnpack();
-    }
-
 protected:
     /**
      * MUST MATCH PACK ORDER IN mPopulateRegionList!
@@ -385,6 +423,7 @@ protected:
     mUnpack(
         const std::vector<PhysicalRegion> &regions,
         size_t baseRID,
+        ItemFlags iFlags,
         Context ctx,
         HighLevelRuntime *rt
     ) {
@@ -415,8 +454,13 @@ protected:
         synchronizers = new Item<Synchronizers>(regions[cid++], ctx, rt);
         //
         pullBEs = new Array<BaseExtent>(regions[cid++], ctx, rt);
+        if (withGhosts(iFlags)) {
+            // TODO
+        }
         // Calculate number of region entries for this structure.
         mNRegionEntries = cid - baseRID;
+        // Stash unpack flags.
+        mUnpackFlags = iFlags;
     }
 
     /**
