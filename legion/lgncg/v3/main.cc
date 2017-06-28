@@ -276,7 +276,7 @@ mainTask(
             TaskArgument(&params, sizeof(params)),
             ArgumentMap()
         );
-        A.intent(RW_E, launcher);
+        A.intent(RW_E, W_GHOSTS, launcher);
         b.intent(RW_E, launcher);
         x.intent(RW_E, launcher);
         xexact.intent(RW_E, launcher);
@@ -322,7 +322,7 @@ startSolveTask(
     Array<floatType> xexact(regions[rid++], ctx, lrt);
     // Private data for this task.
     LogicalCGData lData;
-    lData.allocateLocal(A, ctx, lrt);
+    lData.allocate(A, ctx, lrt);
     // Map CG data locally.
     vector<PhysicalRegion> cgRegions;
     // TODO check permissions here.
@@ -331,7 +331,8 @@ startSolveTask(
     cgRegions.push_back(lData.p.mapRegion(RW_E, ctx, lrt));
     cgRegions.push_back(lData.Ap.mapRegion(RW_E, ctx, lrt));
     //
-    CGData data(cgRegions, 0, ctx, lrt);
+    const int cgDataBaseRID = 0;
+    CGData data(cgRegions, cgDataBaseRID, ctx, lrt);
 
     ////////////////////////////////////////////////////////////////////////////
     // Setup halo information before we begin.

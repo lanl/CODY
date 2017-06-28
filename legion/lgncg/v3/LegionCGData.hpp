@@ -68,7 +68,14 @@ public:
      *
      */
     void
-    allocateLocal(
+    allocate(
+        const Geometry &geom,
+        LegionRuntime::HighLevel::Context &ctx,
+        LegionRuntime::HighLevel::HighLevelRuntime *lrt
+    ) { /* Nothing to do. */ }
+
+    void
+    allocate(
         SparseMatrix &A,
         LegionRuntime::HighLevel::Context &ctx,
         LegionRuntime::HighLevel::HighLevelRuntime *lrt
@@ -146,7 +153,6 @@ struct CGData : public PhysicalMultiBase {
         HighLevelRuntime *runtime
     ) {
         mUnpack(regions, baseRID, NADA, ctx, runtime);
-        mVerifyUnpack();
     }
 
 protected:
@@ -164,24 +170,17 @@ protected:
         size_t cid = baseRID;
         // Populate members from physical regions.
         r = new Array<floatType>(regions[cid++], ctx, rt);
+        assert(r->data());
         //
         z = new Array<floatType>(regions[cid++], ctx, rt);
+        assert(z->data());
         //
         p = new Array<floatType>(regions[cid++], ctx, rt);
+        assert(p->data());
         //
         Ap = new Array<floatType>(regions[cid++], ctx, rt);
+        assert(Ap->data());
         // Calculate number of region entries for this structure.
         mNRegionEntries = cid - baseRID;
-    }
-
-    /**
-     *
-     */
-    void
-    mVerifyUnpack(void) {
-        assert(r->data());
-        assert(z->data());
-        assert(p->data());
-        assert(Ap->data());
     }
 };

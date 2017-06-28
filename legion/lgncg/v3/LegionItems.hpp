@@ -95,8 +95,9 @@ public:
                 privMode,
                 cohProp,
                 logicalRegion
-            ).add_flags(NO_ACCESS_FLAG)
-        ).add_field(fid);
+            )
+        ).add_field(fid)
+         .add_flags(NO_ACCESS_FLAG);
     }
 };
 
@@ -115,7 +116,6 @@ protected:
 
     std::deque<LogicalItemBase *> mLogicalItems;
 
-    std::deque<LogicalItemBase *> mLogicalItemsNoAccess;
 
     /**
      *
@@ -137,7 +137,7 @@ public:
         const Geometry &geom,
         LegionRuntime::HighLevel::Context &ctx,
         LegionRuntime::HighLevel::HighLevelRuntime *lrt
-    ) { ; }
+    ) = 0;
 
     /**
      *
@@ -159,23 +159,16 @@ public:
     ) = 0;
 
     /**
-     * FIXME: Ugly and hacky...
+     *
      */
     virtual void
     intent(
         Legion::PrivilegeMode privMode,
         Legion::CoherenceProperty cohProp,
-        Legion::IndexLauncher &launcher,
-        bool withNoAccess = false
+        Legion::IndexLauncher &launcher
     ) {
         for (auto &a : mLogicalItems) {
             a->intent(privMode, cohProp, launcher);
-        }
-        //
-        if (withNoAccess) {
-            for (auto &a : mLogicalItemsNoAccess) {
-                a->intentNoAccess(privMode, cohProp, launcher);
-            }
         }
     }
 };
@@ -456,12 +449,6 @@ protected:
         Context ctx,
         HighLevelRuntime *rt
     ) = 0;
-
-    /**
-     *
-     */
-    virtual void
-    mVerifyUnpack(void) = 0;
 
 public:
     /**

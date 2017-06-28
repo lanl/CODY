@@ -120,6 +120,7 @@ struct BaseExtent {
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 struct LogicalSparseMatrix : public LogicalMultiBase {
+    using LogicalMultiBase::intent;
     //
     LogicalArray<Geometry> geoms;
     //
@@ -148,12 +149,14 @@ struct LogicalSparseMatrix : public LogicalMultiBase {
     //
     LogicalArray<BaseExtent> pullBEs;
     ////////////////////////////////////////////////////////////////////////////
-    // NO_ACCESS
+    // NO_ACCESS (withGhosts) structures.
     ////////////////////////////////////////////////////////////////////////////
     // Buffer that will be used  to pull data from during ExchangeHalo.
     LogicalArray<floatType> pullBuffer;
 
 protected:
+
+    std::deque<LogicalItemBase *> mLogicalItemsNoAccess;
 
     /**
      * Order matters here. If you update this, also update unpack.
@@ -184,6 +187,25 @@ public:
      */
     LogicalSparseMatrix(void) {
         mPopulateRegionList();
+    }
+
+    /**
+     *
+     */
+    void
+    intent(
+        Legion::PrivilegeMode privMode,
+        Legion::CoherenceProperty cohProp,
+        ItemFlags iFlags,
+        Legion::IndexLauncher &launcher
+    ) {
+        intent(privMode, cohProp, launcher);
+        //
+        if (withGhosts(iFlags)) {
+            for (auto &a : mLogicalItemsNoAccess) {
+                a->intentNoAccess(privMode, cohProp, launcher);
+            }
+        }
     }
 
     /**
@@ -352,15 +374,40 @@ struct SparseMatrix : public PhysicalMultiBase {
     // read.
     Array<BaseExtent> *pullBEs = nullptr;
     ////////////////////////////////////////////////////////////////////////////
-    // NO_ACCESS (withGhosts)
+    // NO_ACCESS (withGhosts) structures.
+    ////////////////////////////////////////////////////////////////////////////
+
+    ////////////////////////////////////////////////////////////////////////////
+    // Task-launch-local structures.
     ////////////////////////////////////////////////////////////////////////////
     // Global to local mapping. NOTE: only valid after a call to
     // PopulateGlobalToLocalMap.
     std::map< global_int_t, local_int_t > globalToLocalMap;
-    // Only valid after a call to SetupHalo. PERSISTS FOR A SINGLE LAUNCH.
+    // Only valid after a call to SetupHalo.
     local_int_t *elementsToSend = nullptr;
+    // A mapping between neighbor IDs and their regions.
+    std::map<int, PhysicalRegion> neighborToRegions;
 
-public:
+    /**
+     *
+     */
+    int
+    mPopulateNeighborToRegionTab(
+        const std::vector<PhysicalRegion> &regions,
+        size_t baseRID,
+        Context ctx,
+        HighLevelRuntime *runtime
+    ) {
+        int *nd = neighbors->data();
+        SparseMatrixScalars *sclrsd = sclrs->data();
+
+        for (int n = 0; n < sclrsd->numberOfSendNeighbors; ++n) {
+            int nid = nd[n];
+            neighborToRegions[nid] = regions[baseRID + nid];
+        }
+        // Number of regions that we have consumed.
+        return geom->data()->size;
+    }
 
     /**
      *
@@ -376,8 +423,7 @@ public:
         Context ctx,
         HighLevelRuntime *runtime
     ) {
-        mUnpack(regions, baseRID, NADA, ctx, runtime);
-        mVerifyUnpack();
+        mDoConstruct(regions, baseRID, NADA, ctx, runtime);
     }
 
     /**
@@ -390,8 +436,7 @@ public:
         Context ctx,
         HighLevelRuntime *runtime
     ) {
-        mUnpack(regions, baseRID, iFlags, ctx, runtime);
-        mVerifyUnpack();
+        mDoConstruct(regions, baseRID, iFlags, ctx, runtime);
     }
 
     /**
@@ -416,6 +461,21 @@ public:
     }
 
 protected:
+
+    /**
+     *
+     */
+    void
+    mDoConstruct(
+        const std::vector<PhysicalRegion> &regions,
+        size_t baseRID,
+        ItemFlags iFlags,
+        Context ctx,
+        HighLevelRuntime *rt
+    ) {
+        mUnpack(regions, baseRID, iFlags, ctx, rt);
+    }
+
     /**
      * MUST MATCH PACK ORDER IN mPopulateRegionList!
      */
@@ -430,57 +490,50 @@ protected:
         size_t cid = baseRID;
         // Populate members from physical regions.
         geom = new Item<Geometry>(regions[cid++], ctx, rt);
+        assert(geom->data());
         //
         sclrs = new Item<SparseMatrixScalars>(regions[cid++], ctx, rt);
+        assert(sclrs->data());
         //
         nonzerosInRow = new Array<char>(regions[cid++], ctx, rt);
+        assert(nonzerosInRow->data());
         //
         mtxIndG = new Array<global_int_t>(regions[cid++], ctx, rt);
+        assert(mtxIndG->data());
         //
         mtxIndL = new Array<local_int_t>(regions[cid++], ctx, rt);
+        assert(mtxIndL->data());
         //
         matrixValues = new Array<floatType>(regions[cid++], ctx, rt);
+        assert(matrixValues->data());
         //
         matrixDiagonal = new Array<floatType>(regions[cid++], ctx, rt);
+        assert(matrixDiagonal->data());
         //
         localToGlobalMap = new Array<global_int_t>(regions[cid++], ctx, rt);
+        assert(localToGlobalMap->data());
         //
         dcAllreduceSum = new Item<DynamicCollective>(regions[cid++], ctx, rt);
+        assert(dcAllreduceSum->data());
         //
         neighbors = new Array<int>(regions[cid++], ctx, rt);
+        assert(neighbors->data());
         //
         sendLength = new Array<local_int_t>(regions[cid++], ctx, rt);
+        assert(sendLength->data());
         //
         synchronizers = new Item<Synchronizers>(regions[cid++], ctx, rt);
+        assert(synchronizers->data());
         //
         pullBEs = new Array<BaseExtent>(regions[cid++], ctx, rt);
+        assert(pullBEs->data());
         if (withGhosts(iFlags)) {
-            // TODO
+            cid += mPopulateNeighborToRegionTab(regions, cid, ctx, rt);
         }
         // Calculate number of region entries for this structure.
         mNRegionEntries = cid - baseRID;
         // Stash unpack flags.
         mUnpackFlags = iFlags;
-    }
-
-    /**
-     *
-     */
-    void
-    mVerifyUnpack(void) {
-        assert(geom->data());
-        assert(sclrs->data());
-        assert(nonzerosInRow->data());
-        assert(mtxIndG->data());
-        assert(mtxIndL->data());
-        assert(matrixValues->data());
-        assert(matrixDiagonal->data());
-        assert(localToGlobalMap->data());
-        assert(dcAllreduceSum->data());
-        assert(neighbors->data());
-        assert(sendLength->data());
-        assert(synchronizers->data());
-        assert(pullBEs->data());
     }
 };
 
