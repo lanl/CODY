@@ -298,7 +298,8 @@ SetupHalo(
 
         const int nNeighbors = Asclrs->numberOfSendNeighbors;
         for (int n = 0; n < nNeighbors; ++n) {
-            auto it = neighborToRegions.find(neighbors[n]);
+            const int nid = neighbors[n];
+            auto it = neighborToRegions.find(nid);
             // Make sure we found it.
             assert(it != neighborToRegions.end());
             // Grab Logical Region from Physical.
@@ -307,6 +308,8 @@ SetupHalo(
             LogicalArray<floatType> la(lr, ctx, lrt);
             // Extract my piece of the pull buffer.
             la.partition(ApullBEs[n], ctx, lrt);
+            // Stash LogicalArray.
+            A.ghostArrays[nid] = la;
         }
     }
 

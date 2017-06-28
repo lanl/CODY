@@ -70,21 +70,6 @@ struct PhaseBarriers {
     PhaseBarrier ready;
     //
     PhaseBarrier done;
-
-    /**
-     *
-     */
-    PhaseBarriers(void) = default;
-
-    /**
-     *
-     */
-    template <class Archive>
-    void
-    serialize(Archive &ar)
-    {
-        ar(ready, done);
-    }
 };
 
 ////////////////////////////////////////////////////////////////////////////////
