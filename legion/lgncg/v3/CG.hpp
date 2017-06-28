@@ -100,7 +100,7 @@
 */
 inline int
 CG(
-    const SparseMatrix &A,
+    SparseMatrix &A,
     CGData &data,
     const Array<floatType> &b,
     Array<floatType> &x,
@@ -110,7 +110,9 @@ CG(
     double &normr,
     double &normr0,
     double *times,
-    bool doPreconditioning
+    bool doPreconditioning,
+    LegionRuntime::HighLevel::Context ctx,
+    LegionRuntime::HighLevel::Runtime *lrt
 ) {
     double t_begin = mytimer();  // Start timing right away
     const int rank = A.geom->data()->rank;
@@ -131,7 +133,7 @@ CG(
     // p is of length ncols, copy x to p for sparse MV operation
     CopyVector(x, p);
     //
-    TICK(); ComputeSPMV(A, p, Ap);  TOCK(t3); // Ap = A*p
+    TICK(); ComputeSPMV(A, p, Ap, ctx, lrt);  TOCK(t3); // Ap = A*p
     // r = b - Ax (x stored in p)
     TICK(); ComputeWAXPBY(nrow, 1.0, b, -1.0, Ap, r); TOCK(t2);
 #if 0

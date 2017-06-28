@@ -62,16 +62,18 @@
 */
 inline int
 ComputeSPMV(
-    const SparseMatrix &A,
+    SparseMatrix &A,
     Array<floatType> &x,
-    Array<floatType> &y
+    Array<floatType> &y,
+    LegionRuntime::HighLevel::Context ctx,
+    LegionRuntime::HighLevel::Runtime *lrt
 ) {
     const SparseMatrixScalars *Asclrs = A.sclrs->data();
     // Test vector lengths
     assert(x.length() >= Asclrs->localNumberOfColumns);
     assert(y.length() >= Asclrs->localNumberOfRows);
 
-    ExchangeHalo(A, x);
+    ExchangeHalo(A, x, ctx, lrt);
     //
     const floatType *const xv = x.data();
     floatType *const yv       = y.data();

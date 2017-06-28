@@ -59,8 +59,10 @@
  */
 inline void
 ExchangeHalo(
-      const SparseMatrix &A,
-      Array<floatType> &x
+    SparseMatrix &A,
+    Array<floatType> &x,
+    LegionRuntime::HighLevel::Context ctx,
+    LegionRuntime::HighLevel::Runtime *lrt
 ) {
     using namespace std;
     // Extract Matrix pieces
@@ -77,18 +79,24 @@ ExchangeHalo(
     local_int_t *elementsToSend = A.elementsToSend;
     assert(elementsToSend);
 
-    double *const xv = x.data();
+    floatType *const xv = x.data();
     assert(xv);
+
+    floatType *pushBuffer = A.pushBuffer->data();
+    assert(pushBuffer);
+
 
     // Number of Legion tasks.
     const int size = Ageom->size;
     // My task ID.
     const int rank = Ageom->rank;
 #if 0
-    //
-    // Externals are at end of locals.
-    //
-    double * x_external = (double *) xv + localNumberOfRows;
+    // Fill up push buffer.
+    for (local_int_t i = 0; i < totalToBeSent; i++) {
+        sendBuffer[i] = xv[elementsToSend[i]];
+    }
+
+    A.pushArray.unmapRegion(ctx, lrt);
 
     // Post receives first
     // TODO: Thread this loop

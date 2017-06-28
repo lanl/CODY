@@ -378,13 +378,13 @@ struct SparseMatrix : public PhysicalMultiBase {
     // me know which contiguous set of points will make up values I need to
     // read.
     Array<BaseExtent> *pullBEs = nullptr;
-    ////////////////////////////////////////////////////////////////////////////
-    // IFLAG_W_GHOSTS structures.
-    ////////////////////////////////////////////////////////////////////////////
 
     ////////////////////////////////////////////////////////////////////////////
     // Task-launch-local structures.
     ////////////////////////////////////////////////////////////////////////////
+    Context lctx;
+    //
+    HighLevelRuntime *lrt = nullptr;
     // Global to local mapping. NOTE: only valid after a call to
     // PopulateGlobalToLocalMap.
     std::map< global_int_t, local_int_t > globalToLocalMap;
@@ -394,8 +394,10 @@ struct SparseMatrix : public PhysicalMultiBase {
     std::map<int, PhysicalRegion> neighborToRegions;
     // A mapping between neighbor IDs and ghost Arrays.
     std::map< int, LogicalArray<floatType> > ghostArrays;
-    // The logical push buffer that I populate with local values.
+    // The logical region that holds push values.
     LogicalArray<floatType> pushArray;
+    // The Array that holds push values.
+    Array<floatType> *pushBuffer = nullptr;
 
     /**
      *
@@ -413,6 +415,10 @@ struct SparseMatrix : public PhysicalMultiBase {
         // Setup my push Array.
         LogicalRegion lrPush = regions[baseRID + me].get_logical_region();
         pushArray = LogicalArray<floatType>(lrPush, ctx, runtime);
+        pushBuffer = new Array<floatType>(
+            pushArray.mapRegion(RW_S, ctx, runtime), ctx, runtime
+        );
+        assert(pushBuffer->data());
         // Get neighbor regions.
         for (int n = 0; n < sclrsd->numberOfSendNeighbors; ++n) {
             const int nid = nd[n];
@@ -471,6 +477,10 @@ struct SparseMatrix : public PhysicalMultiBase {
         delete synchronizers;
         // Task-local allocation of non-region memory.
         if (elementsToSend) delete[] elementsToSend;
+        if (withGhosts(mUnpackFlags)) {
+            pushArray.unmapRegion(lctx, lrt);
+            delete pushBuffer;
+        }
     }
 
 protected:
@@ -486,6 +496,10 @@ protected:
         Context ctx,
         HighLevelRuntime *rt
     ) {
+        lctx = ctx;
+        lrt = rt;
+        mUnpackFlags = iFlags;
+        //
         mUnpack(regions, baseRID, iFlags, ctx, rt);
     }
 
@@ -545,8 +559,6 @@ protected:
         }
         // Calculate number of region entries for this structure.
         mNRegionEntries = cid - baseRID;
-        // Stash unpack flags.
-        mUnpackFlags = iFlags;
     }
 };
 

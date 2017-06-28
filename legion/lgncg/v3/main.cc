@@ -309,7 +309,8 @@ void
 startSolveTask(
     const Task *task,
     const std::vector<PhysicalRegion> &regions,
-    Context ctx, HighLevelRuntime *lrt
+    Context ctx,
+    HighLevelRuntime *lrt
 ) {
     HPCG_Params params = *(HPCG_Params *)task->args;
     //
@@ -377,7 +378,9 @@ startSolveTask(
                       normr,
                       normr0,
                       &optTimes[0],
-                      false // TODO FIXME
+                      false, // TODO FIXME
+                      ctx,
+                      lrt
                    );
         if (ierr) ++errCount; // count the number of errors in CG
 #if 0
