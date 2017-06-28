@@ -394,8 +394,6 @@ struct SparseMatrix : public PhysicalMultiBase {
     std::map<int, PhysicalRegion> neighborToRegions;
     // A mapping between neighbor IDs and ghost Arrays.
     std::map< int, LogicalArray<floatType> > ghostArrays;
-    // The logical region that holds push values.
-    LogicalArray<floatType> pushArray;
     // The Array that holds push values.
     Array<floatType> *pushBuffer = nullptr;
 
@@ -413,17 +411,14 @@ struct SparseMatrix : public PhysicalMultiBase {
         const SparseMatrixScalars *const sclrsd = sclrs->data();
         const int me = geom->data()->rank;
         // Setup my push Array.
-        LogicalRegion lrPush = regions[baseRID + me].get_logical_region();
-        pushArray = LogicalArray<floatType>(lrPush, ctx, runtime);
-        pushBuffer = new Array<floatType>(
-            pushArray.mapRegion(RW_S, ctx, runtime), ctx, runtime
-        );
+        pushBuffer = new Array<floatType>(regions[baseRID + me], ctx, runtime);
         assert(pushBuffer->data());
         // Get neighbor regions.
         for (int n = 0; n < sclrsd->numberOfSendNeighbors; ++n) {
             const int nid = nd[n];
             neighborToRegions[nid] = regions[baseRID + nid];
         }
+        // TODO Unmap unused regions.
         // Return number of regions that we have consumed.
         return geom->data()->size;
     }
@@ -478,7 +473,6 @@ struct SparseMatrix : public PhysicalMultiBase {
         // Task-local allocation of non-region memory.
         if (elementsToSend) delete[] elementsToSend;
         if (withGhosts(mUnpackFlags)) {
-            pushArray.unmapRegion(lctx, lrt);
             delete pushBuffer;
         }
     }

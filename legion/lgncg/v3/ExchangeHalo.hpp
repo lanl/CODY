@@ -68,6 +68,8 @@ ExchangeHalo(
     // Extract Matrix pieces
     const SparseMatrixScalars *Asclrs = A.sclrs->data();
     const Geometry *Ageom = A.geom->data();
+    Synchronizers *syncs = A.synchronizers->data();
+    PhaseBarriers &myPBs = syncs->mine;
     const local_int_t localNumberOfRows = Asclrs->localNumberOfRows;
     const int num_neighbors = Asclrs->numberOfSendNeighbors;
     //local_int_t * receiveLength = A.receiveLength;
@@ -82,22 +84,22 @@ ExchangeHalo(
     floatType *const xv = x.data();
     assert(xv);
 
-    floatType *pushBuffer = A.pushBuffer->data();
-    assert(pushBuffer);
-
-
     // Number of Legion tasks.
     const int size = Ageom->size;
     // My task ID.
     const int rank = Ageom->rank;
-#if 0
+
+    floatType *pushBuffer = A.pushBuffer->data();
+    assert(pushBuffer);
+
     // Fill up push buffer.
     for (local_int_t i = 0; i < totalToBeSent; i++) {
-        sendBuffer[i] = xv[elementsToSend[i]];
+        pushBuffer[i] = xv[elementsToSend[i]];
     }
+    // Local copy done.
+    myPBs.ready = lrt->advance_phase_barrier(ctx, myPBs.ready);
 
-    A.pushArray.unmapRegion(ctx, lrt);
-
+#if 0
     // Post receives first
     // TODO: Thread this loop
     for (int i = 0; i < num_neighbors; i++) {

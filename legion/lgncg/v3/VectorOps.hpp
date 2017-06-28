@@ -66,8 +66,7 @@ ZeroVector(Array<floatType> &v)
 {
     local_int_t localLength = v.length();
     double *vv = v.data();
-    for (int i=0; i<localLength; ++i) vv[i] = 0.0;
-    return;
+    for (int i = 0; i < localLength; ++i) vv[i] = 0.0;
 }
 
 /*!
