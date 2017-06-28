@@ -124,7 +124,6 @@ protected:
 
     std::deque<LogicalItemBase *> mLogicalItems;
 
-
     /**
      *
      */
@@ -209,7 +208,7 @@ struct LogicalItem : public LogicalItemBase {
                             ctx, lr.get_index_space()
                         ).get_rect<1>();
         //
-        mLength       = 1;
+        mLength       = mBounds.volume();
         mIndexSpace   = lr.get_index_space();
         mFS           = lr.get_field_space();
         mIndexSpaceID = mIndexSpace.get_id();

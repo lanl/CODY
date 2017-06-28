@@ -158,7 +158,7 @@ protected:
     // Number of shards used for SparseMatrix decomposition.
     int mSize = 0;
     //
-    std::deque<LogicalItemBase *> mLogicalItemsNoAccess;
+    std::deque<LogicalItemBase *> mLogicalItemsGhost;
 
     /**
      * Order matters here. If you update this, also update unpack.
@@ -180,7 +180,7 @@ protected:
                          &pullBEs
         };
         //
-        mLogicalItemsNoAccess = {&pullBuffer};
+        mLogicalItemsGhost = {&pullBuffer};
     }
 
 public:
@@ -208,7 +208,7 @@ public:
         intent(privMode, cohProp, launcher);
         //
         if (withGhosts(iFlags)) {
-            for (auto &a : mLogicalItemsNoAccess) {
+            for (auto &a : mLogicalItemsGhost) {
                 // Share every sub-region with everyone. During task execution
                 // each task will pick only the regions that are required.
                 for (int color = 0; color < mSize; ++color) {
@@ -424,14 +424,14 @@ struct SparseMatrix : public PhysicalMultiBase {
         Context ctx,
         HighLevelRuntime *runtime
     ) {
-        int *nd = neighbors->data();
-        SparseMatrixScalars *sclrsd = sclrs->data();
+        const int *const nd = neighbors->data();
+        const SparseMatrixScalars *const sclrsd = sclrs->data();
 
         for (int n = 0; n < sclrsd->numberOfSendNeighbors; ++n) {
-            int nid = nd[n];
+            const int nid = nd[n];
             neighborToRegions[nid] = regions[baseRID + nid];
         }
-        // Number of regions that we have consumed.
+        // Return number of regions that we have consumed.
         return geom->data()->size;
     }
 

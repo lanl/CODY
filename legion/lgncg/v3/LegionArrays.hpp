@@ -40,10 +40,20 @@
 template<typename TYPE>
 struct LogicalArray : public LogicalItem<TYPE> {
 public:
+
     /**
      *
      */
     LogicalArray(void) : LogicalItem<TYPE>() { }
+
+    /**
+     * Instantiate from a LogicalRegion.
+     */
+    LogicalArray(
+        const LogicalRegion &lr,
+        Legion::Context &ctx,
+        Legion::HighLevelRuntime *lrt
+    ) : LogicalItem<TYPE>(lr, ctx, lrt) { }
 
     /**
      *
@@ -257,7 +267,7 @@ public:
     const TYPE &
     operator()(size_t row, size_t col) const
     {
-        return mBasePtr[(row*mNCols)+col];
+        return mBasePtr[(row * mNCols) + col];
     }
 
     /**
@@ -266,7 +276,7 @@ public:
     TYPE &
     operator()(size_t row, size_t col)
     {
-        return mBasePtr[(row*mNCols)+col];
+        return mBasePtr[(row * mNCols) + col];
     }
 
     /**
@@ -330,6 +340,7 @@ protected:
     }
 
 public:
+
     /**
      *
      */

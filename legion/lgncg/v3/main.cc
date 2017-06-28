@@ -365,7 +365,7 @@ startSolveTask(
     // Compute the residual reduction and residual count for the user ordering
     // and optimized kernels.
     for (int i = 0; i < numberOfCalls; ++i) {
-        ZeroVector(x); // start x at all zeros
+        ZeroVector(x); // Start x at all zeros.
         double lastCummulativeTime = optTimes[0];
         int ierr = CG(A,
                       data,

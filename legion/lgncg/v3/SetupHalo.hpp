@@ -292,6 +292,16 @@ SetupHalo(
     }
 #endif
 
+    {
+        BaseExtent *ApullBEs = A.pullBEs->data();
+        auto &neighborToRegions = A.neighborToRegions;
+
+        const int nNeighbors = Asclrs->numberOfSendNeighbors;
+        for (int n = 0; n < nNeighbors; ++n) {
+            auto &reg = neighborToRegions[n];
+        }
+    }
+
 #if 0
     A.receiveLength = receiveLength;
 #endif
