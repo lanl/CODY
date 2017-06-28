@@ -394,12 +394,14 @@ struct SparseMatrix : public PhysicalMultiBase {
     std::map<int, PhysicalRegion> neighborToRegions;
     // A mapping between neighbor IDs and ghost Arrays.
     std::map< int, LogicalArray<floatType> > ghostArrays;
+    // The logical push buffer that I populate with local values.
+    LogicalArray<floatType> pushArray;
 
     /**
      *
      */
     int
-    mPopulateNeighborToRegionTab(
+    mSetupGhostStructures(
         const std::vector<PhysicalRegion> &regions,
         size_t baseRID,
         Context ctx,
@@ -407,7 +409,11 @@ struct SparseMatrix : public PhysicalMultiBase {
     ) {
         const int *const nd = neighbors->data();
         const SparseMatrixScalars *const sclrsd = sclrs->data();
-
+        const int me = geom->data()->rank;
+        // Setup my push Array.
+        LogicalRegion lrPush = regions[baseRID + me].get_logical_region();
+        pushArray = LogicalArray<floatType>(lrPush, ctx, runtime);
+        // Get neighbor regions.
         for (int n = 0; n < sclrsd->numberOfSendNeighbors; ++n) {
             const int nid = nd[n];
             neighborToRegions[nid] = regions[baseRID + nid];
@@ -535,7 +541,7 @@ protected:
         pullBEs = new Array<BaseExtent>(regions[cid++], ctx, rt);
         assert(pullBEs->data());
         if (withGhosts(iFlags)) {
-            cid += mPopulateNeighborToRegionTab(regions, cid, ctx, rt);
+            cid += mSetupGhostStructures(regions, cid, ctx, rt);
         }
         // Calculate number of region entries for this structure.
         mNRegionEntries = cid - baseRID;

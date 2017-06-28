@@ -71,7 +71,7 @@ ComputeSPMV(
     assert(x.length() >= Asclrs->localNumberOfColumns);
     assert(y.length() >= Asclrs->localNumberOfRows);
 
-    ExchangeHalo(A,x);
+    ExchangeHalo(A, x);
     //
     const floatType *const xv = x.data();
     floatType *const yv       = y.data();
