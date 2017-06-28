@@ -276,7 +276,7 @@ mainTask(
             TaskArgument(&params, sizeof(params)),
             ArgumentMap()
         );
-        A.intent(RW_E, W_GHOSTS, launcher);
+        A.intent(RW_E, IFLAG_W_GHOSTS, launcher);
         b.intent(RW_E, launcher);
         x.intent(RW_E, launcher);
         xexact.intent(RW_E, launcher);
@@ -314,7 +314,7 @@ startSolveTask(
     HPCG_Params params = *(HPCG_Params *)task->args;
     //
     size_t rid = 0;
-    const ItemFlags AFlags = W_GHOSTS;
+    const ItemFlags AFlags = IFLAG_W_GHOSTS;
     SparseMatrix     A     (regions, rid, AFlags, ctx, lrt);
     rid += A.nRegionEntries();
     Array<floatType> b     (regions[rid++], ctx, lrt);

@@ -152,10 +152,11 @@ struct CGData : public PhysicalMultiBase {
         Context ctx,
         HighLevelRuntime *runtime
     ) {
-        mUnpack(regions, baseRID, NADA, ctx, runtime);
+        mUnpack(regions, baseRID, IFLAG_NIL, ctx, runtime);
     }
 
 protected:
+
     /**
      * MUST MATCH PACK ORDER IN mPopulateRegionList!
      */

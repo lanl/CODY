@@ -149,7 +149,7 @@ struct LogicalSparseMatrix : public LogicalMultiBase {
     //
     LogicalArray<BaseExtent> pullBEs;
     ////////////////////////////////////////////////////////////////////////////
-    // NO_ACCESS (withGhosts) structures.
+    // IFLAG_W_GHOSTS structures.
     ////////////////////////////////////////////////////////////////////////////
     // Buffer that will be used  to pull data from during ExchangeHalo.
     LogicalArray<floatType> pullBuffer;
@@ -247,7 +247,7 @@ public:
         //
         pullBEs.allocate(size * maxNumNeighbors, ctx, lrt);
         ////////////////////////////////////////////////////////////////////////
-        // NO_ACCESS
+        // IFLAG_W_GHOSTS structures.
         ////////////////////////////////////////////////////////////////////////
         // FIXME: A bit wasteful on storage.
         pullBuffer.allocate(globalXYZ, ctx, lrt);
@@ -276,7 +276,7 @@ public:
         synchronizers.partition(nParts, ctx, lrt);
         pullBEs.partition(nParts, ctx, lrt);
         ////////////////////////////////////////////////////////////////////////
-        // NO_ACCESS
+        // IFLAG_W_GHOSTS structures.
         ////////////////////////////////////////////////////////////////////////
         pullBuffer.partition(nParts, ctx, lrt);
         // For the DynamicCollectives we need partition info before population.
@@ -307,7 +307,7 @@ public:
         synchronizers.deallocate(ctx, lrt);
         pullBEs.deallocate(ctx, lrt);
         ////////////////////////////////////////////////////////////////////////
-        // NO_ACCESS
+        // IFLAG_W_GHOSTS structures.
         ////////////////////////////////////////////////////////////////////////
         pullBEs.deallocate(ctx, lrt);
     }
@@ -374,7 +374,7 @@ struct SparseMatrix : public PhysicalMultiBase {
     // read.
     Array<BaseExtent> *pullBEs = nullptr;
     ////////////////////////////////////////////////////////////////////////////
-    // NO_ACCESS (withGhosts) structures.
+    // IFLAG_W_GHOSTS structures.
     ////////////////////////////////////////////////////////////////////////////
 
     ////////////////////////////////////////////////////////////////////////////
@@ -423,7 +423,7 @@ struct SparseMatrix : public PhysicalMultiBase {
         Context ctx,
         HighLevelRuntime *runtime
     ) {
-        mDoConstruct(regions, baseRID, NADA, ctx, runtime);
+        mDoConstruct(regions, baseRID, IFLAG_NIL, ctx, runtime);
     }
 
     /**

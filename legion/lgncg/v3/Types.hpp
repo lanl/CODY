@@ -36,10 +36,10 @@
  */
 using ItemFlags = uint16_t;
 
-#define NADA     0x0000
-#define W_GHOSTS 0x0001
+#define IFLAG_NIL      0x0000
+#define IFLAG_W_GHOSTS 0x0001
 
-#define withGhosts(flags) ( (flags) & W_GHOSTS )
+#define withGhosts(flags) ( (flags) & IFLAG_W_GHOSTS )
 
 /**
  * Floating point type used for calculations.

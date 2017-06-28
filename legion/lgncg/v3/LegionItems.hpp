@@ -49,8 +49,9 @@ public:
     Legion::LogicalPartition logicalPartition;
 
 protected:
+
     /**
-     *
+     * Packs itself into a list. Easy -- only has itself to worry about :).
      */
     std::deque<LogicalItemBase *>
     mRegionPack(void) {
