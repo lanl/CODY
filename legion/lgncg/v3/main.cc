@@ -322,15 +322,16 @@ startSolveTask(
     Array<floatType> x     (regions[rid++], ctx, lrt);
     Array<floatType> xexact(regions[rid++], ctx, lrt);
     // Private data for this task.
-    LogicalCGData lData;
-    lData.allocate(A, ctx, lrt);
+    LogicalCGData lCGData;
+    lCGData.allocate(A, ctx, lrt);
+    lCGData.partition(A, ctx, lrt);
     // Map CG data locally.
     vector<PhysicalRegion> cgRegions;
     // TODO check permissions here.
-    cgRegions.push_back(lData.r.mapRegion(RW_E, ctx, lrt));
-    cgRegions.push_back(lData.z.mapRegion(RW_E, ctx, lrt));
-    cgRegions.push_back(lData.p.mapRegion(RW_E, ctx, lrt));
-    cgRegions.push_back(lData.Ap.mapRegion(RW_E, ctx, lrt));
+    cgRegions.push_back(lCGData.r.mapRegion(RW_E, ctx, lrt));
+    cgRegions.push_back(lCGData.z.mapRegion(RW_E, ctx, lrt));
+    cgRegions.push_back(lCGData.p.mapRegion(RW_E, ctx, lrt));
+    cgRegions.push_back(lCGData.Ap.mapRegion(RW_E, ctx, lrt));
     //
     const int cgDataBaseRID = 0;
     CGData data(cgRegions, cgDataBaseRID, ctx, lrt);
@@ -393,10 +394,10 @@ startSolveTask(
         if (current_time > optWorstTime) optWorstTime = current_time;
     }
     //
-    lData.r.unmapRegion(ctx, lrt);
-    lData.z.unmapRegion(ctx, lrt);
-    lData.p.unmapRegion(ctx, lrt);
-    lData.Ap.unmapRegion(ctx, lrt);
+    lCGData.r.unmapRegion(ctx, lrt);
+    lCGData.z.unmapRegion(ctx, lrt);
+    lCGData.p.unmapRegion(ctx, lrt);
+    lCGData.Ap.unmapRegion(ctx, lrt);
 }
 
 /**
