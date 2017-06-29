@@ -98,13 +98,13 @@ ExchangeHalo(
         // Source
         auto srcIt = A.ghostArrays.find(nid);
         assert(srcIt != A.ghostArrays.end());
-        LogicalArray<floatType> &srcArray = srcIt->second;
+        LogicalArray<floatType> &srcArray = srcIt->second.first;
         //
         RegionRequirement srcrr(
             srcArray.logicalRegion,
             READ_ONLY,
             EXCLUSIVE,
-            srcArray.logicalRegion
+            srcIt->second.second
         );
         srcrr.add_field(srcArray.fid);
         //
@@ -120,7 +120,7 @@ ExchangeHalo(
             xSubReg,
             WRITE_DISCARD,
             EXCLUSIVE,
-            xSubReg
+            x.logicalRegion
         );
         dstrr.add_field(0); // FIXME
 

@@ -401,7 +401,7 @@ struct SparseMatrix : public PhysicalMultiBase {
     // A mapping between neighbor IDs and their regions.
     std::map<int, PhysicalRegion> neighborToRegions;
     // A mapping between neighbor IDs and ghost Arrays.
-    std::map< int, LogicalArray<floatType> > ghostArrays;
+    std::map< int, std::pair<LogicalArray<floatType>, LogicalRegion> > ghostArrays;
     // The Array that holds push values.
     Array<floatType> *pushBuffer = nullptr;
 
