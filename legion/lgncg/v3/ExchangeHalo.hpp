@@ -107,6 +107,7 @@ ExchangeHalo(
             srcIt->second.second
         );
         srcrr.add_field(srcArray.fid);
+        int srcVol = lrt->get_index_space_domain(ctx, srcArray.logicalRegion.get_index_space()).get_volume();
         //
         auto xis = x.logicalRegion.get_index_space();
         auto xip = lrt->get_index_partition(ctx, xis, 0);
@@ -123,6 +124,10 @@ ExchangeHalo(
             x.logicalRegion
         );
         dstrr.add_field(0); // FIXME
+
+        int dstVol = lrt->get_index_space_domain(ctx, xSubReg.get_index_space()).get_volume();
+
+        assert(srcVol == dstVol);
 
         CopyLauncher icl;
         icl.add_copy_requirements(srcrr, dstrr);
