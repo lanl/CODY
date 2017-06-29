@@ -359,6 +359,8 @@ protected:
 public:
     //
     LogicalRegion logicalRegion;
+    // TODO
+    LogicalRegion parentLogicalRegion;
 
     /**
      *
@@ -458,6 +460,7 @@ protected:
     ) = 0;
 
 public:
+
     /**
      *
      */
