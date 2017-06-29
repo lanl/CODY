@@ -99,16 +99,33 @@ ExchangeHalo(
         auto srcIt = A.ghostArrays.find(nid);
         assert(srcIt != A.ghostArrays.end());
         LogicalArray<floatType> &srcArray = srcIt->second;
+        //
         RegionRequirement srcrr(
-            srcArray.logicalPartition,
-            0,
+            srcArray.logicalRegion,
             READ_ONLY,
             EXCLUSIVE,
             srcArray.logicalRegion
         );
         srcrr.add_field(srcArray.fid);
+        //
+        auto xis = x.logicalRegion.get_index_space();
+        auto xip = lrt->get_index_partition(ctx, xis, 0);
+        auto xlp = lrt->get_logical_partition(ctx, x.logicalRegion, xip);
+        LogicalRegion xSubReg = lrt->get_logical_subregion_by_color(
+            ctx,
+            xlp,
+            DomainPoint::from_point<1>(n + 1) // First is private.
+        );
+        RegionRequirement dstrr(
+            xSubReg,
+            WRITE_DISCARD,
+            EXCLUSIVE,
+            xSubReg
+        );
+        dstrr.add_field(0); // FIXME
 
-        CopyLauncher cl;
-        //cl.add_copy_requirements(
+        CopyLauncher icl;
+        icl.add_copy_requirements(srcrr, dstrr);
+        lrt->issue_copy_operation(ctx, icl);
     }
 }

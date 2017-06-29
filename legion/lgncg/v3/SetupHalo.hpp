@@ -309,8 +309,13 @@ SetupHalo(
             LogicalArray<floatType> la(lr, ctx, lrt);
             // Extract my piece of the pull buffer.
             la.partition(ApullBEs[n], ctx, lrt);
-            // Stash LogicalArray.
-            A.ghostArrays[nid] = la;
+            LogicalRegion subReg = lrt->get_logical_subregion_by_color(
+                ctx,
+                la.logicalPartition,
+                DomainPoint::from_point<1>(0) // Only one partition.
+            );
+            // Stash sub-region Array.
+            A.ghostArrays[nid] = LogicalArray<floatType>(subReg, ctx, lrt);
         }
     }
 
