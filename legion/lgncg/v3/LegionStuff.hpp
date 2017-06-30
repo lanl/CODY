@@ -57,6 +57,7 @@ enum {
     MAIN_TID = 0,
     GEN_PROB_TID,
     START_SOLVE_TID,
+    REGION_TO_REGION_COPY_TID,
     LOCAL_NONZEROS_TID,
     FLOAT_REDUCE_SUM_TID,
     INT_REDUCE_SUM_TID,
@@ -143,14 +144,12 @@ localNonzerosTask(
     Context ctx, HighLevelRuntime *runtime
 );
 
-inline void
-testTask(
+void
+regionToRegionCopyTask(
     const Task *task,
     const std::vector<PhysicalRegion> &regions,
     Context ctx, HighLevelRuntime *runtime
-) {
-    ;
-}
+);
 
 ////////////////////////////////////////////////////////////////////////////////
 // Task Registration
@@ -183,6 +182,15 @@ registerTasks(void) {
         TaskConfigOptions(false /* leaf task */),
         "startSolveTask"
     );
+    HighLevelRuntime::register_legion_task<regionToRegionCopyTask>(
+        REGION_TO_REGION_COPY_TID /* task id */,
+        Processor::LOC_PROC /* proc kind  */,
+        true /* single */,
+        true /* index */,
+        AUTO_GENERATE_ID,
+        TaskConfigOptions(true /* leaf task */),
+        "regionToRegionCopyTask"
+    );
     HighLevelRuntime::register_legion_task<global_int_t, localNonzerosTask>(
         LOCAL_NONZEROS_TID /* task id */,
         Processor::LOC_PROC /* proc kind  */,
@@ -197,15 +205,6 @@ registerTasks(void) {
     );
     HighLevelRuntime::register_reduction_op<IntReduceSumAccumulate>(
         INT_REDUCE_SUM_TID
-    );
-    HighLevelRuntime::register_legion_task<testTask>(
-        TEST_TID /* task id */,
-        Processor::LOC_PROC /* proc kind  */,
-        true /* single */,
-        true /* index */,
-        AUTO_GENERATE_ID,
-        TaskConfigOptions(false /* leaf task */),
-        "testTask"
     );
 }
 

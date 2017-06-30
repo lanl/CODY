@@ -44,6 +44,7 @@
 
 #include "LegionMatrices.hpp"
 #include "LegionArrays.hpp"
+#include "RegionToRegionCopy.hpp"
 #include "Geometry.hpp"
 
 #include <cstdlib>
@@ -98,39 +99,49 @@ ExchangeHalo(
         // Source
         auto srcIt = A.ghostArrays.find(nid);
         assert(srcIt != A.ghostArrays.end());
-        LogicalArray<floatType> &srcArray = srcIt->second.first;
-        //
-        RegionRequirement srcrr(
-            srcArray.logicalRegion,
-            READ_ONLY,
-            EXCLUSIVE,
-            srcIt->second.second
-        );
-        srcrr.add_field(srcArray.fid);
-        int srcVol = lrt->get_index_space_domain(ctx, srcArray.logicalRegion.get_index_space()).get_volume();
-        //
+        LogicalArray<floatType> &srcArray = srcIt->second;
+        assert(srcArray.hasParentLogicalRegion());
+        // Destination.
         auto xis = x.logicalRegion.get_index_space();
-        auto xip = lrt->get_index_partition(ctx, xis, 0);
+        auto xip = lrt->get_index_partition(ctx, xis, 0 /* color */);
         auto xlp = lrt->get_logical_partition(ctx, x.logicalRegion, xip);
         LogicalRegion xSubReg = lrt->get_logical_subregion_by_color(
             ctx,
             xlp,
             DomainPoint::from_point<1>(n + 1) // First is private.
         );
+        LogicalArray<floatType> dstArray(xSubReg, ctx, lrt);
+        dstArray.setParentLogicalRegion(x.logicalRegion);
+        // Setup copy.
+        RegionRequirement srcrr(
+            srcArray.logicalRegion,
+            READ_ONLY,
+            EXCLUSIVE,
+            srcArray.getParentLogicalRegion()
+        );
+        srcrr.add_field(srcArray.fid);
+
         RegionRequirement dstrr(
-            xSubReg,
+            dstArray.logicalRegion,
             WRITE_DISCARD,
             EXCLUSIVE,
-            x.logicalRegion
+            dstArray.getParentLogicalRegion()
         );
-        dstrr.add_field(0); // FIXME
-
-        int dstVol = lrt->get_index_space_domain(ctx, xSubReg.get_index_space()).get_volume();
-
-        assert(srcVol == dstVol);
-
-        CopyLauncher icl;
-        icl.add_copy_requirements(srcrr, dstrr);
-        lrt->issue_copy_operation(ctx, icl);
+        dstrr.add_field(dstArray.fid);
+        //
+        TaskLauncher tl(
+            REGION_TO_REGION_COPY_TID,
+            TaskArgument(NULL, 0)
+        );
+        tl.add_region_requirement(srcrr);
+        tl.add_region_requirement(dstrr);
+        //
+        tl.add_wait_barrier(syncs->neighbors[n].ready);
+        tl.add_arrival_barrier(syncs->neighbors[n].done);
+        syncs->neighbors[n].done = lrt->advance_phase_barrier(
+            ctx, syncs->neighbors[n].done
+        );
+        //
+        lrt->execute_task(ctx, tl);
     }
 }

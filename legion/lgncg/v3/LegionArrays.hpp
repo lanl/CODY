@@ -242,10 +242,6 @@ public:
 template<typename TYPE>
 class Array : public Item<TYPE> {
 public:
-    /**
-     *
-     */
-    Array(void) = default;
 
     /**
      *

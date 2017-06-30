@@ -47,8 +47,12 @@ public:
     Legion::Domain launchDomain;
     // Logical partition.
     Legion::LogicalPartition logicalPartition;
+    //
+    LogicalRegion parentLogicalRegion;
 
 protected:
+    //
+    bool mHasParentLogicalRegion = false;
 
     /**
      * Packs itself into a list. Easy -- only has itself to worry about :).
@@ -107,6 +111,29 @@ public:
         ).add_field(fid)
          .add_flags(regFlags);
     }
+
+    /**
+     *
+     */
+    void
+    setParentLogicalRegion(
+        const LogicalRegion &parent
+    ) {
+        parentLogicalRegion = parent;
+        mHasParentLogicalRegion = true;
+    }
+
+    /**
+     *
+     */
+    bool
+    hasParentLogicalRegion(void) { return mHasParentLogicalRegion; }
+
+    /**
+     *
+     */
+    LogicalRegion
+    getParentLogicalRegion(void) { return parentLogicalRegion; }
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -186,6 +213,7 @@ public:
 ////////////////////////////////////////////////////////////////////////////////
 template<typename TYPE>
 struct LogicalItem : public LogicalItemBase {
+
     /**
      *
      */
@@ -356,16 +384,12 @@ protected:
     size_t mLength = 0;
     //
     TYPE *mData = nullptr;
+
 public:
     //
     LogicalRegion logicalRegion;
-    // TODO
-    LogicalRegion parentLogicalRegion;
-
-    /**
-     *
-     */
-    Item(void) = default;
+    // Field ID.
+    Legion::FieldID fid = 0;
 
     /**
      *
