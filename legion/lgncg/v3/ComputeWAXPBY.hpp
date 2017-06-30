@@ -78,8 +78,8 @@ ComputeWAXPBY(
     Array<floatType> &w
 ) {
 	// Test vector lengths
-	assert(x.length() >= n);
-	assert(y.length() >=n);
+	assert(x.length() >= size_t(n));
+	assert(y.length() >= size_t(n));
 
 	const floatType *const xv = x.data();
 	const floatType *const yv = y.data();

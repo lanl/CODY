@@ -49,6 +49,10 @@
 
 #include <cstdlib>
 
+/*
+ * PhaseBarriers debug: -level barrier=2 -logfile barriers.log
+ */
+
 /*!
     Communicates data that is at the border of the part of the domain assigned to
     this processor.
@@ -132,12 +136,16 @@ ExchangeHalo(
         tl.add_region_requirement(srcrr);
         tl.add_region_requirement(dstrr);
         //
-        syncs->neighbors[n].ready = lrt->advance_phase_barrier(ctx, syncs->neighbors[n].ready);
+        syncs->neighbors[n].ready = lrt->advance_phase_barrier(
+            ctx, syncs->neighbors[n].ready
+        );
         tl.add_wait_barrier(syncs->neighbors[n].ready);
+        //
         tl.add_arrival_barrier(syncs->neighbors[n].done);
-        syncs->neighbors[n].done = lrt->advance_phase_barrier(ctx, syncs->neighbors[n].done);
-        // Wait for owner to notify me that its pullBuffer is ready.
-        // Let owner know that I'm done consuming the values.
+        syncs->neighbors[n].done = lrt->advance_phase_barrier(
+            ctx, syncs->neighbors[n].done
+        );
+
         lrt->execute_task(ctx, tl);
     }
 }

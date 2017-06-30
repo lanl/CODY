@@ -80,11 +80,12 @@ CopyVector(
     Array<floatType> &v,
     Array<floatType> &w
 ) {
-    local_int_t localLength = v.length();
+    size_t localLength = v.length();
     assert(w.length() >= localLength);
-    floatType *vv = v.data();
+    const floatType *const vv = v.data();
     double *wv = w.data();
-    for (int i = 0; i < localLength; ++i) wv[i] = vv[i];
+    //
+    for (size_t i = 0; i < localLength; ++i) wv[i] = vv[i];
 }
 
 /**

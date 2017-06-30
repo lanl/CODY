@@ -70,8 +70,8 @@ ComputeSPMV(
 ) {
     const SparseMatrixScalars *Asclrs = A.sclrs->data();
     // Test vector lengths
-    assert(x.length() >= Asclrs->localNumberOfColumns);
-    assert(y.length() >= Asclrs->localNumberOfRows);
+    assert(x.length() >= size_t(Asclrs->localNumberOfColumns));
+    assert(y.length() >= size_t(Asclrs->localNumberOfRows));
 
     ExchangeHalo(A, x, ctx, lrt);
     //

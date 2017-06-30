@@ -111,7 +111,7 @@ public:
         // a list of sub-grid bounds.
         // provides a task ID to sub-grid bounds mapping.
         std::vector< Rect<1> > subGridBounds;
-        for (int64_t color = 0; color < nParts; ++color) {
+        for (size_t color = 0; color < nParts; ++color) {
             Rect<1> subRect((Point<1>(x0)), (Point<1>(x1)));
             // cache the subgrid bounds
             subGridBounds.push_back(subRect);
@@ -160,7 +160,7 @@ public:
         DomainColoring disjointColoring;
         // provides a task ID to sub-grid bounds mapping.
         std::vector< Rect<1> > subGridBounds;
-        for (int64_t color = 0; color < nParts; ++color) {
+        for (size_t color = 0; color < nParts; ++color) {
             Rect<1> subRect((Point<1>(x0)), (Point<1>(x1)));
             // cache the subgrid bounds
             subGridBounds.push_back(subRect);

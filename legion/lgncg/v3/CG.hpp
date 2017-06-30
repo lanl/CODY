@@ -188,6 +188,6 @@ CG(
     times[5] += t5; // preconditioner apply time
     times[6] += t6; // exchange halo time
     times[0] += mytimer() - t_begin;  // Total time. All done...
-    return 0;
 #endif
+    return 0;
 }
