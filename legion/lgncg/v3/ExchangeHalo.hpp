@@ -88,10 +88,14 @@ ExchangeHalo(
     floatType *pullBuffer = A.pullBuffer->data();
     assert(pullBuffer);
 
+    myPBs.done.wait();
+    myPBs.done = lrt->advance_phase_barrier(ctx, myPBs.done);
     // Fill up pull buffer (the buffer that neighbor task will pull from).
     for (local_int_t i = 0; i < totalToBeSent; i++) {
         pullBuffer[i] = xv[elementsToSend[i]];
     }
+    myPBs.ready.arrive(1);
+    myPBs.ready = lrt->advance_phase_barrier(ctx, myPBs.ready);
 
     for (int n = 0; n < nNeighbors; ++n) {
         //
@@ -102,7 +106,7 @@ ExchangeHalo(
         LogicalArray<floatType> &srcArray = srcIt->second;
         assert(srcArray.hasParentLogicalRegion());
         // Destination.
-        LogicalArray<floatType> &dstArray  = x.ghosts[n];
+        LogicalArray<floatType> &dstArray = x.ghosts[n];
         assert(dstArray.hasParentLogicalRegion());
         // Setup copy.
         RegionRequirement srcrr(
@@ -128,9 +132,10 @@ ExchangeHalo(
         tl.add_region_requirement(srcrr);
         tl.add_region_requirement(dstrr);
         //
-        if (n == 0) {
-            // Let tasks know that the pullBuffer is ready to consume.
-        }
+        syncs->neighbors[n].ready = lrt->advance_phase_barrier(ctx, syncs->neighbors[n].ready);
+        tl.add_wait_barrier(syncs->neighbors[n].ready);
+        tl.add_arrival_barrier(syncs->neighbors[n].done);
+        syncs->neighbors[n].done = lrt->advance_phase_barrier(ctx, syncs->neighbors[n].done);
         // Wait for owner to notify me that its pullBuffer is ready.
         // Let owner know that I'm done consuming the values.
         lrt->execute_task(ctx, tl);
