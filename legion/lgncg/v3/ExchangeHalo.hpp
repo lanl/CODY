@@ -128,12 +128,11 @@ ExchangeHalo(
         tl.add_region_requirement(srcrr);
         tl.add_region_requirement(dstrr);
         //
-        tl.add_wait_barrier(syncs->neighbors[n].ready);
-        tl.add_arrival_barrier(syncs->neighbors[n].done);
-        syncs->neighbors[n].done = lrt->advance_phase_barrier(
-            ctx, syncs->neighbors[n].done
-        );
-        //
+        if (n == 0) {
+            // Let tasks know that the pullBuffer is ready to consume.
+        }
+        // Wait for owner to notify me that its pullBuffer is ready.
+        // Let owner know that I'm done consuming the values.
         lrt->execute_task(ctx, tl);
     }
 }
