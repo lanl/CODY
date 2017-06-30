@@ -240,13 +240,9 @@ public:
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 template<typename TYPE>
-class Array : public Item<TYPE> {
-public:
-
-    /**
-     *
-     */
-    Array(void) = default;
+struct Array : public Item<TYPE> {
+    //
+    std::vector<LogicalArray<TYPE>> ghosts;
 
     /**
      *
@@ -262,6 +258,12 @@ public:
      */
     size_t
     length(void) const { return this->mLength; }
+
+    /**
+     *
+     */
+    bool
+    hasGhosts(void) { return (ghosts.size() > 0); }
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -332,109 +334,5 @@ public:
     operator()(size_t row)
     {
         return (mBasePtr + (row * mNCols));
-    }
-};
-
-////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-template<typename TYPE>
-struct LogicalArray2D : public LogicalItemBase {
-protected:
-    LegionRuntime::Arrays::Rect<2> mBounds;
-    //
-    IndexSpace mIndexSpace;
-    //
-    FieldSpace mFS;
-    //
-    int64_t mNRows;
-    //
-    int64_t mNCols;
-
-    /**
-     *
-     */
-    void
-    mAllocate(
-        int64_t nRows,
-        int nCols,
-        Legion::Context &ctx,
-        Legion::HighLevelRuntime *lrt
-    ) {
-        mNRows = nRows;
-        mNCols = nCols;
-        //
-        Point<2> pBounds;
-        // Global number of rows.
-        pBounds.x[0] = nRows;
-        // Number of columns per row.
-        pBounds.x[1] = nCols;
-        mBounds = Rect<2>(Point<2>::ZEROES(), pBounds - Point<2>::ONES());
-        //
-        Domain dom(Domain::from_rect<2>(mBounds));
-        // vec index space
-        mIndexSpace = lrt->create_index_space(ctx, dom);
-        // vec field space
-        mFS = lrt->create_field_space(ctx);
-        // vec field allocator
-        FieldAllocator fa = lrt->create_field_allocator(ctx, mFS);
-        // all elements are going to be of size TYPE
-        fa.allocate_field(sizeof(TYPE), fid);
-        // now create the logical region
-        logicalRegion = lrt->create_logical_region(ctx, mIndexSpace, mFS);
-    }
-
-public:
-
-    /**
-     *
-     */
-    LogicalArray2D(void) : LogicalItemBase() { }
-
-    /**
-     *
-     */
-    void
-    allocate(
-        int64_t nRows,
-        int nCols,
-        Legion::Context &ctx,
-        Legion::HighLevelRuntime *lrt
-    ) {
-        this->mAllocate(nRows, nCols, ctx, lrt);
-    }
-
-    /**
-     * 1D partition along rows.
-     */
-    void
-    partition(
-        size_t nParts,
-        Legion::Context &ctx,
-        Legion::HighLevelRuntime *lrt
-    ) {
-        using namespace Legion;
-        using LegionRuntime::Arrays::Rect;
-
-        assert(0 == mNRows % nParts && "Uneven partitioning requested.");
-
-        const int64_t rowsPerPart = mNRows / nParts;
-        assert(rowsPerPart <= INT_MAX && "Overflow");
-
-        const int bf[2] = {int(rowsPerPart), int(mNCols)};
-        Point<2> blockingFactor(bf);
-        Blockify<2> blockification(blockingFactor);
-        IndexPartition iPart = lrt->create_index_partition(ctx, mIndexSpace,
-                                                           blockification, 0); // Disjoint
-        // logical partitions
-        this->logicalPartition = lrt->get_logical_partition(
-                                     ctx, this->logicalRegion, iPart
-                                 );
-        // launch domain -- one task per color
-        const int cb[2] = {int(nParts), 1};
-        Point<2> cbp(cb);
-        Rect<2> colorBounds(Point<2>::ZEROES(), cbp - Point<2>::ONES());
-        this->launchDomain = Domain::from_rect<2>(colorBounds);
     }
 };

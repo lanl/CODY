@@ -67,18 +67,20 @@ ExchangeHalo(
 ) {
     using namespace std;
     // Extract Matrix pieces
-    const SparseMatrixScalars *Asclrs = A.sclrs->data();
+    const SparseMatrixScalars *const Asclrs = A.sclrs->data();
     Synchronizers *syncs = A.synchronizers->data();
     PhaseBarriers &myPBs = syncs->mine;
     const int nNeighbors = Asclrs->numberOfSendNeighbors;
-    //local_int_t * receiveLength = A.receiveLength;
-    //local_int_t *sendLength = A.sendLength->data();
     const int *const neighbors = A.neighbors->data();
-    //double *sendBuffer = A.sendBuffer;
     const local_int_t totalToBeSent = Asclrs->totalToBeSent;
     // Non-region memory populated during SetupHalo().
     local_int_t *elementsToSend = A.elementsToSend;
     assert(elementsToSend);
+
+    // Setup ghost regions if not already there.
+    if (!x.hasGhosts()) {
+        SetupGhostArrays(A, x, ctx, lrt);
+    }
 
     floatType *const xv = x.data();
     assert(xv);
@@ -100,16 +102,8 @@ ExchangeHalo(
         LogicalArray<floatType> &srcArray = srcIt->second;
         assert(srcArray.hasParentLogicalRegion());
         // Destination.
-        auto xis = x.logicalRegion.get_index_space();
-        auto xip = lrt->get_index_partition(ctx, xis, 0 /* color */);
-        auto xlp = lrt->get_logical_partition(ctx, x.logicalRegion, xip);
-        LogicalRegion xSubReg = lrt->get_logical_subregion_by_color(
-            ctx,
-            xlp,
-            DomainPoint::from_point<1>(n + 1) // First is private.
-        );
-        LogicalArray<floatType> dstArray(xSubReg, ctx, lrt);
-        dstArray.setParentLogicalRegion(x.logicalRegion);
+        LogicalArray<floatType> &dstArray  = x.ghosts[n];
+        assert(dstArray.hasParentLogicalRegion());
         // Setup copy.
         RegionRequirement srcrr(
             srcArray.logicalRegion,

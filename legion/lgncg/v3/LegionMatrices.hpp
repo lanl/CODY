@@ -620,3 +620,37 @@ PopulateGlobalToLocalMap(
         }
     }
 }
+
+/**
+ *
+ */
+inline void
+SetupGhostArrays(
+    SparseMatrix &A,
+    Array<floatType> &x,
+    LegionRuntime::HighLevel::Context &ctx,
+    LegionRuntime::HighLevel::HighLevelRuntime *lrt
+) {
+    // Make sure that we aren't doing this again for something that already has
+    // the ghosts setup.
+    assert(!x.hasGhosts());
+    //
+    const SparseMatrixScalars *const Asclrs = A.sclrs->data();
+    const int nNeighbors = Asclrs->numberOfSendNeighbors;
+
+    for (int n = 0; n < nNeighbors; ++n) {
+        //
+        auto xis = x.logicalRegion.get_index_space();
+        auto xip = lrt->get_index_partition(ctx, xis, 0 /* color */);
+        auto xlp = lrt->get_logical_partition(ctx, x.logicalRegion, xip);
+        LogicalRegion xSubReg = lrt->get_logical_subregion_by_color(
+            ctx,
+            xlp,
+            DomainPoint::from_point<1>(n + 1) // First is private.
+        );
+        LogicalArray<floatType> dstArray(xSubReg, ctx, lrt);
+        dstArray.setParentLogicalRegion(x.logicalRegion);
+        // Cache in x.
+        x.ghosts.push_back(dstArray);
+    }
+}
