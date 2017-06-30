@@ -83,15 +83,13 @@ ExchangeHalo(
     floatType *const xv = x.data();
     assert(xv);
 
-    floatType *pushBuffer = A.pushBuffer->data();
-    assert(pushBuffer);
+    floatType *pullBuffer = A.pullBuffer->data();
+    assert(pullBuffer);
 
-    // Fill up push buffer.
+    // Fill up pull buffer (the buffer that neighbor task will pull from).
     for (local_int_t i = 0; i < totalToBeSent; i++) {
-        pushBuffer[i] = xv[elementsToSend[i]];
+        pullBuffer[i] = xv[elementsToSend[i]];
     }
-    // Local copy done.
-    myPBs.ready = lrt->advance_phase_barrier(ctx, myPBs.ready);
 
     for (int n = 0; n < nNeighbors; ++n) {
         //

@@ -246,6 +246,11 @@ public:
     /**
      *
      */
+    Array(void) = default;
+
+    /**
+     *
+     */
     Array(
         const PhysicalRegion &physicalRegion,
         Context ctx,

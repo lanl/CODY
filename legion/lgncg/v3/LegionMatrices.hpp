@@ -321,6 +321,7 @@ public:
         // IFLAG_W_GHOSTS structures.
         ////////////////////////////////////////////////////////////////////////
         pullBEs.deallocate(ctx, lrt);
+        pullBuffer.deallocate(ctx, lrt);
     }
 
 private:
@@ -403,7 +404,7 @@ struct SparseMatrix : public PhysicalMultiBase {
     // A mapping between neighbor IDs and ghost Arrays.
     std::map< int, LogicalArray<floatType> > ghostArrays;
     // The Array that holds push values.
-    Array<floatType> *pushBuffer = nullptr;
+    Array<floatType> *pullBuffer = nullptr;
 
     /**
      *
@@ -419,8 +420,8 @@ struct SparseMatrix : public PhysicalMultiBase {
         const SparseMatrixScalars *const sclrsd = sclrs->data();
         const int me = geom->data()->rank;
         // Setup my push Array.
-        pushBuffer = new Array<floatType>(regions[baseRID + me], ctx, runtime);
-        assert(pushBuffer->data());
+        pullBuffer = new Array<floatType>(regions[baseRID + me], ctx, runtime);
+        assert(pullBuffer->data());
         // Get neighbor regions.
         for (int n = 0; n < sclrsd->numberOfSendNeighbors; ++n) {
             const int nid = nd[n];
@@ -482,7 +483,7 @@ struct SparseMatrix : public PhysicalMultiBase {
         // Task-local allocation of non-region memory.
         if (elementsToSend) delete[] elementsToSend;
         if (withGhosts(mUnpackFlags)) {
-            delete pushBuffer;
+            delete pullBuffer;
         }
     }
 
