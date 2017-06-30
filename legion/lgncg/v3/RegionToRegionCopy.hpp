@@ -53,8 +53,8 @@ regionToRegionCopyTask(
     HighLevelRuntime *lrt
 ) {
     int rid = 0;
-    Array<floatType> src(regions[++rid], ctx, lrt);
-    Array<floatType> dst(regions[++rid], ctx, lrt);
+    Array<floatType> src(regions[rid++], ctx, lrt);
+    Array<floatType> dst(regions[rid++], ctx, lrt);
 
     assert(src.length() == dst.length());
 
