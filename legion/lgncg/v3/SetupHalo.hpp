@@ -420,9 +420,9 @@ SetupHaloTopLevel(
 #endif // Debug
         // Create PhaseBarriers for shard.
         PhaseBarriers pbs = {
-            // Means I am ready for neighboring tasks to PUSH values.
+            // Means I am ready for neighboring tasks to PULL values.
             .ready = lrt->create_phase_barrier(ctx, 1),
-            // Means All pushes done and I can safely consume ghost values.
+            // Means All pulls are complete.
             .done  = lrt->create_phase_barrier(ctx, nNeighbors)
         };
         //
