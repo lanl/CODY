@@ -136,6 +136,7 @@ CG(
     TICK(); ComputeSPMV(A, p, Ap, ctx, lrt);  TOCK(t3); // Ap = A*p
     // r = b - Ax (x stored in p)
     TICK(); ComputeWAXPBY(nrow, 1.0, b, -1.0, Ap, r); TOCK(t2);
+
 #if 0
   TICK(); ComputeDotProduct_ref(nrow, r, r, normr, t4);  TOCK(t1);
   normr = sqrt(normr);

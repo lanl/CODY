@@ -347,7 +347,7 @@ startSolveTask(
 #if 0 // FIXME
     int numberOfCalls = 10;
 #else
-    int numberOfCalls = 2;
+    int numberOfCalls = 1;
 #endif
     // Check if QuickPath option is enabled.  If the running time is set to
     // zero, we minimize all paths through the program

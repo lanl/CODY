@@ -78,7 +78,7 @@ ExchangeHalo(
     const int *const neighbors = A.neighbors->data();
     const local_int_t totalToBeSent = Asclrs->totalToBeSent;
     // Non-region memory populated during SetupHalo().
-    local_int_t *elementsToSend = A.elementsToSend;
+    const local_int_t *const elementsToSend = A.elementsToSend;
     assert(elementsToSend);
 
     // Setup ghost regions if not already there.
@@ -145,7 +145,7 @@ ExchangeHalo(
         syncs->neighbors[n].done = lrt->advance_phase_barrier(
             ctx, syncs->neighbors[n].done
         );
-
+        //
         lrt->execute_task(ctx, tl);
     }
 }
