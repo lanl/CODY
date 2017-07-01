@@ -84,10 +84,19 @@ struct SparseMatrixScalars {
 
 template<typename TYPE>
 struct DynColl {
-    DynamicCollective dc;
-    int64_t nArrivals = 0;
     int tid;
+    int64_t nArrivals = 0;
+    DynamicCollective dc;
     TYPE localBuffer;
+
+    /**
+     *
+     */
+    DynColl(
+        int tid,
+        int64_t nArrivals
+    ) : tid(tid)
+      , nArrivals(nArrivals) { }
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -132,6 +141,7 @@ struct LogicalSparseMatrix : public LogicalMultiBase {
     // The SAME dynamic collective instance replicated because
     // IndexLauncher will be unhappy with different launch domains :-(
     LogicalArray< DynColl<global_int_t> > dcAllRedSumGI;
+    LogicalArray< DynColl<floatType> > dcAllRedSumFT;
     // Neighboring processes.
     LogicalArray<int> neighbors;
     // Number of items that will be sent on a per neighbor basis.
@@ -169,6 +179,7 @@ protected:
                          &matrixDiagonal,
                          &localToGlobalMap,
                          &dcAllRedSumGI,
+                         &dcAllRedSumFT,
                          &neighbors,
                          &sendLength,
                          &recvLength,
@@ -258,6 +269,7 @@ public:
         localToGlobalMap.allocate(globalXYZ, ctx, lrt);
         //
         dcAllRedSumGI.allocate(mSize, ctx, lrt);
+        dcAllRedSumFT.allocate(mSize, ctx, lrt);
         //
         const int maxNumNeighbors = geom.stencilSize - 1;
         // Each task will have at most 26 neighbors.
@@ -294,6 +306,7 @@ public:
         matrixDiagonal.partition(nParts, ctx, lrt);
         localToGlobalMap.partition(nParts, ctx, lrt);
         dcAllRedSumGI.partition(nParts, ctx, lrt);
+        dcAllRedSumFT.partition(nParts, ctx, lrt);
         neighbors.partition(nParts, ctx, lrt);
         sendLength.partition(nParts, ctx, lrt);
         recvLength.partition(nParts, ctx, lrt);
@@ -305,7 +318,12 @@ public:
         pullBuffer.partition(nParts, ctx, lrt);
         //
         // For the DynamicCollectives we need partition info before population.
-        mPopulateDynamicCollectives(nParts, ctx, lrt);
+        const auto nArrivals = nParts;
+        DynColl<global_int_t> dynColGI(INT_REDUCE_SUM_TID, nArrivals);
+        mPopulateDynamicCollectives(dcAllRedSumGI, dynColGI, ctx, lrt);
+        //
+        DynColl<floatType> dynColFT(FLOAT_REDUCE_SUM_TID, nArrivals);
+        mPopulateDynamicCollectives(dcAllRedSumFT, dynColFT, ctx, lrt);
         // Just pick a structure that has a representative launch domain.
         launchDomain = geoms.launchDomain;
     }
@@ -327,6 +345,7 @@ public:
         matrixDiagonal.deallocate(ctx, lrt);
         localToGlobalMap.deallocate(ctx, lrt);
         dcAllRedSumGI.deallocate(ctx, lrt);
+        dcAllRedSumFT.deallocate(ctx, lrt);
         neighbors.deallocate(ctx, lrt);
         sendLength.deallocate(ctx, lrt);
         recvLength.deallocate(ctx, lrt);
@@ -340,23 +359,21 @@ public:
     }
 
 private:
+    template <typename TYPE>
     void
     mPopulateDynamicCollectives(
-        int64_t nArrivals,
+        LogicalArray< DynColl<TYPE> > &targetLogicalArray,
+        DynColl<TYPE> &dynCol,
         LegionRuntime::HighLevel::Context &ctx,
         LegionRuntime::HighLevel::HighLevelRuntime *lrt
     ) {
-        Array< DynColl<global_int_t> > dcs(
-            dcAllRedSumGI.mapRegion(RW_E, ctx, lrt), ctx, lrt
+        Array< DynColl<TYPE> > dcs(
+            targetLogicalArray.mapRegion(RW_E, ctx, lrt), ctx, lrt
         );
-
-        DynColl<global_int_t> *dcsd = dcs.data();
+        //
+        DynColl<TYPE> *dcsd = dcs.data();
         assert(dcsd);
-
-        DynColl<global_int_t> dynCol;
-        dynCol.tid = INT_REDUCE_SUM_TID;
-        dynCol.nArrivals = nArrivals;
-
+        //
         dynCol.dc = lrt->create_dynamic_collective(
             ctx,
             dynCol.nArrivals /* Number of arrivals. */,
@@ -365,11 +382,11 @@ private:
             sizeof(dynCol.localBuffer)
         );
         // Replicate
-        for (int64_t i = 0; i < nArrivals; ++i) {
+        for (int64_t i = 0; i < dynCol.nArrivals; ++i) {
             dcsd[i] = dynCol;
         }
         // Done, so unmap.
-        dcAllRedSumGI.unmapRegion(ctx, lrt);
+        targetLogicalArray.unmapRegion(ctx, lrt);
     }
 };
 
@@ -396,6 +413,8 @@ struct SparseMatrix : public PhysicalMultiBase {
     Array<global_int_t> *localToGlobalMap = nullptr;
     //
     Item< DynColl<global_int_t> > *dcAllRedSumGI = nullptr;
+    //
+    Item< DynColl<floatType> > *dcAllRedSumFT = nullptr;
     //
     Array<int> *neighbors = nullptr;
     //
@@ -497,6 +516,7 @@ struct SparseMatrix : public PhysicalMultiBase {
         delete matrixDiagonal;
         delete localToGlobalMap;
         delete dcAllRedSumGI;
+        delete dcAllRedSumFT;
         delete neighbors;
         delete sendLength;
         delete recvLength;
@@ -567,6 +587,9 @@ protected:
         //
         dcAllRedSumGI = new Item< DynColl<global_int_t> >(regions[cid++], ctx, rt);
         assert(dcAllRedSumGI->data());
+        //
+        dcAllRedSumFT = new Item< DynColl<floatType> >(regions[cid++], ctx, rt);
+        assert(dcAllRedSumFT->data());
         //
         neighbors = new Array<int>(regions[cid++], ctx, rt);
         assert(neighbors->data());

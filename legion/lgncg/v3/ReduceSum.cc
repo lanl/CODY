@@ -41,7 +41,7 @@ template<>
 void
 FloatReduceSumAccumulate::apply<false>(LHS &lhs, RHS rhs) {
     int64_t *target = (int64_t *)&lhs;
-    union { int64_t as_int; double as_T; } oldval, newval;
+    union { int64_t as_int; floatType as_T; } oldval, newval;
     do {
         oldval.as_int = *target;
         newval.as_T = oldval.as_T + rhs;
@@ -58,7 +58,7 @@ template<>
 void
 FloatReduceSumAccumulate::fold<false>(RHS &rhs1, RHS rhs2) {
     int64_t *target = (int64_t *)&rhs1;
-    union { int64_t as_int; double as_T; } oldval, newval;
+    union { int64_t as_int; floatType as_T; } oldval, newval;
     do {
         oldval.as_int = *target;
         newval.as_T = oldval.as_T + rhs2;
