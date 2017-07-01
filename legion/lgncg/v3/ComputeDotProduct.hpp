@@ -105,8 +105,8 @@ ComputeDotProduct(
     Array<floatType> &x,
     Array<floatType> &y,
     double &result,
-    double &time_allreduce,
     Item< DynColl<floatType> > &dcAllreduceSum,
+    double &time_allreduce,
     LegionRuntime::HighLevel::Context ctx,
     LegionRuntime::HighLevel::Runtime *runtime
 ) {

@@ -113,6 +113,9 @@ CG(
     LegionRuntime::HighLevel::Context ctx,
     LegionRuntime::HighLevel::Runtime *lrt
 ) {
+    using namespace std;
+
+    const int print_freq = 50;
     double t_begin = mytimer();  // Start timing right away
     const int rank = A.geom->data()->rank;
     normr = 0.0;
@@ -139,51 +142,78 @@ CG(
     TICK(); ComputeWAXPBY(nrow, 1.0, b, -1.0, Ap, r); TOCK(t2);
 
     TICK();
-    ComputeDotProduct(nrow, r, r, normr, t4, dcFT, ctx, lrt);
+    ComputeDotProduct(nrow, r, r, normr, dcFT, t4, ctx, lrt);
     TOCK(t1);
 
     normr = sqrt(normr);
 
     if (rank == 0) std::cout << "Initial Residual = "<< normr << std::endl;
-#if 0
 
-  // Record initial residual for convergence testing
-  normr0 = normr;
+    // Record initial residual for convergence testing
+    normr0 = normr;
 
   // Start iterations
 
-  for (int k=1; k<=max_iter && normr/normr0 > tolerance; k++ ) {
-    TICK();
-    if (doPreconditioning)
-      ComputeMG_ref(A, r, z); // Apply preconditioner
-    else
-      ComputeWAXPBY_ref(nrow, 1.0, r, 0.0, r, z); // copy r to z (no preconditioning)
-    TOCK(t5); // Preconditioner apply time
-
-    if (k == 1) {
-      CopyVector(z, p); TOCK(t2); // Copy Mr to p
-      TICK(); ComputeDotProduct_ref(nrow, r, z, rtz, t4); TOCK(t1); // rtz = r'*z
-    } else {
-      oldrtz = rtz;
-      TICK(); ComputeDotProduct_ref(nrow, r, z, rtz, t4); TOCK(t1); // rtz = r'*z
-      beta = rtz/oldrtz;
-      TICK(); ComputeWAXPBY_ref(nrow, 1.0, z, beta, p, p);  TOCK(t2); // p = beta*p + z
-    }
-
-    TICK(); ComputeSPMV_ref(A, p, Ap); TOCK(t3); // Ap = A*p
-    TICK(); ComputeDotProduct_ref(nrow, p, Ap, pAp, t4); TOCK(t1); // alpha = p'*Ap
-    alpha = rtz/pAp;
-    TICK(); ComputeWAXPBY_ref(nrow, 1.0, x, alpha, p, x);// x = x + alpha*p
-            ComputeWAXPBY_ref(nrow, 1.0, r, -alpha, Ap, r);  TOCK(t2);// r = r - alpha*Ap
-    TICK(); ComputeDotProduct_ref(nrow, r, r, normr, t4); TOCK(t1);
-    normr = sqrt(normr);
-#ifdef HPCG_DEBUG
-    if (A.geom->rank==0 && (k%print_freq == 0 || k == max_iter))
-      HPCG_fout << "Iteration = "<< k << "   Scaled Residual = "<< normr/normr0 << std::endl;
+    for (int k = 1; k <= max_iter && normr / normr0 > tolerance; k++ ) {
+        TICK();
+        if (doPreconditioning) {
+#if 0
+            ComputeMG_ref(A, r, z); // Apply preconditioner
 #endif
-    niters = k;
-  }
+        }
+        else {
+            // copy r to z (no preconditioning)
+            ComputeWAXPBY(nrow, 1.0, r, 0.0, r, z);
+        }
+        TOCK(t5); // Preconditioner apply time
 
+        if (k == 1) {
+            TICK(); CopyVector(z, p); TOCK(t2); // Copy Mr to p
+            // rtz = r'*z
+            TICK();
+            ComputeDotProduct(nrow, r, z, rtz, dcFT, t4, ctx, lrt);
+            TOCK(t1);
+        }
+        else {
+            oldrtz = rtz;
+            //
+            TICK(); // rtz = r'*z
+            ComputeDotProduct(nrow, r, z, rtz, dcFT, t4, ctx, lrt);
+            TOCK(t1);
+            beta = rtz / oldrtz;
+            //
+            TICK(); // p = beta*p + z
+            ComputeWAXPBY(nrow, 1.0, z, beta, p, p);
+            TOCK(t2);
+        }
+
+        TICK(); // Ap = A*p
+        ComputeSPMV(A, p, Ap, ctx, lrt);
+        TOCK(t3);
+        //
+        TICK(); // alpha = p'*Ap
+        ComputeDotProduct(nrow, p, Ap, pAp, dcFT, t4, ctx, lrt);
+        TOCK(t1);
+        //
+        alpha = rtz / pAp;
+        //
+        TICK(); // x = x + alpha*p
+        ComputeWAXPBY(nrow, 1.0, x, alpha, p, x);
+        // r = r - alpha*Ap
+        ComputeWAXPBY(nrow, 1.0, r, -alpha, Ap, r);
+        TOCK(t2);
+        //
+        TICK();
+        ComputeDotProduct(nrow, r, r, normr, dcFT, t4, ctx, lrt);
+        TOCK(t1);
+        normr = sqrt(normr);
+        //
+        if (rank == 0 && ( k % print_freq == 0 || k == max_iter)) {
+            cout << "Iteration = "<< k << "   Scaled Residual = "
+                << normr / normr0 << std::endl;
+        }
+        niters = k;
+  }
     // Store times
     times[1] += t1; // dot product time
     times[2] += t2; // WAXPBY time
@@ -192,6 +222,6 @@ CG(
     times[5] += t5; // preconditioner apply time
     times[6] += t6; // exchange halo time
     times[0] += mytimer() - t_begin;  // Total time. All done...
-#endif
+
     return 0;
 }
