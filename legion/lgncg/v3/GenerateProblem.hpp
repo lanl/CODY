@@ -69,12 +69,16 @@ getTotalNumberOfNonZeros(
     LegionRuntime::HighLevel::Context ctx,
     LegionRuntime::HighLevel::Runtime *runtime
 ) {
-    DynamicCollective dcAllreduceSum = A.dcAllRedSumGI->data()->dc;
+    DynamicCollective &dcAllreduceSum = A.dcAllRedSumGI->data()->dc;
     //
     TaskLauncher tlLocalNZ(LOCAL_NONZEROS_TID, TaskArgument(NULL, 0));
     tlLocalNZ.add_region_requirement(
-        RegionRequirement(A.sclrs->logicalRegion, RO_E, A.sclrs->logicalRegion)
-    ).add_field(A.sclrs->getFieldID());
+        RegionRequirement(
+            A.dcAllRedSumGI->logicalRegion,
+            RO_E,
+            A.dcAllRedSumGI->logicalRegion
+        )
+    ).add_field(A.dcAllRedSumGI->getFieldID());
     //
     Future future = runtime->execute_task(ctx, tlLocalNZ);
     //
@@ -262,6 +266,8 @@ GenerateProblem(
     // Will be updated later to include external values in GetNeighborInfo.
     Asclrs->localNumberOfColumns  = localNumberOfRows;
     Asclrs->localNumberOfNonzeros = localNumberOfNonzeros;
+    //
+    A.dcAllRedSumGI->data()->localBuffer = localNumberOfNonzeros;
     Asclrs->totalNumberOfNonzeros = getTotalNumberOfNonZeros(A, ctx, runtime);
     // If this assert fails, it most likely means that the global_int_t is
     // set to int and should be set to long long This assert is usually the

@@ -75,8 +75,6 @@ struct SparseMatrixScalars {
     int numberOfSendNeighbors = 0;
     //Total number of entries to be sent.
     local_int_t totalToBeSent = 0;
-    // Buffer used to collect local partial sums.
-    floatType localPartialSum = 0;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -601,8 +599,8 @@ localNonzerosTask(
     const std::vector<PhysicalRegion> &regions,
     Context ctx, HighLevelRuntime *runtime
 ) {
-    Item<SparseMatrixScalars> sms(regions[0], ctx, runtime);
-    return sms.data()->localNumberOfNonzeros;
+    Item< DynColl<global_int_t> > dc(regions[0], ctx, runtime);
+    return dc.data()->localBuffer;
 }
 
 /**
@@ -614,8 +612,8 @@ localPartialSumTask(
     const std::vector<PhysicalRegion> &regions,
     Context ctx, HighLevelRuntime *runtime
 ) {
-    Item<SparseMatrixScalars> sms(regions[0], ctx, runtime);
-    return sms.data()->localPartialSum;
+    Item< DynColl<floatType> > dc(regions[0], ctx, runtime);
+    return dc.data()->localBuffer;
 }
 
 /**
