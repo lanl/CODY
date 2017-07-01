@@ -126,7 +126,7 @@ CG(
     Array<floatType> &p  = *(data.p); // Direction vector (in MPI mode ncol>=nrow)
     Array<floatType> &Ap = *(data.Ap);
 
-    DynamicCollective &dcAllreduceSum = *A.dcAllreduceSum->data();
+    DynamicCollective &dcAllreduceSum = A.dcAllRedSumGI->data()->dc;
 
     if (!doPreconditioning && rank == 0) {
         std::cout << "WARNING: PERFORMING UNPRECONDITIONED ITERATIONS" << std::endl;

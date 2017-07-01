@@ -83,8 +83,13 @@ struct SparseMatrixScalars {
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
-struct DynCollBuffer {
-    floatType floatTypeTarget;
+
+template<typename TYPE>
+struct DynColl {
+    DynamicCollective dc;
+    int64_t nArrivals = 0;
+    int tid;
+    TYPE localBuffer;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -115,8 +120,6 @@ struct LogicalSparseMatrix : public LogicalMultiBase {
     //
     LogicalArray<SparseMatrixScalars> sclrs;
     //
-    LogicalArray<DynCollBuffer> dcBuffer;
-    //
     LogicalArray<char> nonzerosInRow;
     //
     LogicalArray<global_int_t> mtxIndG;
@@ -130,7 +133,7 @@ struct LogicalSparseMatrix : public LogicalMultiBase {
     LogicalArray<global_int_t> localToGlobalMap;
     // The SAME dynamic collective instance replicated because
     // IndexLauncher will be unhappy with different launch domains :-(
-    LogicalArray<DynamicCollective> dcAllreduceSum;
+    LogicalArray< DynColl<global_int_t> > dcAllRedSumGI;
     // Neighboring processes.
     LogicalArray<int> neighbors;
     // Number of items that will be sent on a per neighbor basis.
@@ -142,7 +145,7 @@ struct LogicalSparseMatrix : public LogicalMultiBase {
     //
     LogicalArray<BaseExtent> pullBEs;
     ////////////////////////////////////////////////////////////////////////////
-    // IFLAG_W_GHOSTS structures.
+    // mLogicalItemsGhost structures.
     ////////////////////////////////////////////////////////////////////////////
     // Buffer that will be used  to pull data from during ExchangeHalo.
     LogicalArray<floatType> pullBuffer;
@@ -152,6 +155,7 @@ protected:
     int mSize = 0;
     //
     std::deque<LogicalItemBase *> mLogicalItemsGhost;
+    //
 
     /**
      * Order matters here. If you update this, also update unpack.
@@ -160,14 +164,13 @@ protected:
     mPopulateRegionList(void) {
         mLogicalItems = {&geoms,
                          &sclrs,
-                         &dcBuffer,
                          &nonzerosInRow,
                          &mtxIndG,
                          &mtxIndL,
                          &matrixValues,
                          &matrixDiagonal,
                          &localToGlobalMap,
-                         &dcAllreduceSum,
+                         &dcAllRedSumGI,
                          &neighbors,
                          &sendLength,
                          &recvLength,
@@ -243,7 +246,6 @@ public:
 
         geoms.allocate(mSize, ctx, lrt);
         sclrs.allocate(mSize, ctx, lrt);
-        dcBuffer.allocate(mSize, ctx, lrt);
         //
         nonzerosInRow.allocate(globalXYZ, ctx, lrt);
         // Flattened to 1D from 2D.
@@ -257,7 +259,7 @@ public:
         //
         localToGlobalMap.allocate(globalXYZ, ctx, lrt);
         //
-        dcAllreduceSum.allocate(mSize, ctx, lrt);
+        dcAllRedSumGI.allocate(mSize, ctx, lrt);
         //
         const int maxNumNeighbors = geom.stencilSize - 1;
         // Each task will have at most 26 neighbors.
@@ -287,14 +289,13 @@ public:
     ) {
         geoms.partition(nParts, ctx, lrt);
         sclrs.partition(nParts, ctx, lrt);
-        dcBuffer.partition(nParts, ctx, lrt);
         nonzerosInRow.partition(nParts, ctx, lrt);
         mtxIndG.partition(nParts, ctx, lrt);
         mtxIndL.partition(nParts, ctx, lrt);
         matrixValues.partition(nParts, ctx, lrt);
         matrixDiagonal.partition(nParts, ctx, lrt);
         localToGlobalMap.partition(nParts, ctx, lrt);
-        dcAllreduceSum.partition(nParts, ctx, lrt);
+        dcAllRedSumGI.partition(nParts, ctx, lrt);
         neighbors.partition(nParts, ctx, lrt);
         sendLength.partition(nParts, ctx, lrt);
         recvLength.partition(nParts, ctx, lrt);
@@ -321,14 +322,13 @@ public:
     ) {
         geoms.deallocate(ctx, lrt);
         sclrs.deallocate(ctx, lrt);
-        dcBuffer.deallocate(ctx, lrt);
         mtxIndG.deallocate(ctx, lrt);
         mtxIndL.deallocate(ctx, lrt);
         nonzerosInRow.deallocate(ctx, lrt);
         matrixValues.deallocate(ctx, lrt);
         matrixDiagonal.deallocate(ctx, lrt);
         localToGlobalMap.deallocate(ctx, lrt);
-        dcAllreduceSum.deallocate(ctx, lrt);
+        dcAllRedSumGI.deallocate(ctx, lrt);
         neighbors.deallocate(ctx, lrt);
         sendLength.deallocate(ctx, lrt);
         recvLength.deallocate(ctx, lrt);
@@ -348,24 +348,30 @@ private:
         LegionRuntime::HighLevel::Context &ctx,
         LegionRuntime::HighLevel::HighLevelRuntime *lrt
     ) {
-        Array<DynamicCollective> dcs(
-            dcAllreduceSum.mapRegion(RW_E, ctx, lrt), ctx, lrt
+        Array< DynColl<global_int_t> > dcs(
+            dcAllRedSumGI.mapRegion(RW_E, ctx, lrt), ctx, lrt
         );
-        global_int_t dummy = 0;
-        DynamicCollective dc = lrt->create_dynamic_collective(
+
+        DynColl<global_int_t> *dcsd = dcs.data();
+        assert(dcsd);
+
+        DynColl<global_int_t> dynCol;
+        dynCol.tid = INT_REDUCE_SUM_TID;
+        dynCol.nArrivals = nArrivals;
+
+        dynCol.dc = lrt->create_dynamic_collective(
             ctx,
-            nArrivals /* Number of arrivals. */,
-            INT_REDUCE_SUM_TID,
-            &dummy,
-            sizeof(dummy)
+            dynCol.nArrivals /* Number of arrivals. */,
+            dynCol.tid,
+            &dynCol.localBuffer,
+            sizeof(dynCol.localBuffer)
         );
         // Replicate
-        DynamicCollective *dcsd = dcs.data();
         for (int64_t i = 0; i < nArrivals; ++i) {
-            dcsd[i] = dc;
+            dcsd[i] = dynCol;
         }
         // Done, so unmap.
-        dcAllreduceSum.unmapRegion(ctx, lrt);
+        dcAllRedSumGI.unmapRegion(ctx, lrt);
     }
 };
 
@@ -379,8 +385,6 @@ struct SparseMatrix : public PhysicalMultiBase {
     // Container for all scalar values.
     Item<SparseMatrixScalars> *sclrs = nullptr;
     //
-    Item<DynCollBuffer> *dcBuffer = nullptr;
-    //
     Array<char> *nonzerosInRow = nullptr;
     // Flattened to 1D from 2D.
     Array<global_int_t> *mtxIndG = nullptr;
@@ -393,7 +397,7 @@ struct SparseMatrix : public PhysicalMultiBase {
     //
     Array<global_int_t> *localToGlobalMap = nullptr;
     //
-    Item<DynamicCollective> *dcAllreduceSum = nullptr;
+    Item< DynColl<global_int_t> > *dcAllRedSumGI = nullptr;
     //
     Array<int> *neighbors = nullptr;
     //
@@ -488,14 +492,13 @@ struct SparseMatrix : public PhysicalMultiBase {
     ~SparseMatrix(void) {
         delete geom;
         delete sclrs;
-        delete dcBuffer;
         delete nonzerosInRow;
         delete mtxIndG;
         delete mtxIndL;
         delete matrixValues;
         delete matrixDiagonal;
         delete localToGlobalMap;
-        delete dcAllreduceSum;
+        delete dcAllRedSumGI;
         delete neighbors;
         delete sendLength;
         delete recvLength;
@@ -546,9 +549,6 @@ protected:
         sclrs = new Item<SparseMatrixScalars>(regions[cid++], ctx, rt);
         assert(sclrs->data());
         //
-        dcBuffer = new Item<DynCollBuffer>(regions[cid++], ctx, rt);
-        assert(dcBuffer->data());
-        //
         nonzerosInRow = new Array<char>(regions[cid++], ctx, rt);
         assert(nonzerosInRow->data());
         //
@@ -567,8 +567,8 @@ protected:
         localToGlobalMap = new Array<global_int_t>(regions[cid++], ctx, rt);
         assert(localToGlobalMap->data());
         //
-        dcAllreduceSum = new Item<DynamicCollective>(regions[cid++], ctx, rt);
-        assert(dcAllreduceSum->data());
+        dcAllRedSumGI = new Item< DynColl<global_int_t> >(regions[cid++], ctx, rt);
+        assert(dcAllRedSumGI->data());
         //
         neighbors = new Array<int>(regions[cid++], ctx, rt);
         assert(neighbors->data());

@@ -69,7 +69,7 @@ getTotalNumberOfNonZeros(
     LegionRuntime::HighLevel::Context ctx,
     LegionRuntime::HighLevel::Runtime *runtime
 ) {
-    DynamicCollective dcAllreduceSum = *A.dcAllreduceSum->data();
+    DynamicCollective dcAllreduceSum = A.dcAllRedSumGI->data()->dc;
     //
     TaskLauncher tlLocalNZ(LOCAL_NONZEROS_TID, TaskArgument(NULL, 0));
     tlLocalNZ.add_region_requirement(
