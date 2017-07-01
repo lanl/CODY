@@ -126,7 +126,7 @@ CG(
     Array<floatType> &p  = *(data.p); // Direction vector (in MPI mode ncol>=nrow)
     Array<floatType> &Ap = *(data.Ap);
 
-    DynamicCollective &dcAllreduceSum = A.dcAllRedSumGI->data()->dc;
+    Item< DynColl<floatType> > &dcFT = *A.dcAllRedSumFT;
 
     if (!doPreconditioning && rank == 0) {
         std::cout << "WARNING: PERFORMING UNPRECONDITIONED ITERATIONS" << std::endl;
@@ -139,14 +139,13 @@ CG(
     TICK(); ComputeWAXPBY(nrow, 1.0, b, -1.0, Ap, r); TOCK(t2);
 
     TICK();
-    ComputeDotProduct(nrow, r, r, normr, t4, dcAllreduceSum, ctx, lrt);
+    ComputeDotProduct(nrow, r, r, normr, t4, dcFT, ctx, lrt);
     TOCK(t1);
 
     normr = sqrt(normr);
+
+    if (rank == 0) std::cout << "Initial Residual = "<< normr << std::endl;
 #if 0
-#ifdef HPCG_DEBUG
-  if (A.geom->rank==0) HPCG_fout << "Initial Residual = "<< normr << std::endl;
-#endif
 
   // Record initial residual for convergence testing
   normr0 = normr;

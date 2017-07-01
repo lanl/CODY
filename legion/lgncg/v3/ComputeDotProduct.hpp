@@ -48,6 +48,7 @@
 
 #pragma once
 
+#include "LegionStuff.hpp"
 #include "LegionArrays.hpp"
 #include "mytimer.hpp"
 
@@ -58,23 +59,26 @@
  */
 static inline floatType 
 allReduceSum(
-    Array<floatType> &x,
-    DynamicCollective &dcAllreduceSum,
+    Item< DynColl<floatType> > &dc,
     LegionRuntime::HighLevel::Context ctx,
     LegionRuntime::HighLevel::Runtime *runtime
 ) {
-    TaskLauncher tl(LOCAL_PARTIAL_SUM_TID, TaskArgument(NULL, 0));
-
-    tl.add_region_requirement(
-        RegionRequirement(x.logicalRegion, RO_E, x.logicalRegion)
-    ).add_field(x.fid);
+    TaskLauncher tlLocalNZ(LOCAL_PARTIAL_SUM_TID, TaskArgument(NULL, 0));
     //
-    Future future = runtime->execute_task(ctx, tl);
+    tlLocalNZ.add_region_requirement(
+        RegionRequirement(
+            dc.logicalRegion,
+            RO_E,
+            dc.logicalRegion
+        )
+    ).add_field(dc.fid);
     //
-    runtime->defer_dynamic_collective_arrival(ctx, dcAllreduceSum, future);
-    dcAllreduceSum = runtime->advance_dynamic_collective(ctx, dcAllreduceSum);
+    Future future = runtime->execute_task(ctx, tlLocalNZ);
     //
-    Future fSum = runtime->get_dynamic_collective_result(ctx, dcAllreduceSum);
+    runtime->defer_dynamic_collective_arrival(ctx, dc.data()->dc, future);
+    dc.data()->dc = runtime->advance_dynamic_collective(ctx, dc.data()->dc);
+    //
+    Future fSum = runtime->get_dynamic_collective_result(ctx, dc.data()->dc);
 
     return fSum.get<floatType>();
 }
@@ -102,16 +106,17 @@ ComputeDotProduct(
     Array<floatType> &y,
     double &result,
     double &time_allreduce,
-    DynamicCollective &dcAllreduceSum,
+    Item< DynColl<floatType> > &dcAllreduceSum,
     LegionRuntime::HighLevel::Context ctx,
     LegionRuntime::HighLevel::Runtime *runtime
 ) {
     assert(x.length() >= size_t(n));
     assert(y.length() >= size_t(n));
 
-    double local_result = 0.0;
-    double *xv = x.data();
-    double *yv = y.data();
+    floatType &local_result = dcAllreduceSum.data()->localBuffer;
+    local_result = 0.0;
+    floatType *xv = x.data();
+    floatType *yv = y.data();
 
     if (yv == xv) {
       for (local_int_t i = 0; i < n; i++) local_result += xv[i] * xv[i];
@@ -120,12 +125,9 @@ ComputeDotProduct(
       for (local_int_t i = 0; i < n; i++) local_result += xv[i] * yv[i];
     }
     // Collect all partial sums.
-    double t0 = mytimer();
-    double global_result = 0.0;
-#if 0
-    MPI_Allreduce(&local_result, &global_result, 1, MPI_DOUBLE, MPI_SUM,
-        MPI_COMM_WORLD);
-#endif
+    floatType t0 = mytimer();
+    floatType global_result = 0.0;
+    global_result = allReduceSum(dcAllreduceSum, ctx, runtime);
     result = global_result;
     time_allreduce += mytimer() - t0;
 
