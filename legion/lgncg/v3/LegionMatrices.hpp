@@ -75,6 +75,16 @@ struct SparseMatrixScalars {
     int numberOfSendNeighbors = 0;
     //Total number of entries to be sent.
     local_int_t totalToBeSent = 0;
+    // Buffer used to collect local partial sums.
+    floatType localPartialSum = 0;
+};
+
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+struct DynCollBuffer {
+    floatType floatTypeTarget;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -104,6 +114,8 @@ struct LogicalSparseMatrix : public LogicalMultiBase {
     LogicalArray<Geometry> geoms;
     //
     LogicalArray<SparseMatrixScalars> sclrs;
+    //
+    LogicalArray<DynCollBuffer> dcBuffer;
     //
     LogicalArray<char> nonzerosInRow;
     //
@@ -148,6 +160,7 @@ protected:
     mPopulateRegionList(void) {
         mLogicalItems = {&geoms,
                          &sclrs,
+                         &dcBuffer,
                          &nonzerosInRow,
                          &mtxIndG,
                          &mtxIndL,
@@ -230,6 +243,8 @@ public:
 
         geoms.allocate(mSize, ctx, lrt);
         sclrs.allocate(mSize, ctx, lrt);
+        dcBuffer.allocate(mSize, ctx, lrt);
+        //
         nonzerosInRow.allocate(globalXYZ, ctx, lrt);
         // Flattened to 1D from 2D.
         mtxIndG.allocate(globalXYZ * stencilSize, ctx, lrt);
@@ -272,6 +287,7 @@ public:
     ) {
         geoms.partition(nParts, ctx, lrt);
         sclrs.partition(nParts, ctx, lrt);
+        dcBuffer.partition(nParts, ctx, lrt);
         nonzerosInRow.partition(nParts, ctx, lrt);
         mtxIndG.partition(nParts, ctx, lrt);
         mtxIndL.partition(nParts, ctx, lrt);
@@ -305,6 +321,7 @@ public:
     ) {
         geoms.deallocate(ctx, lrt);
         sclrs.deallocate(ctx, lrt);
+        dcBuffer.deallocate(ctx, lrt);
         mtxIndG.deallocate(ctx, lrt);
         mtxIndL.deallocate(ctx, lrt);
         nonzerosInRow.deallocate(ctx, lrt);
@@ -361,6 +378,8 @@ struct SparseMatrix : public PhysicalMultiBase {
     Item<Geometry> *geom = nullptr;
     // Container for all scalar values.
     Item<SparseMatrixScalars> *sclrs = nullptr;
+    //
+    Item<DynCollBuffer> *dcBuffer = nullptr;
     //
     Array<char> *nonzerosInRow = nullptr;
     // Flattened to 1D from 2D.
@@ -469,6 +488,7 @@ struct SparseMatrix : public PhysicalMultiBase {
     ~SparseMatrix(void) {
         delete geom;
         delete sclrs;
+        delete dcBuffer;
         delete nonzerosInRow;
         delete mtxIndG;
         delete mtxIndL;
@@ -526,6 +546,9 @@ protected:
         sclrs = new Item<SparseMatrixScalars>(regions[cid++], ctx, rt);
         assert(sclrs->data());
         //
+        dcBuffer = new Item<DynCollBuffer>(regions[cid++], ctx, rt);
+        assert(dcBuffer->data());
+        //
         nonzerosInRow = new Array<char>(regions[cid++], ctx, rt);
         assert(nonzerosInRow->data());
         //
@@ -580,6 +603,19 @@ localNonzerosTask(
 ) {
     Item<SparseMatrixScalars> sms(regions[0], ctx, runtime);
     return sms.data()->localNumberOfNonzeros;
+}
+
+/**
+ *
+ */
+inline floatType
+localPartialSumTask(
+    const Task *task,
+    const std::vector<PhysicalRegion> &regions,
+    Context ctx, HighLevelRuntime *runtime
+) {
+    Item<SparseMatrixScalars> sms(regions[0], ctx, runtime);
+    return sms.data()->localPartialSum;
 }
 
 /**

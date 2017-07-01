@@ -41,6 +41,7 @@ legion_home = os.getenv("LG_RT_DIR")
 # echo | clang -std=c++11 -stdlib=libc++ -v -E -x c++ -
 flags = [
 '-Wall',
+'-Wextra',
 '-std=c++11',
 '-x',
 'c++',

@@ -59,6 +59,7 @@ enum {
     START_SOLVE_TID,
     REGION_TO_REGION_COPY_TID,
     LOCAL_NONZEROS_TID,
+    LOCAL_PARTIAL_SUM_TID,
     FLOAT_REDUCE_SUM_TID,
     INT_REDUCE_SUM_TID,
     TEST_TID
@@ -144,6 +145,13 @@ localNonzerosTask(
     Context ctx, HighLevelRuntime *runtime
 );
 
+floatType
+localPartialSumTask(
+    const Task *task,
+    const std::vector<PhysicalRegion> &regions,
+    Context ctx, HighLevelRuntime *runtime
+);
+
 void
 regionToRegionCopyTask(
     const Task *task,
@@ -199,6 +207,15 @@ registerTasks(void) {
         AUTO_GENERATE_ID,
         TaskConfigOptions(true /* leaf task */),
         "localNonzerosTask"
+    );
+    HighLevelRuntime::register_legion_task<floatType, localPartialSumTask>(
+        LOCAL_PARTIAL_SUM_TID /* task id */,
+        Processor::LOC_PROC /* proc kind  */,
+        true /* single */,
+        true /* index */,
+        AUTO_GENERATE_ID,
+        TaskConfigOptions(true /* leaf task */),
+        "localPartialSumTask"
     );
     HighLevelRuntime::register_reduction_op<FloatReduceSumAccumulate>(
         FLOAT_REDUCE_SUM_TID

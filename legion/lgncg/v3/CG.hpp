@@ -60,12 +60,11 @@
 
 #include "ComputeSPMV.hpp"
 #include "ComputeWAXPBY.hpp"
+#include "ComputeDotProduct.hpp"
 
 #if 0
 #include "ComputeMG_ref.hpp"
-#include "ComputeDotProduct_ref.hpp"
 #endif
-
 
 // Use TICK and TOCK to time a code section in MATLAB-like fashion
 #define TICK()  t0 = mytimer() //!< record current time in 't0'
@@ -127,6 +126,8 @@ CG(
     Array<floatType> &p  = *(data.p); // Direction vector (in MPI mode ncol>=nrow)
     Array<floatType> &Ap = *(data.Ap);
 
+    DynamicCollective &dcAllreduceSum = *A.dcAllreduceSum->data();
+
     if (!doPreconditioning && rank == 0) {
         std::cout << "WARNING: PERFORMING UNPRECONDITIONED ITERATIONS" << std::endl;
     }
@@ -137,9 +138,12 @@ CG(
     // r = b - Ax (x stored in p)
     TICK(); ComputeWAXPBY(nrow, 1.0, b, -1.0, Ap, r); TOCK(t2);
 
+    TICK();
+    ComputeDotProduct(nrow, r, r, normr, t4, dcAllreduceSum, ctx, lrt);
+    TOCK(t1);
+
+    normr = sqrt(normr);
 #if 0
-  TICK(); ComputeDotProduct_ref(nrow, r, r, normr, t4);  TOCK(t1);
-  normr = sqrt(normr);
 #ifdef HPCG_DEBUG
   if (A.geom->rank==0) HPCG_fout << "Initial Residual = "<< normr << std::endl;
 #endif
