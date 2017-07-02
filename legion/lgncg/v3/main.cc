@@ -351,11 +351,9 @@ startSolveTask(
 #endif
     // Check if QuickPath option is enabled.  If the running time is set to
     // zero, we minimize all paths through the program
-#if 0  // FIXME
     bool quickPath = (params.runningTime == 0);
     //QuickPath means we do on one call of each block of repetitive code
     if (quickPath) numberOfCalls = 1;
-#endif
     //
     int niters          = 0;
     double normr        = 0.0;
@@ -369,7 +367,7 @@ startSolveTask(
     // Compute the residual reduction and residual count for the user ordering
     // and optimized kernels.
     for (int i = 0; i < numberOfCalls; ++i) {
-        ZeroVector(x); // Start x at all zeros.
+        ZeroVector(x, ctx, lrt); // Start x at all zeros.
         double lastCummulativeTime = optTimes[0];
         int ierr = CG(A,
                       data,

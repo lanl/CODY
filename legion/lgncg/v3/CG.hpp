@@ -115,14 +115,16 @@ CG(
 ) {
     using namespace std;
 
-    const int print_freq = 50;
     double t_begin = mytimer();  // Start timing right away
+    //
+    const int print_freq = 50;
     const int rank = A.geom->data()->rank;
-    normr = 0.0;
+    const local_int_t nrow = A.sclrs->data()->localNumberOfRows;
+    //
     double rtz = 0.0, oldrtz = 0.0, alpha = 0.0, beta = 0.0, pAp = 0.0;
     double t0 = 0.0, t1 = 0.0, t2 = 0.0, t3 = 0.0, t4 = 0.0, t5 = 0.0, t6 = 0.0;
 
-    local_int_t nrow = A.sclrs->data()->localNumberOfRows;
+    normr = 0.0;
 
     Array<floatType> &r  = *(data.r); // Residual vector
     Array<floatType> &z  = *(data.z); // Preconditioned residual vector
@@ -135,7 +137,7 @@ CG(
         std::cout << "WARNING: PERFORMING UNPRECONDITIONED ITERATIONS" << std::endl;
     }
     // p is of length ncols, copy x to p for sparse MV operation
-    CopyVector(x, p);
+    CopyVector(x, p, ctx, lrt);
     //
     TICK(); ComputeSPMV(A, p, Ap, ctx, lrt);  TOCK(t3); // Ap = A*p
     // r = b - Ax (x stored in p)
@@ -168,7 +170,7 @@ CG(
         TOCK(t5); // Preconditioner apply time
 
         if (k == 1) {
-            TICK(); CopyVector(z, p); TOCK(t2); // Copy Mr to p
+            TICK(); CopyVector(z, p, ctx, lrt); TOCK(t2); // Copy Mr to p
             // rtz = r'*z
             TICK();
             ComputeDotProduct(nrow, r, z, rtz, dcFT, t4, ctx, lrt);

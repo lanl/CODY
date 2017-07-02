@@ -31,6 +31,11 @@
 
 #include <cstdint>
 
+#define LGNCG_UNUSED(x)                                                        \
+do {                                                                           \
+    (void)(x);                                                                 \
+} while (0)
+
 /**
  * Flags that influence how Item structures are treated.
  */

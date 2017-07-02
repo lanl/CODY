@@ -41,60 +41,71 @@
 //@HEADER
 
 /*!
- @file Vector.hpp
+    @file Vector.hpp
 
- HPCG data structures for dense vectors
+    HPCG data structures for dense vectors
  */
 
 #pragma once
-
-#include <cassert>
-#include <cstdlib>
-#include <iomanip>
 
 #include "Geometry.hpp"
 #include "hpcg.hpp"
 #include "LegionArrays.hpp"
 
-/*!
-  Fill the input vector with zero values.
+#include <cassert>
+#include <cstdlib>
+#include <iomanip>
 
-  @param[inout] v - On entrance v is initialized, on exit all its values are zero.
+/*!
+    Fill the input vector with zero values.
+
+    @param[inout] v - On entrance v is initialized, on exit all its values are
+    zero.
  */
 inline void
-ZeroVector(Array<floatType> &v)
-{
-    local_int_t localLength = v.length();
-    double *vv = v.data();
-    for (int i = 0; i < localLength; ++i) vv[i] = 0.0;
+ZeroVector(
+    Array<floatType> &v,
+    Context,
+    Runtime *
+) {
+    const local_int_t localLength = v.length();
+    double *const vv = v.data();
+    for (local_int_t i = 0; i < localLength; ++i) vv[i] = 0.0;
 }
 
 /*!
-  Copy input vector to output vector.
+    Copy input vector to output vector.
 
-  @param[in] v Input vector
-  @param[in] w Output vector
+    @param[in] v Input vector
+    @param[in] w Output vector
  */
 inline void
 CopyVector(
     Array<floatType> &v,
-    Array<floatType> &w
+    Array<floatType> &w,
+    Context,
+    Runtime *
 ) {
-    size_t localLength = v.length();
-    assert(w.length() >= localLength);
+    const local_int_t localLength = v.length();
+    assert(w.length() >= size_t(localLength));
+
     const floatType *const vv = v.data();
-    double *wv = w.data();
+    double *const wv = w.data();
     //
-    for (size_t i = 0; i < localLength; ++i) wv[i] = vv[i];
+    for (local_int_t i = 0; i < localLength; ++i) wv[i] = vv[i];
 }
 
 /**
  *
  */
 void
-PrintVector(Array<floatType> &v)
-{
+PrintVector(
+    Array<floatType> &v,
+    Context,
+    Runtime *
+) {
     using namespace std;
+
     const decltype(v.length()) w = 8;
     const decltype(v.length()) brk = 80;
 
@@ -129,19 +140,6 @@ inline void FillRandomVector(Vector & v) {
   local_int_t localLength = v.localLength;
   double * vv = v.values;
   for (int i=0; i<localLength; ++i) vv[i] = rand() / (double)(RAND_MAX) + 1.0;
-  return;
-}
-
-
-/*!
-  Deallocates the members of the data structure of the known system matrix provided they are not 0.
-
-  @param[in] A the known system matrix
- */
-inline void DeleteVector(Vector & v) {
-
-  delete [] v.values;
-  v.localLength = 0;
   return;
 }
 #endif
