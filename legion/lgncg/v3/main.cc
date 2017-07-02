@@ -197,8 +197,6 @@ mainTask(
 ) {
     // Ask the mapper how many shards we can have.
     const size_t nShards = getNumProcs();
-    // TODO FIXME
-    assert(nShards > 1 && "Run with at least 2 shards (e.g., try -ll:cpu 2)");
     ////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////
     // At this point we need to know some run parameters so we can allocate and
@@ -327,7 +325,7 @@ startSolveTask(
     lCGData.partition(A, ctx, lrt);
     // Map CG data locally.
     vector<PhysicalRegion> cgRegions;
-    // TODO check permissions here.
+    //
     cgRegions.push_back(lCGData.r.mapRegion(RW_E, ctx, lrt));
     cgRegions.push_back(lCGData.z.mapRegion(RW_E, ctx, lrt));
     cgRegions.push_back(lCGData.p.mapRegion(RW_E, ctx, lrt));
@@ -344,11 +342,7 @@ startSolveTask(
     const int refMaxIters  = 50;
     const int optMaxIters  = 10 * refMaxIters;
     //
-#if 0 // FIXME
     int numberOfCalls = 10;
-#else
-    int numberOfCalls = 2;
-#endif
     // Check if QuickPath option is enabled.  If the running time is set to
     // zero, we minimize all paths through the program
     bool quickPath = (params.runningTime == 0);

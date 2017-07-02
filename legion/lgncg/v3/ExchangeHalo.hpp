@@ -72,9 +72,12 @@ ExchangeHalo(
     using namespace std;
     // Extract Matrix pieces
     const SparseMatrixScalars *const Asclrs = A.sclrs->data();
+    const int nNeighbors = Asclrs->numberOfSendNeighbors;
+    // Nothing to do.
+    if (nNeighbors == 0) return;
+    // We have neighbors.
     Synchronizers *syncs = A.synchronizers->data();
     PhaseBarriers &myPBs = syncs->mine;
-    const int nNeighbors = Asclrs->numberOfSendNeighbors;
     const int *const neighbors = A.neighbors->data();
     const local_int_t totalToBeSent = Asclrs->totalToBeSent;
     // Non-region memory populated during SetupHalo().
