@@ -55,6 +55,7 @@
 #include <cassert>
 #include <cstdlib>
 #include <iomanip>
+#include <fstream>
 
 /*!
     Fill the input vector with zero values.
@@ -115,6 +116,37 @@ PrintVector(
         if (0 == i % (brk / w)) cout << endl;
         cout << scientific << setprecision(1) << vd[i] << " ";
     }
+}
+
+/**
+ *
+ */
+void
+PrintVector(
+    Array<floatType> &v,
+    int rank,
+    Context,
+    Runtime *
+) {
+    using namespace std;
+
+    const decltype(v.length()) w = 8;
+    const decltype(v.length()) brk = 80;
+
+    string rankS = to_string(rank);
+    string fName = rankS + "-vector-out.txt";
+
+    ofstream file;
+    file.open(fName);
+
+    floatType *vd = v.data();
+
+    for (decltype(v.length()) i = 0; i < v.length(); ++i) {
+        if (0 == i % (brk / w)) file << endl;
+        file << scientific << setprecision(1) << vd[i] << " ";
+    }
+
+    file.close();
 }
 
 #if 0

@@ -344,7 +344,7 @@ startSolveTask(
     //
     int numberOfCalls = 10;
     // Check if QuickPath option is enabled.  If the running time is set to
-    // zero, we minimize all paths through the program
+    // zero, we minimize all paths through the program.
     bool quickPath = (params.runningTime == 0);
     //QuickPath means we do on one call of each block of repetitive code
     if (quickPath) numberOfCalls = 1;
@@ -387,6 +387,8 @@ startSolveTask(
         double current_time = optTimes[0] - lastCummulativeTime;
         if (current_time > optWorstTime) optWorstTime = current_time;
     }
+    // TODO RM
+    PrintVector(x, A.geom->data()->rank, ctx, lrt);
     //
     lCGData.r.unmapRegion(ctx, lrt);
     lCGData.z.unmapRegion(ctx, lrt);
