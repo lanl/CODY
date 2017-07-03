@@ -140,6 +140,7 @@ CG(
     CopyVector(x, p, ctx, lrt);
     //
     TICK(); ComputeSPMV(A, p, Ap, ctx, lrt);  TOCK(t3); // Ap = A*p
+#if 0
     // r = b - Ax (x stored in p)
     TICK(); ComputeWAXPBY(nrow, 1.0, b, -1.0, Ap, r); TOCK(t2);
 
@@ -224,6 +225,7 @@ CG(
     times[5] += t5; // preconditioner apply time
     times[6] += t6; // exchange halo time
     times[0] += mytimer() - t_begin;  // Total time. All done...
+#endif
 
     return 0;
 }

@@ -42,10 +42,11 @@
 
 #pragma once
 
-#include "LegionMatrices.hpp"
-#include "LegionArrays.hpp"
-#include "RegionToRegionCopy.hpp"
 #include "Geometry.hpp"
+#include "LegionArrays.hpp"
+#include "VectorOps.hpp"
+#include "LegionMatrices.hpp"
+#include "RegionToRegionCopy.hpp"
 
 #include <cstdlib>
 
@@ -131,10 +132,11 @@ ExchangeHalo(
             dstArray.getParentLogicalRegion()
         );
         dstrr.add_field(dstArray.fid);
-        //
+        // task/neighbor mapping
+        std::pair<int, int> tArgs(A.geom->data()->rank, nid);
         TaskLauncher tl(
             REGION_TO_REGION_COPY_TID,
-            TaskArgument(NULL, 0)
+            TaskArgument(&tArgs, sizeof(tArgs))
         );
         tl.add_region_requirement(srcrr);
         tl.add_region_requirement(dstrr);

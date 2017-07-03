@@ -361,7 +361,8 @@ startSolveTask(
     // Compute the residual reduction and residual count for the user ordering
     // and optimized kernels.
     for (int i = 0; i < numberOfCalls; ++i) {
-        ZeroVector(x, ctx, lrt); // Start x at all zeros.
+        //ZeroVector(x, ctx, lrt); // Start x at all zeros. // TODO uncomment.
+        ColorVector(x, A.geom->data()->rank + 1, ctx, lrt); // TODO RM
         double lastCummulativeTime = optTimes[0];
         int ierr = CG(A,
                       data,
@@ -387,8 +388,6 @@ startSolveTask(
         double current_time = optTimes[0] - lastCummulativeTime;
         if (current_time > optWorstTime) optWorstTime = current_time;
     }
-    // TODO RM
-    PrintVector(x, A.geom->data()->rank, ctx, lrt);
     //
     lCGData.r.unmapRegion(ctx, lrt);
     lCGData.z.unmapRegion(ctx, lrt);
@@ -404,5 +403,6 @@ int
 main(int argc, char **argv)
 {
     LegionInit();
-    return Runtime::start(argc, argv);
+    auto ret = Runtime::start(argc, argv);
+    return ret;
 }

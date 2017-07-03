@@ -410,9 +410,9 @@ SetupHaloTopLevel(
         // Get total number of neighbors this shard has
         const SparseMatrixScalars &myScalars = smScalars[shard];
         const int nNeighbors = myScalars.numberOfSendNeighbors;
-#if 0 // Debug
+#if 1 // Debug
         cout << "Rank " << shard << " Has "
-             << nNeighbors << " Send Neighbors: " << endl;
+             << nNeighbors << " Pull Neighbors: " << endl;
         for (int n = 0; n < nNeighbors; ++n) {
             cout << neighbors(shard, n) << " ";
         }

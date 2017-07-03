@@ -38,6 +38,8 @@
 #include <vector>
 #include <map>
 
+#include <unistd.h>
+
 using namespace LegionRuntime::HighLevel;
 using namespace LegionRuntime::Accessor;
 using namespace LegionRuntime::HighLevel;

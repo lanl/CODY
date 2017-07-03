@@ -124,7 +124,7 @@ PrintVector(
 void
 PrintVector(
     Array<floatType> &v,
-    int rank,
+    std::string fName,
     Context,
     Runtime *
 ) {
@@ -133,20 +133,30 @@ PrintVector(
     const decltype(v.length()) w = 8;
     const decltype(v.length()) brk = 80;
 
-    string rankS = to_string(rank);
-    string fName = rankS + "-vector-out.txt";
-
     ofstream file;
     file.open(fName);
 
     floatType *vd = v.data();
 
     for (decltype(v.length()) i = 0; i < v.length(); ++i) {
-        if (0 == i % (brk / w)) file << endl;
-        file << scientific << setprecision(1) << vd[i] << " ";
+        //if (0 == i % (brk / w)) file << endl;
+        file << scientific << setprecision(1) << vd[i] << " " << flush;
+        file << endl;
     }
 
     file.close();
+}
+
+inline void
+ColorVector(
+    Array<floatType> &v,
+    int color,
+    Context,
+    Runtime *
+) {
+    const local_int_t localLength = v.length();
+    floatType *const vv = v.data();
+    for (local_int_t i = 0; i < localLength; ++i) vv[i] = floatType(color);
 }
 
 #if 0
