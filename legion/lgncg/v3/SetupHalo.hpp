@@ -295,14 +295,14 @@ SetupHalo(
 
     {
         BaseExtent *ApullBEs = A.pullBEs->data();
-        auto &neighborToRegions = A.neighborToRegions;
+        auto &nidToPullRegion = A.nidToPullRegion;
 
         const int nNeighbors = Asclrs->numberOfSendNeighbors;
         for (int n = 0; n < nNeighbors; ++n) {
             const int nid = neighbors[n];
-            auto it = neighborToRegions.find(nid);
+            auto it = nidToPullRegion.find(nid);
             // Make sure we found it.
-            assert(it != neighborToRegions.end());
+            assert(it != nidToPullRegion.end());
             // Grab Logical Region from Physical.
             LogicalRegion lr = it->second.get_logical_region();
             // Create Array structure from LogicalRegion.

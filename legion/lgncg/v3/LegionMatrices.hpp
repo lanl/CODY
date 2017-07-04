@@ -417,7 +417,7 @@ struct SparseMatrix : public PhysicalMultiBase {
     // Only valid after a call to SetupHalo.
     local_int_t *elementsToSend = nullptr;
     // A mapping between neighbor IDs and their regions.
-    std::map<int, PhysicalRegion> neighborToRegions;
+    std::map<int, PhysicalRegion> nidToPullRegion;
     // A mapping between neighbor IDs and ghost Arrays.
     std::map< int, LogicalArray<floatType> > ghostArrays;
     // The Array that holds push values.
@@ -442,7 +442,7 @@ struct SparseMatrix : public PhysicalMultiBase {
         // Get neighbor regions.
         for (int n = 0; n < sclrsd->numberOfSendNeighbors; ++n) {
             const int nid = nd[n];
-            neighborToRegions[nid] = regions[baseRID + nid];
+            nidToPullRegion[nid] = regions[baseRID + nid];
         }
         // TODO Unmap unused regions.
         // Return number of regions that we have consumed.
