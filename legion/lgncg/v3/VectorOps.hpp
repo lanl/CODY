@@ -153,8 +153,7 @@ ColorVector(
 ) {
     const local_int_t localLength = v.length();
     floatType *const vv = v.data();
-    floatType cVal = floatType(color);
-    for (local_int_t i = 0; i < localLength; ++i) vv[i] = cVal++;
+    for (local_int_t i = 0; i < localLength; ++i) vv[i] = floatType(color);
 }
 
 #if 0
