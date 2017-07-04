@@ -317,7 +317,7 @@ SetupHalo(
             // Stash sub-region Array.
             auto *lsr = new LogicalArray<floatType>(subReg, ctx, lrt);
             lsr->setParentLogicalRegion(lr);
-            A.ghostArrays[nid] = lsr;
+            A.nidToRemotePullBuffer[nid] = lsr;
         }
     }
 

@@ -102,6 +102,9 @@ ExchangeHalo(
     for (local_int_t i = 0; i < totalToBeSent; i++) {
         pullBuffer[i] = xv[elementsToSend[i]];
     }
+    PrintVector(*A.pullBuffer,
+                "pullBuffer-t" + to_string(A.geom->data()->rank) + ".txt",
+                ctx, lrt);
     myPBs.ready.arrive(1);
     myPBs.ready = lrt->advance_phase_barrier(ctx, myPBs.ready);
 
@@ -109,8 +112,9 @@ ExchangeHalo(
         //
         const int nid = neighbors[n];
         // Source
-        auto srcIt = A.ghostArrays.find(nid);
-        assert(srcIt != A.ghostArrays.end());
+        auto srcIt = A.nidToRemotePullBuffer.find(nid);
+        assert(srcIt != A.nidToRemotePullBuffer.end());
+        //
         LogicalArray<floatType> *srcArray = srcIt->second;
         assert(srcArray->hasParentLogicalRegion());
         // Destination.
@@ -147,10 +151,11 @@ ExchangeHalo(
         tl.add_wait_barrier(syncs->neighbors[n].ready);
         //
         tl.add_arrival_barrier(syncs->neighbors[n].done);
+        //
+        lrt->execute_task(ctx, tl);
+        //
         syncs->neighbors[n].done = lrt->advance_phase_barrier(
             ctx, syncs->neighbors[n].done
         );
-        //
-        lrt->execute_task(ctx, tl);
     }
 }

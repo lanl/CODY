@@ -416,7 +416,7 @@ struct SparseMatrix : public PhysicalMultiBase {
     // A mapping between neighbor IDs and their regions.
     std::map<int, PhysicalRegion> nidToPullRegion;
     // A mapping between neighbor IDs and ghost Arrays.
-    std::map< int, LogicalArray<floatType> *> ghostArrays;
+    std::map< int, LogicalArray<floatType> *> nidToRemotePullBuffer;
     // The Array that holds push values.
     Array<floatType> *pullBuffer = nullptr;
 
@@ -498,7 +498,7 @@ struct SparseMatrix : public PhysicalMultiBase {
         // Task-local allocation of non-region memory.
         if (elementsToSend) delete[] elementsToSend;
         if (withGhosts(mUnpackFlags)) {
-            for (auto &i : ghostArrays) {
+            for (auto &i : nidToRemotePullBuffer) {
                 delete i.second;
             }
             delete pullBuffer;
