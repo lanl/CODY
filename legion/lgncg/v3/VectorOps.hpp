@@ -137,7 +137,7 @@ PrintVector(
 
     for (decltype(v.length()) i = 0; i < v.length(); ++i) {
         //if (0 == i % (brk / w)) file << endl;
-        file << scientific << setprecision(1) << vd[i] << " " << flush;
+        file << vd[i] << " " << flush;
         file << endl;
     }
 
@@ -153,7 +153,8 @@ ColorVector(
 ) {
     const local_int_t localLength = v.length();
     floatType *const vv = v.data();
-    for (local_int_t i = 0; i < localLength; ++i) vv[i] = floatType(color);
+    floatType cVal = floatType(color);
+    for (local_int_t i = 0; i < localLength; ++i) vv[i] = cVal++;
 }
 
 #if 0

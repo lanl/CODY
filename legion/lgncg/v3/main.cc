@@ -361,8 +361,7 @@ startSolveTask(
     // Compute the residual reduction and residual count for the user ordering
     // and optimized kernels.
     for (int i = 0; i < numberOfCalls; ++i) {
-        //ZeroVector(x, ctx, lrt); // Start x at all zeros. // TODO uncomment.
-        ColorVector(x, A.geom->data()->rank + 1, ctx, lrt); // TODO RM
+        ZeroVector(x, ctx, lrt); // Start x at all zeros. // TODO uncomment.
         double lastCummulativeTime = optTimes[0];
         int ierr = CG(A,
                       data,

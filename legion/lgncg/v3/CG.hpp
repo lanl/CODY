@@ -137,7 +137,8 @@ CG(
         std::cout << "WARNING: PERFORMING UNPRECONDITIONED ITERATIONS" << std::endl;
     }
     // p is of length ncols, copy x to p for sparse MV operation
-    CopyVector(x, p, ctx, lrt);
+    //CopyVector(x, p, ctx, lrt);
+    ColorVector(p, A.geom->data()->rank + 100, ctx, lrt); // TODO RM
     //
     TICK(); ComputeSPMV(A, p, Ap, ctx, lrt);  TOCK(t3); // Ap = A*p
 #if 0
