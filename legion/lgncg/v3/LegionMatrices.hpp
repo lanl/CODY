@@ -406,11 +406,8 @@ struct SparseMatrix : public PhysicalMultiBase {
     Array<BaseExtent> *pullBEs = nullptr;
 
     ////////////////////////////////////////////////////////////////////////////
-    // Task-launch-local structures.
+    // Task-launch-specific structures.
     ////////////////////////////////////////////////////////////////////////////
-    Context lctx;
-    //
-    HighLevelRuntime *lrt = nullptr;
     // Global to local mapping. NOTE: only valid after a call to
     // PopulateGlobalToLocalMap.
     std::map< global_int_t, local_int_t > globalToLocalMap;
@@ -419,7 +416,7 @@ struct SparseMatrix : public PhysicalMultiBase {
     // A mapping between neighbor IDs and their regions.
     std::map<int, PhysicalRegion> nidToPullRegion;
     // A mapping between neighbor IDs and ghost Arrays.
-    std::map< int, LogicalArray<floatType> > ghostArrays;
+    std::map< int, LogicalArray<floatType> *> ghostArrays;
     // The Array that holds push values.
     Array<floatType> *pullBuffer = nullptr;
 
@@ -501,6 +498,9 @@ struct SparseMatrix : public PhysicalMultiBase {
         // Task-local allocation of non-region memory.
         if (elementsToSend) delete[] elementsToSend;
         if (withGhosts(mUnpackFlags)) {
+            for (auto &i : ghostArrays) {
+                delete i.second;
+            }
             delete pullBuffer;
         }
     }
@@ -518,8 +518,6 @@ protected:
         Context ctx,
         HighLevelRuntime *rt
     ) {
-        lctx = ctx;
-        lrt = rt;
         mUnpackFlags = iFlags;
         //
         mUnpack(regions, baseRID, iFlags, ctx, rt);

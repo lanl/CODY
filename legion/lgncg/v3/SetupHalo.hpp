@@ -315,8 +315,8 @@ SetupHalo(
                 DomainPoint::from_point<1>(0) // Only one partition.
             );
             // Stash sub-region Array.
-            LogicalArray<floatType> lsr(subReg, ctx, lrt);
-            lsr.setParentLogicalRegion(lr);
+            auto *lsr = new LogicalArray<floatType>(subReg, ctx, lrt);
+            lsr->setParentLogicalRegion(lr);
             A.ghostArrays[nid] = lsr;
         }
     }

@@ -111,19 +111,19 @@ ExchangeHalo(
         // Source
         auto srcIt = A.ghostArrays.find(nid);
         assert(srcIt != A.ghostArrays.end());
-        LogicalArray<floatType> &srcArray = srcIt->second;
-        assert(srcArray.hasParentLogicalRegion());
+        LogicalArray<floatType> *srcArray = srcIt->second;
+        assert(srcArray->hasParentLogicalRegion());
         // Destination.
         LogicalArray<floatType> &dstArray = x.ghosts[n];
         assert(dstArray.hasParentLogicalRegion());
         // Setup copy.
         RegionRequirement srcrr(
-            srcArray.logicalRegion,
+            srcArray->logicalRegion,
             READ_ONLY,
             EXCLUSIVE,
-            srcArray.getParentLogicalRegion()
+            srcArray->getParentLogicalRegion()
         );
-        srcrr.add_field(srcArray.fid);
+        srcrr.add_field(srcArray->fid);
 
         RegionRequirement dstrr(
             dstArray.logicalRegion,
