@@ -130,9 +130,6 @@ PrintVector(
 ) {
     using namespace std;
 
-    const decltype(v.length()) w = 8;
-    const decltype(v.length()) brk = 80;
-
     ofstream file;
     file.open(fName);
 

@@ -328,7 +328,6 @@ public:
         sendLength.deallocate(ctx, lrt);
         recvLength.deallocate(ctx, lrt);
         synchronizers.deallocate(ctx, lrt);
-        pullBEs.deallocate(ctx, lrt);
         ////////////////////////////////////////////////////////////////////////
         // IFLAG_W_GHOSTS structures.
         ////////////////////////////////////////////////////////////////////////
