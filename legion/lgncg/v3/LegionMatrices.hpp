@@ -198,9 +198,9 @@ public:
                 // each task will pick only the regions that are required.
                 for (int color = 0; color < mSize; ++color) {
                     auto lsr = lrt->get_logical_subregion_by_color(
-                                   ctx,
-                                   a->logicalPartition,
-                                   color
+                        ctx,
+                        a->logicalPartition,
+                        color
                     );
                     launcher.add_region_requirement(
                         RegionRequirement(
@@ -210,9 +210,8 @@ public:
                             READ_WRITE,
                             SIMULTANEOUS,
                             a->logicalRegion
-                        )
-                    ).add_field(a->fid)
-                     .add_flags(NO_ACCESS_FLAG);
+                        ).add_flags(NO_ACCESS_FLAG)
+                    ).add_field(a->fid);
                 }
             }
         }
