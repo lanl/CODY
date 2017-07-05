@@ -51,7 +51,7 @@ public:
      */
     LogicalArray(
         const LogicalRegion &lr,
-        Legion::Context &ctx,
+        Legion::Context ctx,
         Legion::HighLevelRuntime *lrt
     ) : LogicalItem<TYPE>(lr, ctx, lrt) { }
 
@@ -61,7 +61,7 @@ public:
     void
     allocate(
         int64_t nElems,
-        Legion::Context &ctx,
+        Legion::Context ctx,
         Legion::HighLevelRuntime *lrt
     ) {
         this->mAllocate(nElems, ctx, lrt);
@@ -87,7 +87,7 @@ public:
     void
     partition(
         size_t nParts,
-        Legion::Context &ctx,
+        Legion::Context ctx,
         Legion::HighLevelRuntime *lrt
     ) {
         using namespace Legion;
@@ -144,7 +144,7 @@ public:
     void
     partition(
         const std::vector<local_int_t> &partLens,
-        Legion::Context &ctx,
+        Legion::Context ctx,
         Legion::HighLevelRuntime *lrt
     ) {
         using namespace Legion;
@@ -195,7 +195,7 @@ public:
     void
     partition(
         BaseExtent be,
-        Legion::Context &ctx,
+        Legion::Context ctx,
         Legion::HighLevelRuntime *lrt
     ) {
         using namespace Legion;

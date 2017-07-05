@@ -187,7 +187,7 @@ public:
         Legion::CoherenceProperty cohProp,
         ItemFlags iFlags,
         Legion::IndexLauncher &launcher,
-        LegionRuntime::HighLevel::Context &ctx,
+        LegionRuntime::HighLevel::Context ctx,
         LegionRuntime::HighLevel::HighLevelRuntime *lrt
     ) {
         intent(privMode, cohProp, launcher);
@@ -223,7 +223,7 @@ public:
     void
     allocate(
         const Geometry &geom,
-        LegionRuntime::HighLevel::Context &ctx,
+        LegionRuntime::HighLevel::Context ctx,
         LegionRuntime::HighLevel::HighLevelRuntime *lrt
     ) {
         mSize = geom.size;
@@ -271,7 +271,7 @@ public:
     void
     partition(
         int64_t nParts,
-        LegionRuntime::HighLevel::Context &ctx,
+        LegionRuntime::HighLevel::Context ctx,
         LegionRuntime::HighLevel::HighLevelRuntime *lrt
     ) {
         geoms.partition(nParts, ctx, lrt);
@@ -310,7 +310,7 @@ public:
      */
     void
     deallocate(
-        LegionRuntime::HighLevel::Context &ctx,
+        LegionRuntime::HighLevel::Context ctx,
         LegionRuntime::HighLevel::HighLevelRuntime *lrt
     ) {
         geoms.deallocate(ctx, lrt);
@@ -340,7 +340,7 @@ private:
     mPopulateDynamicCollectives(
         LogicalArray< DynColl<TYPE> > &targetLogicalArray,
         DynColl<TYPE> &dynCol,
-        LegionRuntime::HighLevel::Context &ctx,
+        LegionRuntime::HighLevel::Context ctx,
         LegionRuntime::HighLevel::HighLevelRuntime *lrt
     ) {
         Array< DynColl<TYPE> > dcs(
@@ -659,7 +659,7 @@ inline void
 SetupGhostArrays(
     SparseMatrix &A,
     Array<floatType> &x,
-    LegionRuntime::HighLevel::Context &ctx,
+    LegionRuntime::HighLevel::Context ctx,
     LegionRuntime::HighLevel::HighLevelRuntime *lrt
 ) {
     // Make sure that we aren't doing this again for something that already has

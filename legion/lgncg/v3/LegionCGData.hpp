@@ -70,14 +70,14 @@ public:
     void
     allocate(
         const Geometry &geom,
-        LegionRuntime::HighLevel::Context &ctx,
+        LegionRuntime::HighLevel::Context ctx,
         LegionRuntime::HighLevel::HighLevelRuntime *lrt
     ) { /* Nothing to do. */ }
 
     void
     allocate(
         SparseMatrix &A,
-        LegionRuntime::HighLevel::Context &ctx,
+        LegionRuntime::HighLevel::Context ctx,
         LegionRuntime::HighLevel::HighLevelRuntime *lrt
     ) {
         const local_int_t nrow = A.sclrs->data()->localNumberOfRows;
@@ -94,7 +94,7 @@ public:
     void
     partition(
         int64_t nParts,
-        LegionRuntime::HighLevel::Context &ctx,
+        LegionRuntime::HighLevel::Context ctx,
         LegionRuntime::HighLevel::HighLevelRuntime *lrt
     ) { /* Nothing to do. */ }
 
@@ -104,7 +104,7 @@ public:
     void
     partition(
         SparseMatrix &A,
-        LegionRuntime::HighLevel::Context &ctx,
+        LegionRuntime::HighLevel::Context ctx,
         LegionRuntime::HighLevel::HighLevelRuntime *lrt
     ) {
         const local_int_t nrow = A.sclrs->data()->localNumberOfRows;
@@ -135,7 +135,7 @@ public:
      */
     void
     deallocate(
-        LegionRuntime::HighLevel::Context &ctx,
+        LegionRuntime::HighLevel::Context ctx,
         LegionRuntime::HighLevel::HighLevelRuntime *lrt
     ) {
         r.deallocate(ctx, lrt);

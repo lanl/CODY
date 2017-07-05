@@ -169,7 +169,7 @@ public:
     virtual void
     allocate(
         const Geometry &geom,
-        LegionRuntime::HighLevel::Context &ctx,
+        LegionRuntime::HighLevel::Context ctx,
         LegionRuntime::HighLevel::HighLevelRuntime *lrt
     ) = 0;
 
@@ -179,7 +179,7 @@ public:
     virtual void
     partition(
         int64_t nParts,
-        LegionRuntime::HighLevel::Context &ctx,
+        LegionRuntime::HighLevel::Context ctx,
         LegionRuntime::HighLevel::HighLevelRuntime *lrt
     ) = 0;
 
@@ -188,7 +188,7 @@ public:
      */
     virtual void
     deallocate(
-        LegionRuntime::HighLevel::Context &ctx,
+        LegionRuntime::HighLevel::Context ctx,
         LegionRuntime::HighLevel::HighLevelRuntime *lrt
     ) = 0;
 
@@ -224,7 +224,7 @@ struct LogicalItem : public LogicalItemBase {
      */
     LogicalItem(
         const LogicalRegion &lr,
-        Legion::Context &ctx,
+        Legion::Context ctx,
         Legion::HighLevelRuntime *lrt
     ) : LogicalItemBase()
     {
@@ -269,7 +269,7 @@ protected:
     void
     mAllocate(
         int64_t len,
-        Legion::Context &ctx,
+        Legion::Context ctx,
         Legion::HighLevelRuntime *lrt
     ) {
         mLength = len;
@@ -304,7 +304,7 @@ public:
      */
     void
     allocate(
-        Legion::Context &ctx,
+        Legion::Context ctx,
         Legion::HighLevelRuntime *lrt
     ) {
         mAllocate(1, ctx, lrt);
@@ -315,7 +315,7 @@ public:
      */
     void
     deallocate(
-        Legion::Context &ctx,
+        Legion::Context ctx,
         Legion::HighLevelRuntime *lrt
     ) {
         lrt->destroy_logical_region(ctx, logicalRegion);
@@ -344,7 +344,7 @@ public:
     mapRegion(
         Legion::PrivilegeMode privMode,
         Legion::CoherenceProperty cohProp,
-        Legion::Context &ctx,
+        Legion::Context ctx,
         Legion::HighLevelRuntime *lrt
     ) {
         using namespace Legion;
@@ -366,7 +366,7 @@ public:
      */
     void
     unmapRegion(
-        Legion::Context &ctx,
+        Legion::Context ctx,
         Legion::HighLevelRuntime *lrt
     ) {
         lrt->unmap_region(ctx, physicalRegion);
