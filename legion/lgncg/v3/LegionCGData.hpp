@@ -130,8 +130,9 @@ public:
         z.partition(partLens, ctx, lrt);
         p.partition(partLens, ctx, lrt);
         //
-        r.partition(1, ctx, lrt);
-        Ap.partition(1, ctx, lrt);
+        const bool disjoint = true;
+        r.partition(1, disjoint, ctx, lrt);
+        Ap.partition(1, disjoint, ctx, lrt);
     }
 
     /**

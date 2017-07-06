@@ -45,6 +45,8 @@ public:
     Legion::LogicalRegion logicalRegion;
     // Launch domain.
     Legion::Domain launchDomain;
+    // Index partition.
+    Legion::IndexPartition indexPartition;
     // Logical partition.
     Legion::LogicalPartition logicalPartition;
     // Parent logical region (if set).
@@ -287,10 +289,11 @@ protected:
         using namespace std;
         //
         const char *lpName = mName.c_str();
+        const char *ipName = mName.c_str();
         //
         lrt->attach_name(logicalPartition, lpName);
+        lrt->attach_name(indexPartition, ipName);
     }
-
 
     /**
      *

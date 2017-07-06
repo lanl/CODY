@@ -94,6 +94,7 @@ public:
     void
     partition(
         size_t nParts,
+        bool disjoint,
         Legion::Context ctx,
         Legion::HighLevelRuntime *lrt
     ) {
@@ -130,15 +131,19 @@ public:
             x0 += inc;
             x1 += inc;
         }
-        auto iPart = lrt->create_index_partition(
-                         ctx, this->mIndexSpace,
-                         colorDomain, disjointColoring,
-                         true /* disjoint */
+        this->indexPartition = lrt->create_index_partition(
+            ctx,
+            this->mIndexSpace,
+            colorDomain,
+            disjointColoring,
+            disjoint
         );
         // logical partitions
         using Legion::LogicalPartition;
         this->logicalPartition = lrt->get_logical_partition(
-                                     ctx, this->logicalRegion, iPart
+                                     ctx,
+                                     this->logicalRegion,
+                                     this->indexPartition
                                  );
         // launch domain -- one task per color
         // launch domain
@@ -183,15 +188,17 @@ public:
             x0 += partLens[parti];
             x1 = (x0 + partLens[++parti] - 1);
         }
-        auto iPart = lrt->create_index_partition(
-                         ctx, this->mIndexSpace,
-                         colorDomain, disjointColoring,
-                         true /* disjoint */
+        this->indexPartition = lrt->create_index_partition(
+            ctx, this->mIndexSpace,
+            colorDomain, disjointColoring,
+            true /* disjoint */
         );
         // logical partitions
         using Legion::LogicalPartition;
         this->logicalPartition = lrt->get_logical_partition(
-                                     ctx, this->logicalRegion, iPart
+                                     ctx,
+                                     this->logicalRegion,
+                                     this->indexPartition
                                  );
         // launch domain -- one task per color
         // launch domain
@@ -229,17 +236,19 @@ public:
 #endif
         //
         disjointColoring[0] = Domain::from_rect<1>(subRect);
-        auto iPart = lrt->create_index_partition(
-                         ctx,
-                         this->mIndexSpace,
-                         colorDomain,
-                         disjointColoring,
-                         true /* disjoint */
+        this->indexPartition = lrt->create_index_partition(
+            ctx,
+            this->mIndexSpace,
+            colorDomain,
+            disjointColoring,
+            true /* disjoint */
         );
         // Logical partitions.
         using Legion::LogicalPartition;
         this->logicalPartition = lrt->get_logical_partition(
-                                     ctx, this->logicalRegion, iPart
+                                     ctx,
+                                     this->logicalRegion,
+                                     this->indexPartition
                                  );
         // Launch domain -- one task per color.
         this->launchDomain = colorDomain;

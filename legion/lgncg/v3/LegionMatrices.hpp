@@ -275,25 +275,26 @@ public:
         LegionRuntime::HighLevel::Context ctx,
         LegionRuntime::HighLevel::HighLevelRuntime *lrt
     ) {
-        geoms.partition(nParts, ctx, lrt);
-        sclrs.partition(nParts, ctx, lrt);
-        nonzerosInRow.partition(nParts, ctx, lrt);
-        mtxIndG.partition(nParts, ctx, lrt);
-        mtxIndL.partition(nParts, ctx, lrt);
-        matrixValues.partition(nParts, ctx, lrt);
-        matrixDiagonal.partition(nParts, ctx, lrt);
-        localToGlobalMap.partition(nParts, ctx, lrt);
-        dcAllRedSumGI.partition(nParts, ctx, lrt);
-        dcAllRedSumFT.partition(nParts, ctx, lrt);
-        neighbors.partition(nParts, ctx, lrt);
-        sendLength.partition(nParts, ctx, lrt);
-        recvLength.partition(nParts, ctx, lrt);
-        synchronizers.partition(nParts, ctx, lrt);
-        pullBEs.partition(nParts, ctx, lrt);
+        const bool disjoint = true;
+        geoms.partition(nParts, disjoint, ctx, lrt);
+        sclrs.partition(nParts, disjoint, ctx, lrt);
+        nonzerosInRow.partition(nParts, disjoint, ctx, lrt);
+        mtxIndG.partition(nParts, disjoint, ctx, lrt);
+        mtxIndL.partition(nParts, disjoint, ctx, lrt);
+        matrixValues.partition(nParts, disjoint, ctx, lrt);
+        matrixDiagonal.partition(nParts, disjoint, ctx, lrt);
+        localToGlobalMap.partition(nParts, disjoint, ctx, lrt);
+        dcAllRedSumGI.partition(nParts, disjoint, ctx, lrt);
+        dcAllRedSumFT.partition(nParts, disjoint, ctx, lrt);
+        neighbors.partition(nParts, disjoint, ctx, lrt);
+        sendLength.partition(nParts, disjoint, ctx, lrt);
+        recvLength.partition(nParts, disjoint, ctx, lrt);
+        synchronizers.partition(nParts, disjoint, ctx, lrt);
+        pullBEs.partition(nParts, disjoint, ctx, lrt);
         ////////////////////////////////////////////////////////////////////////
         // IFLAG_W_GHOSTS structures.
         ////////////////////////////////////////////////////////////////////////
-        pullBuffer.partition(nParts, ctx, lrt);
+        pullBuffer.partition(nParts, !disjoint, ctx, lrt);
         //
         // For the DynamicCollectives we need partition info before population.
         const auto nArrivals = nParts;
