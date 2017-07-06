@@ -93,33 +93,6 @@ public:
      *
      */
     void
-    intent(
-        Legion::PrivilegeMode privMode,
-        Legion::CoherenceProperty cohProp,
-        ItemFlags iFlags,
-        Legion::IndexLauncher &launcher
-    ) {
-        legion_region_flags_t regFlags = NO_FLAG;
-
-        if (withGhosts(iFlags)) {
-            regFlags = legion_region_flags_t(regFlags | NO_ACCESS_FLAG);
-        }
-        //
-        launcher.add_region_requirement(
-            RegionRequirement(
-                logicalPartition,
-                0,
-                privMode,
-                cohProp,
-                logicalRegion
-            ).add_flags(regFlags)
-        ).add_field(fid);
-    }
-
-    /**
-     *
-     */
-    void
     setParentLogicalRegion(
         const LogicalRegion &parent
     ) {

@@ -190,7 +190,7 @@ public:
         LegionRuntime::HighLevel::Context ctx,
         LegionRuntime::HighLevel::HighLevelRuntime *lrt
     ) {
-        intent(privMode, cohProp, launcher);
+        LogicalMultiBase::intent(privMode, cohProp, launcher);
         //
         if (withGhosts(iFlags)) {
             for (auto &a : mLogicalItemsGhost) {
