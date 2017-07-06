@@ -260,7 +260,7 @@ public:
         //
         aalloca(pullBEs, mSize * maxNumNeighbors, ctx, lrt);
         ////////////////////////////////////////////////////////////////////////
-        // withGhosts structures.
+        // IFLAG_W_GHOSTS structures.
         ////////////////////////////////////////////////////////////////////////
         // FIXME: A bit wasteful on storage.
         aalloca(pullBuffer, globalXYZ, ctx, lrt);
@@ -276,21 +276,22 @@ public:
         LegionRuntime::HighLevel::HighLevelRuntime *lrt
     ) {
         const bool disjoint = true;
-        geoms.partition(nParts, disjoint, ctx, lrt);
-        sclrs.partition(nParts, disjoint, ctx, lrt);
-        nonzerosInRow.partition(nParts, disjoint, ctx, lrt);
-        mtxIndG.partition(nParts, disjoint, ctx, lrt);
-        mtxIndL.partition(nParts, disjoint, ctx, lrt);
-        matrixValues.partition(nParts, disjoint, ctx, lrt);
-        matrixDiagonal.partition(nParts, disjoint, ctx, lrt);
+        // TODO use mLogicalItems to iterate over items.
+        geoms.partition(           nParts, disjoint, ctx, lrt);
+        sclrs.partition(           nParts, disjoint, ctx, lrt);
+        nonzerosInRow.partition(   nParts, disjoint, ctx, lrt);
+        mtxIndG.partition(         nParts, disjoint, ctx, lrt);
+        mtxIndL.partition(         nParts, disjoint, ctx, lrt);
+        matrixValues.partition(    nParts, disjoint, ctx, lrt);
+        matrixDiagonal.partition(  nParts, disjoint, ctx, lrt);
         localToGlobalMap.partition(nParts, disjoint, ctx, lrt);
-        dcAllRedSumGI.partition(nParts, disjoint, ctx, lrt);
-        dcAllRedSumFT.partition(nParts, disjoint, ctx, lrt);
-        neighbors.partition(nParts, disjoint, ctx, lrt);
-        sendLength.partition(nParts, disjoint, ctx, lrt);
-        recvLength.partition(nParts, disjoint, ctx, lrt);
-        synchronizers.partition(nParts, disjoint, ctx, lrt);
-        pullBEs.partition(nParts, disjoint, ctx, lrt);
+        dcAllRedSumGI.partition(   nParts, disjoint, ctx, lrt);
+        dcAllRedSumFT.partition(   nParts, disjoint, ctx, lrt);
+        neighbors.partition(       nParts, disjoint, ctx, lrt);
+        sendLength.partition(      nParts, disjoint, ctx, lrt);
+        recvLength.partition(      nParts, disjoint, ctx, lrt);
+        synchronizers.partition(   nParts, disjoint, ctx, lrt);
+        pullBEs.partition(         nParts, disjoint, ctx, lrt);
         ////////////////////////////////////////////////////////////////////////
         // IFLAG_W_GHOSTS structures.
         ////////////////////////////////////////////////////////////////////////
@@ -315,6 +316,7 @@ public:
         LegionRuntime::HighLevel::Context ctx,
         LegionRuntime::HighLevel::HighLevelRuntime *lrt
     ) {
+        // TODO use mLogicalItems to iterate over items.
         geoms.deallocate(ctx, lrt);
         sclrs.deallocate(ctx, lrt);
         mtxIndG.deallocate(ctx, lrt);
