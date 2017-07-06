@@ -326,6 +326,10 @@ public:
     }
 
 private:
+
+    /**
+     *
+     */
     template <typename TYPE>
     void
     mPopulateDynamicCollectives(

@@ -54,7 +54,7 @@ using namespace LegionRuntime::HighLevel;
 
 #define aalloca(sName, size, ctx, rtp)                                         \
 do {                                                                           \
-    (sName).allocate(name + "-" #sName, size, ctx, rtp);                        \
+    sName.allocate(name + "-" #sName, size, ctx, rtp);                         \
 } while(0)
 
 ////////////////////////////////////////////////////////////////////////////////

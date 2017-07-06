@@ -116,23 +116,26 @@ public:
         // First nrow items are 'local data'. After is remote data.
         std::vector<local_int_t> partLens;
         // First partition for local data.
+        local_int_t totLen = nrow;
         partLens.push_back(nrow);
         // The rest are based on receive lengths.
         const int nNeighbors = A.sclrs->data()->numberOfSendNeighbors;
         const local_int_t *const recvLength = A.recvLength->data();
-        local_int_t totLen = nrow;
+        //
         for (int n = 0; n < nNeighbors; ++n) {
             const int recvl = recvLength[n];
             partLens.push_back(recvl);
             totLen += recvl;
         }
         assert(totLen == ncol);
+        //
         z.partition(partLens, ctx, lrt);
         p.partition(partLens, ctx, lrt);
         //
+        const int numParts = 1;
         const bool disjoint = true;
-        r.partition(1, disjoint, ctx, lrt);
-        Ap.partition(1, disjoint, ctx, lrt);
+        r.partition( numParts, disjoint, ctx, lrt);
+        Ap.partition(numParts, disjoint, ctx, lrt);
     }
 
     /**
@@ -143,10 +146,9 @@ public:
         LegionRuntime::HighLevel::Context ctx,
         LegionRuntime::HighLevel::HighLevelRuntime *lrt
     ) {
-        r.deallocate(ctx, lrt);
-        z.deallocate(ctx, lrt);
-        p.deallocate(ctx, lrt);
-        Ap.deallocate(ctx, lrt);
+        for (auto *i : mLogicalItems) {
+            i->deallocate(ctx, lrt);
+        }
     }
 };
 

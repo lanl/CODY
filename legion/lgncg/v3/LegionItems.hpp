@@ -393,13 +393,11 @@ public:
         Legion::Context ctx,
         Legion::HighLevelRuntime *lrt
     ) {
-        using namespace Legion;
-        using namespace LegionRuntime::Accessor;
-        using LegionRuntime::Arrays::Rect;
         RegionRequirement req(
             logicalRegion, privMode, cohProp, logicalRegion
         );
         req.add_field(fid);
+        //
         InlineLauncher inl(req);
         physicalRegion = lrt->map_region(ctx, inl);
         physicalRegion.wait_until_valid();
@@ -434,8 +432,8 @@ protected:
 public:
     //
     LogicalRegion logicalRegion;
-    // Field ID.
-    Legion::FieldID fid = 0;
+    // Field ID (only one, so it doesn't change).
+    const Legion::FieldID fid = 0;
 
     /**
      *
@@ -514,7 +512,7 @@ struct PhysicalMultiBase {
 protected:
     // Number of region entries.
     size_t mNRegionEntries = 0;
-    //
+    // Flags passed to unpack.
     ItemFlags mUnpackFlags = 0;
 
     /**

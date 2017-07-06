@@ -98,10 +98,7 @@ public:
         Legion::Context ctx,
         Legion::HighLevelRuntime *lrt
     ) {
-        using namespace Legion;
-        using LegionRuntime::Arrays::Rect;
-
-        // For now only allow even partitioning.
+        // Only allow even partitioning.
         assert(0 == this->mLength % nParts && "Uneven partitioning requested.");
         //
         int64_t inc = this->mLength / nParts; // the increment
@@ -123,7 +120,7 @@ public:
             Rect<1> subRect((Point<1>(x0)), (Point<1>(x1)));
             // cache the subgrid bounds
             subGridBounds.push_back(subRect);
-#if 0 // nice debug
+#if 0 // Debug.
             printf("vec disjoint partition: (%d) to (%d)\n",
                     subRect.lo.x[0], subRect.hi.x[0]);
 #endif
@@ -138,15 +135,13 @@ public:
             disjointColoring,
             disjoint
         );
-        // logical partitions
-        using Legion::LogicalPartition;
+        // Logical partitions.
         this->logicalPartition = lrt->get_logical_partition(
-                                     ctx,
-                                     this->logicalRegion,
-                                     this->indexPartition
-                                 );
-        // launch domain -- one task per color
-        // launch domain
+            ctx,
+            this->logicalRegion,
+            this->indexPartition
+        );
+        // Launch domain -- one task per color.
         this->launchDomain = colorDomain;
         //
         this->mAttachNameAtPartition(ctx, lrt);
@@ -161,10 +156,6 @@ public:
         Legion::Context ctx,
         Legion::HighLevelRuntime *lrt
     ) {
-        using namespace Legion;
-        using LegionRuntime::Arrays::Rect;
-
-        //
         const size_t nParts = partLens.size();
         Rect<1> colorBounds(Point<1>(0), Point<1>(nParts - 1));
         Domain colorDomain = Domain::from_rect<1>(colorBounds);
@@ -189,26 +180,26 @@ public:
             x1 = (x0 + partLens[++parti] - 1);
         }
         this->indexPartition = lrt->create_index_partition(
-            ctx, this->mIndexSpace,
-            colorDomain, disjointColoring,
+            ctx,
+            this->mIndexSpace,
+            colorDomain,
+            disjointColoring,
             true /* disjoint */
         );
-        // logical partitions
-        using Legion::LogicalPartition;
+        // Logical partitions.
         this->logicalPartition = lrt->get_logical_partition(
-                                     ctx,
-                                     this->logicalRegion,
-                                     this->indexPartition
-                                 );
-        // launch domain -- one task per color
-        // launch domain
+            ctx,
+            this->logicalRegion,
+            this->indexPartition
+        );
+        // Launch domain -- one task per color.
         this->launchDomain = colorDomain;
         //
         this->mAttachNameAtPartition(ctx, lrt);
     }
 
     /**
-     * Creates a single, contiguous partition from BaseExtent info.
+     * Creates a single, contiguous partition from a BaseExtent instance.
      */
     void
     partition(
@@ -216,9 +207,6 @@ public:
         Legion::Context ctx,
         Legion::HighLevelRuntime *lrt
     ) {
-        using namespace Legion;
-        using LegionRuntime::Arrays::Rect;
-        //
         Rect<1> colorBounds(Point<1>(0), Point<1>(0));
         Domain colorDomain = Domain::from_rect<1>(colorBounds);
         //
@@ -244,12 +232,11 @@ public:
             true /* disjoint */
         );
         // Logical partitions.
-        using Legion::LogicalPartition;
         this->logicalPartition = lrt->get_logical_partition(
-                                     ctx,
-                                     this->logicalRegion,
-                                     this->indexPartition
-                                 );
+            ctx,
+            this->logicalRegion,
+            this->indexPartition
+        );
         // Launch domain -- one task per color.
         this->launchDomain = colorDomain;
         //

@@ -327,9 +327,9 @@ startSolveTask(
     // Map CG data locally.
     vector<PhysicalRegion> cgRegions;
     //
-    cgRegions.push_back(lCGData.r.mapRegion(RW_E, ctx, lrt));
-    cgRegions.push_back(lCGData.z.mapRegion(RW_E, ctx, lrt));
-    cgRegions.push_back(lCGData.p.mapRegion(RW_E, ctx, lrt));
+    cgRegions.push_back( lCGData.r.mapRegion(RW_E, ctx, lrt));
+    cgRegions.push_back( lCGData.z.mapRegion(RW_E, ctx, lrt));
+    cgRegions.push_back( lCGData.p.mapRegion(RW_E, ctx, lrt));
     cgRegions.push_back(lCGData.Ap.mapRegion(RW_E, ctx, lrt));
     //
     const int cgDataBaseRID = 0;
