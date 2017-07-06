@@ -316,26 +316,13 @@ public:
         LegionRuntime::HighLevel::Context ctx,
         LegionRuntime::HighLevel::HighLevelRuntime *lrt
     ) {
-        // TODO use mLogicalItems to iterate over items.
-        geoms.deallocate(ctx, lrt);
-        sclrs.deallocate(ctx, lrt);
-        mtxIndG.deallocate(ctx, lrt);
-        mtxIndL.deallocate(ctx, lrt);
-        nonzerosInRow.deallocate(ctx, lrt);
-        matrixValues.deallocate(ctx, lrt);
-        matrixDiagonal.deallocate(ctx, lrt);
-        localToGlobalMap.deallocate(ctx, lrt);
-        dcAllRedSumGI.deallocate(ctx, lrt);
-        dcAllRedSumFT.deallocate(ctx, lrt);
-        neighbors.deallocate(ctx, lrt);
-        sendLength.deallocate(ctx, lrt);
-        recvLength.deallocate(ctx, lrt);
-        synchronizers.deallocate(ctx, lrt);
-        ////////////////////////////////////////////////////////////////////////
+        for (auto *i : mLogicalItems) {
+            i->deallocate(ctx, lrt);
+        }
         // IFLAG_W_GHOSTS structures.
-        ////////////////////////////////////////////////////////////////////////
-        pullBEs.deallocate(ctx, lrt);
-        pullBuffer.deallocate(ctx, lrt);
+        for (auto *i : mLogicalItemsGhost) {
+            i->deallocate(ctx, lrt);
+        }
     }
 
 private:

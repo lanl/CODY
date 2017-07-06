@@ -63,6 +63,15 @@ public:
     /**
      *
      */
+    virtual void
+    deallocate(
+        Legion::Context ctx,
+        Legion::HighLevelRuntime *lrt
+    ) = 0;
+
+    /**
+     *
+     */
     void
     intent(
         Legion::PrivilegeMode privMode,
@@ -355,9 +364,9 @@ public:
         Legion::Context ctx,
         Legion::HighLevelRuntime *lrt
     ) {
-        lrt->destroy_logical_region(ctx, logicalRegion);
-        lrt->destroy_field_space(ctx, mFS);
         lrt->destroy_index_space(ctx, mIndexSpace);
+        lrt->destroy_field_space(ctx, mFS);
+        lrt->destroy_logical_region(ctx, logicalRegion);
     }
 
     /**
