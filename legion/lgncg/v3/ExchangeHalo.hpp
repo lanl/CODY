@@ -151,11 +151,10 @@ ExchangeHalo(
         tl.add_wait_barrier(syncs->neighbors[n].ready);
         //
         tl.add_arrival_barrier(syncs->neighbors[n].done);
-        //
-        lrt->execute_task(ctx, tl);
-        //
         syncs->neighbors[n].done = lrt->advance_phase_barrier(
             ctx, syncs->neighbors[n].done
         );
+        //
+        lrt->execute_task(ctx, tl);
     }
 }

@@ -253,8 +253,7 @@ public:
         //
         const int maxNumNeighbors = geom.stencilSize - 1;
         // Each task will have at most 26 neighbors.
-        aalloca(neighbors, mSize * maxNumNeighbors, ctx, lrt);
-        // Each task will have at most 26 neighbors.
+        aalloca(neighbors,  mSize * maxNumNeighbors, ctx, lrt);
         aalloca(sendLength, mSize * maxNumNeighbors, ctx, lrt);
         aalloca(recvLength, mSize * maxNumNeighbors, ctx, lrt);
         //
