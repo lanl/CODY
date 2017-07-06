@@ -251,7 +251,7 @@ public:
 template<typename TYPE>
 struct Array : public Item<TYPE> {
     //
-    std::vector<LogicalArray<TYPE>> ghosts;
+    std::vector<LogicalArray<TYPE> *> ghosts;
 
     /**
      *
@@ -261,6 +261,15 @@ struct Array : public Item<TYPE> {
         Context ctx,
         HighLevelRuntime *runtime
     ) : Item<TYPE>(physicalRegion, ctx, runtime) { }
+
+    /**
+     *
+     */
+    ~Array(void) {
+        for (auto *i : ghosts) {
+            delete i;
+        }
+    }
 
     /**
      *

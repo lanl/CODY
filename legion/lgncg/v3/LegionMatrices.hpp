@@ -691,9 +691,9 @@ SetupGhostArrays(
             xlp,
             DomainPoint::from_point<1>(n + 1) // First is private.
         );
-        LogicalArray<floatType> dstArray(xSubReg, ctx, lrt);
-        dstArray.setParentLogicalRegion(x.logicalRegion);
+        auto *dst= new LogicalArray<floatType>(xSubReg, ctx, lrt);
+        dst->setParentLogicalRegion(x.logicalRegion);
         // Cache in x.
-        x.ghosts.push_back(dstArray);
+        x.ghosts.push_back(dst);
     }
 }

@@ -118,8 +118,8 @@ ExchangeHalo(
         LogicalArray<floatType> *srcArray = srcIt->second;
         assert(srcArray->hasParentLogicalRegion());
         // Destination.
-        LogicalArray<floatType> &dstArray = x.ghosts[n];
-        assert(dstArray.hasParentLogicalRegion());
+        LogicalArray<floatType> *dstArray = x.ghosts[n];
+        assert(dstArray->hasParentLogicalRegion());
         // Setup copy.
         RegionRequirement srcrr(
             srcArray->logicalRegion,
@@ -130,12 +130,12 @@ ExchangeHalo(
         srcrr.add_field(srcArray->fid);
 
         RegionRequirement dstrr(
-            dstArray.logicalRegion,
+            dstArray->logicalRegion,
             WRITE_DISCARD,
             EXCLUSIVE,
-            dstArray.getParentLogicalRegion()
+            dstArray->getParentLogicalRegion()
         );
-        dstrr.add_field(dstArray.fid);
+        dstrr.add_field(dstArray->fid);
         // task/neighbor mapping
         std::pair<int, int> tArgs(A.geom->data()->rank, nid);
         TaskLauncher tl(
