@@ -115,23 +115,32 @@ CG(
 ) {
     using namespace std;
 
+#if 0
     double t_begin = mytimer();  // Start timing right away
     //
     const int print_freq = 50;
+#endif
     const int rank = A.geom->data()->rank;
+#if 0
     const local_int_t nrow = A.sclrs->data()->localNumberOfRows;
     //
     double rtz = 0.0, oldrtz = 0.0, alpha = 0.0, beta = 0.0, pAp = 0.0;
-    double t0 = 0.0, t1 = 0.0, t2 = 0.0, t3 = 0.0, t4 = 0.0, t5 = 0.0, t6 = 0.0;
+    double t1 = 0.0, t2 = 0.0, t3 = 0.0, t4 = 0.0, t5 = 0.0, t6 = 0.0;
+#endif
+    double t0 = 0.0, t3 = 0.0;
 
     normr = 0.0;
 
+#if 0
     Array<floatType> &r  = *(data.r); // Residual vector
     Array<floatType> &z  = *(data.z); // Preconditioned residual vector
+#endif
     Array<floatType> &p  = *(data.p); // Direction vector (in MPI mode ncol>=nrow)
     Array<floatType> &Ap = *(data.Ap);
 
+#if 0
     Item< DynColl<floatType> > &dcFT = *A.dcAllRedSumFT;
+#endif
 
     if (!doPreconditioning && rank == 0) {
         std::cout << "WARNING: PERFORMING UNPRECONDITIONED ITERATIONS" << std::endl;

@@ -47,20 +47,14 @@ public:
     Legion::Domain launchDomain;
     // Logical partition.
     Legion::LogicalPartition logicalPartition;
-    //
+    // Parent logical region (if set).
     LogicalRegion parentLogicalRegion;
 
 protected:
+    // Name we attach to item.
+    std::string mName;
     //
     bool mHasParentLogicalRegion = false;
-
-    /**
-     * Packs itself into a list. Easy -- only has itself to worry about :).
-     */
-    std::deque<LogicalItemBase *>
-    mRegionPack(void) {
-        return std::deque<LogicalItemBase *>({this});
-    }
 
 public:
 
@@ -107,9 +101,8 @@ public:
                 privMode,
                 cohProp,
                 logicalRegion
-            )
-        ).add_field(fid)
-         .add_flags(regFlags);
+            ).add_flags(regFlags)
+        ).add_field(fid);
     }
 
     /**
@@ -168,6 +161,7 @@ public:
      */
     virtual void
     allocate(
+        const std::string &name,
         const Geometry &geom,
         LegionRuntime::HighLevel::Context ctx,
         LegionRuntime::HighLevel::HighLevelRuntime *lrt
@@ -266,33 +260,72 @@ protected:
     /**
      *
      */
+    virtual void
+    mAttachNameAtAllocate(
+        LegionRuntime::HighLevel::Context ctx,
+        LegionRuntime::HighLevel::HighLevelRuntime *lrt
+    ) {
+        using namespace std;
+        //
+        const char *isName = mName.c_str();
+        const char *fsName = mName.c_str();
+        const char *lrName = mName.c_str();
+        //
+        lrt->attach_name(mIndexSpace,   isName);
+        lrt->attach_name(mFS,           fsName);
+        lrt->attach_name(logicalRegion, lrName);
+    }
+
+    /**
+     *
+     */
+    virtual void
+    mAttachNameAtPartition(
+        LegionRuntime::HighLevel::Context ctx,
+        LegionRuntime::HighLevel::HighLevelRuntime *lrt
+    ) {
+        using namespace std;
+        //
+        const char *lpName = mName.c_str();
+        //
+        lrt->attach_name(logicalPartition, lpName);
+    }
+
+
+    /**
+     *
+     */
     void
     mAllocate(
+        const std::string &name,
         int64_t len,
         Legion::Context ctx,
         Legion::HighLevelRuntime *lrt
     ) {
         mLength = len;
         // Calculate the size of the logicalRegion vec (inclusive).
-        size_t n = mLength - 1;
-        // Vector rect.
+        const size_t n = mLength - 1;
+        // Item rect.
         mBounds = Rect<1>(Point<1>::ZEROES(), Point<1>(n));
-        // Vector domain.
+        // Item domain.
         Domain dom(Domain::from_rect<1>(mBounds));
-        // VEctor index space.
+        // Item index space.
         mIndexSpace = lrt->create_index_space(ctx, dom);
-        // Vector field space.
+        // Item field space.
         mFS = lrt->create_field_space(ctx);
-        // Vector field allocator.
+        // Item field allocator.
         FieldAllocator fa = lrt->create_field_allocator(ctx, mFS);
-        // all elements are going to be of size T
+        // All elements are going to be of size T.
         fa.allocate_field(sizeof(TYPE), fid);
-        // now create the logical region
+        // Create the logical region.
         logicalRegion = lrt->create_logical_region(ctx, mIndexSpace, mFS);
-        // stash some info for equality checks
+        // Stash some info for equality checks.
         mIndexSpaceID = logicalRegion.get_index_space().get_id();
         mFieldSpaceID = logicalRegion.get_field_space().get_id();
         mRTreeID      = logicalRegion.get_tree_id();
+        //
+        mName = name;
+        mAttachNameAtAllocate(ctx, lrt);
     }
 
 public:
@@ -304,10 +337,11 @@ public:
      */
     void
     allocate(
+        const std::string &name,
         Legion::Context ctx,
         Legion::HighLevelRuntime *lrt
     ) {
-        mAllocate(1, ctx, lrt);
+        mAllocate(name, 1, ctx, lrt);
     }
 
     /**

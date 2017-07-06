@@ -29,6 +29,7 @@
 
 #pragma once
 
+#include "LegionStuff.hpp"
 #include "LegionArrays.hpp"
 #include "LegionMatrices.hpp"
 
@@ -69,6 +70,7 @@ public:
      */
     void
     allocate(
+        const std::string &name,
         const Geometry &geom,
         LegionRuntime::HighLevel::Context ctx,
         LegionRuntime::HighLevel::HighLevelRuntime *lrt
@@ -76,16 +78,18 @@ public:
 
     void
     allocate(
+        const std::string &name,
         SparseMatrix &A,
         LegionRuntime::HighLevel::Context ctx,
         LegionRuntime::HighLevel::HighLevelRuntime *lrt
     ) {
         const local_int_t nrow = A.sclrs->data()->localNumberOfRows;
         const local_int_t ncol = A.sclrs->data()->localNumberOfColumns;
-        r.allocate(nrow, ctx, lrt);
-        z.allocate(ncol, ctx, lrt);
-        p.allocate(ncol, ctx, lrt);
-        Ap.allocate(nrow, ctx, lrt);
+        //
+        aalloca(r,  nrow, ctx, lrt);
+        aalloca(z,  ncol, ctx, lrt);
+        aalloca(p,  ncol, ctx, lrt);
+        aalloca(Ap, nrow, ctx, lrt);
     }
 
     /**

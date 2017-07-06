@@ -150,13 +150,13 @@ createLogicalStructures(
     // First calculate global XYZ for the problem.
     global_int_t globalXYZ = getGlobalXYZ(geom);
     //
-    A.allocate(geom, ctx, runtime);
+    A.allocate("A", geom, ctx, runtime);
     A.partition(geom.size, ctx, runtime);
-    x.allocate(globalXYZ, ctx, runtime);
+    x.allocate("x", globalXYZ, ctx, runtime);
     x.partition(geom.size, ctx, runtime);
-    y.allocate(globalXYZ, ctx, runtime);
+    y.allocate("y", globalXYZ, ctx, runtime);
     y.partition(geom.size, ctx, runtime);
-    xexact.allocate(globalXYZ, ctx, runtime);
+    xexact.allocate("xexact", globalXYZ, ctx, runtime);
     xexact.partition(geom.size, ctx, runtime);
     const double initEnd = mytimer();
     const double initTime = initEnd - initStart;
@@ -321,7 +321,7 @@ startSolveTask(
     Array<floatType> xexact(regions[rid++], ctx, lrt);
     // Private data for this task.
     LogicalCGData lCGData;
-    lCGData.allocate(A, ctx, lrt);
+    lCGData.allocate("cgdata", A, ctx, lrt);
     lCGData.partition(A, ctx, lrt);
     // Map CG data locally.
     vector<PhysicalRegion> cgRegions;

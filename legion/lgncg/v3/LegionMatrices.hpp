@@ -222,6 +222,7 @@ public:
      */
     void
     allocate(
+        const std::string &name,
         const Geometry &geom,
         LegionRuntime::HighLevel::Context ctx,
         LegionRuntime::HighLevel::HighLevelRuntime *lrt
@@ -230,39 +231,39 @@ public:
         const auto globalXYZ   = getGlobalXYZ(geom);
         const auto stencilSize = geom.stencilSize;
 
-        geoms.allocate(mSize, ctx, lrt);
-        sclrs.allocate(mSize, ctx, lrt);
+        aalloca(geoms, mSize, ctx, lrt);
+        aalloca(sclrs, mSize, ctx, lrt);
         //
-        nonzerosInRow.allocate(globalXYZ, ctx, lrt);
+        aalloca(nonzerosInRow, globalXYZ, ctx, lrt);
         // Flattened to 1D from 2D.
-        mtxIndG.allocate(globalXYZ * stencilSize, ctx, lrt);
+        aalloca(mtxIndG, globalXYZ * stencilSize, ctx, lrt);
         // Flattened to 1D from 2D.
-        mtxIndL.allocate(globalXYZ * stencilSize, ctx, lrt);
+        aalloca(mtxIndL, globalXYZ * stencilSize, ctx, lrt);
         // Flattened to 1D from 2D.
-        matrixValues.allocate(globalXYZ * stencilSize, ctx, lrt);
+        aalloca(matrixValues, globalXYZ * stencilSize, ctx, lrt);
         // 2D thing in reference implementation, but not needed (1D suffices).
-        matrixDiagonal.allocate(globalXYZ, ctx, lrt);
+        aalloca(matrixDiagonal, globalXYZ, ctx, lrt);
         //
-        localToGlobalMap.allocate(globalXYZ, ctx, lrt);
+        aalloca(localToGlobalMap, globalXYZ, ctx, lrt);
         //
-        dcAllRedSumGI.allocate(mSize, ctx, lrt);
-        dcAllRedSumFT.allocate(mSize, ctx, lrt);
+        aalloca(dcAllRedSumGI, mSize, ctx, lrt);
+        aalloca(dcAllRedSumFT, mSize, ctx, lrt);
         //
         const int maxNumNeighbors = geom.stencilSize - 1;
         // Each task will have at most 26 neighbors.
-        neighbors.allocate(mSize * maxNumNeighbors, ctx, lrt);
+        aalloca(neighbors, mSize * maxNumNeighbors, ctx, lrt);
         // Each task will have at most 26 neighbors.
-        sendLength.allocate(mSize * maxNumNeighbors, ctx, lrt);
-        recvLength.allocate(mSize * maxNumNeighbors, ctx, lrt);
+        aalloca(sendLength, mSize * maxNumNeighbors, ctx, lrt);
+        aalloca(recvLength, mSize * maxNumNeighbors, ctx, lrt);
         //
-        synchronizers.allocate(mSize, ctx, lrt);
+        aalloca(synchronizers, mSize, ctx, lrt);
         //
-        pullBEs.allocate(mSize * maxNumNeighbors, ctx, lrt);
+        aalloca(pullBEs, mSize * maxNumNeighbors, ctx, lrt);
         ////////////////////////////////////////////////////////////////////////
-        // IFLAG_W_GHOSTS structures.
+        // withGhosts structures.
         ////////////////////////////////////////////////////////////////////////
         // FIXME: A bit wasteful on storage.
-        pullBuffer.allocate(globalXYZ, ctx, lrt);
+        aalloca(pullBuffer, globalXYZ, ctx, lrt);
     }
 
     /**

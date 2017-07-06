@@ -58,13 +58,20 @@ public:
     /**
      *
      */
+    virtual
+    ~LogicalArray(void) = default;
+
+    /**
+     *
+     */
     void
     allocate(
+        const std::string &name,
         int64_t nElems,
         Legion::Context ctx,
         Legion::HighLevelRuntime *lrt
     ) {
-        this->mAllocate(nElems, ctx, lrt);
+        this->mAllocate(name, nElems, ctx, lrt);
     }
 
     /**
@@ -136,6 +143,8 @@ public:
         // launch domain -- one task per color
         // launch domain
         this->launchDomain = colorDomain;
+        //
+        this->mAttachNameAtPartition(ctx, lrt);
     }
 
     /**
@@ -187,6 +196,8 @@ public:
         // launch domain -- one task per color
         // launch domain
         this->launchDomain = colorDomain;
+        //
+        this->mAttachNameAtPartition(ctx, lrt);
     }
 
     /**
@@ -232,6 +243,8 @@ public:
                                  );
         // Launch domain -- one task per color.
         this->launchDomain = colorDomain;
+        //
+        this->mAttachNameAtPartition(ctx, lrt);
     }
 };
 

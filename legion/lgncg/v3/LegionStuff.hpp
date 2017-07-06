@@ -52,6 +52,11 @@ using namespace LegionRuntime::HighLevel;
 #define RO_S READ_ONLY , SIMULTANEOUS
 #define WO_S WRITE_ONLY, SIMULTANEOUS
 
+#define aalloca(sName, size, ctx, rtp)                                         \
+do {                                                                           \
+    (sName).allocate(name + "-" #sName, size, ctx, rtp);                        \
+} while(0)
+
 ////////////////////////////////////////////////////////////////////////////////
 // Task IDs
 ////////////////////////////////////////////////////////////////////////////////
