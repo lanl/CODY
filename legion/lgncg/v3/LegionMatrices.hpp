@@ -193,33 +193,62 @@ public:
         LegionRuntime::HighLevel::HighLevelRuntime *lrt
     ) {
         LogicalMultiBase::intent(privMode, cohProp, shard, launcher, ctx, lrt);
-#if 0
         //
         if (withGhosts(iFlags)) {
-            for (auto &a : mLogicalItemsGhost) {
-                // TODO use intent
-                // Share every sub-region with everyone. During task execution
-                // each task will pick only the regions that are required.
-                for (int color = 0; color < mSize; ++color) {
-                    auto lsr = lrt->get_logical_subregion_by_color(
+            // FIXME ugly.
+            const int maxNumNeighbors = HPCG_STENCIL - 1;
+            //
+            Array<SparseMatrixScalars> aSparseMatrixScalars(
+                sclrs.mapRegion(RO_E, ctx, lrt), ctx, lrt
+            );
+            SparseMatrixScalars *sclrsd = aSparseMatrixScalars.data();
+            assert(sclrsd);
+            //
+            Array<int> aNeighbors(
+                neighbors.mapRegion(RO_E, ctx, lrt), ctx, lrt
+            );
+            assert(aNeighbors.data());
+            // For convenience we'll interpret this as a 2D array.
+            Array2D<int> neighborsd(
+                mSize, maxNumNeighbors, aNeighbors.data()
+            );
+            /* NOTE disregard for passed args here. */
+            for (auto *a : mLogicalItemsGhost) {
+                auto mine = lrt->get_logical_subregion_by_color(
+                    ctx,
+                    a->logicalPartition,
+                    shard
+                );
+                launcher.add_region_requirement(
+                    RegionRequirement(
+                        mine,
+                        READ_WRITE,
+                        SIMULTANEOUS,
+                        a->logicalRegion
+                    )
+                ).add_field(a->fid);
+                //
+                const int nPullNeighbors = sclrsd[shard].numberOfSendNeighbors;
+                for (int n = 0; n < nPullNeighbors; ++n) {
+                    const int nid = neighborsd(shard, n);
+                    auto pullsr = lrt->get_logical_subregion_by_color(
                         ctx,
                         a->logicalPartition,
-                        color
+                        nid
                     );
                     launcher.add_region_requirement(
                         RegionRequirement(
-                            lsr,
-                            0,
-                            /* NOTE disregard for passed args here. */
-                            READ_WRITE,
+                            pullsr,
+                            READ_ONLY,
                             SIMULTANEOUS,
                             a->logicalRegion
                         ).add_flags(NO_ACCESS_FLAG)
                     ).add_field(a->fid);
                 }
             }
+            sclrs.unmapRegion(ctx, lrt);
+            neighbors.unmapRegion(ctx, lrt);
         }
-#endif
     }
 
     /**

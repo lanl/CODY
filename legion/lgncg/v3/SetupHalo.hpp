@@ -361,6 +361,8 @@ SetupHaloTopLevel(
     Array<int> aNeighbors(
         A.neighbors.mapRegion(RO_E, ctx, lrt), ctx, lrt
     );
+    // For convenience we'll interpret this as a 2D array.
+    Array2D<int> neighbors(geom.size, maxNumNeighbors, aNeighbors.data());
     //
     cout << "--> Memory for Synchronizers="
          << (sizeof(Synchronizers) * nShards) / 1024.0 / 1024.0
@@ -370,8 +372,6 @@ SetupHaloTopLevel(
     );
     Synchronizers *synchronizers = aSynchronizers.data();
     assert(synchronizers);
-    // For convenience we'll interpret this as a 2D array.
-    Array2D<int> neighbors(geom.size, maxNumNeighbors, aNeighbors.data());
     //
     cout << "--> Memory for Send/Recv Lengths="
          << (sizeof(local_int_t) * nShards * maxNumNeighbors) / 1024.0 / 1024.0
