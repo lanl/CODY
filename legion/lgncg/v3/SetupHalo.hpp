@@ -293,6 +293,7 @@ SetupHalo(
     }
 #endif
 
+#if 0
     {
         BaseExtent *ApullBEs = A.pullBEs->data();
         auto &nidToPullRegion = A.nidToPullRegion;
@@ -320,6 +321,7 @@ SetupHalo(
             A.nidToRemotePullBuffer[nid] = lsr;
         }
     }
+#endif
 
     delete[] neighbors;
     delete[] receiveLength;

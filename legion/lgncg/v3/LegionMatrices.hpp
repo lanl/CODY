@@ -212,6 +212,15 @@ public:
             Array2D<int> neighborsd(
                 mSize, maxNumNeighbors, aNeighbors.data()
             );
+
+            Array<BaseExtent> aBE(
+                    pullBEs.mapRegion(RO_E, ctx, lrt), ctx, lrt
+            );
+            assert(aBE.data());
+            // For convenience we'll interpret this as a 2D array.
+            Array2D<BaseExtent> pullBEsd(
+                mSize, maxNumNeighbors, aBE.data()
+            );
             /* NOTE disregard for passed args here. */
             for (auto *a : mLogicalItemsGhost) {
                 auto mine = lrt->get_logical_subregion_by_color(
@@ -236,9 +245,20 @@ public:
                         a->logicalPartition,
                         nid
                     );
+                    // Create Array structure from LogicalRegion.
+                    LogicalArray<floatType> la(pullsr, ctx, lrt);
+                    // Extract my piece of the pull buffer.
+                    la.partition(pullBEsd(shard, n), ctx, lrt);
+                    // My get just my pull piece from neighbor.
+                    LogicalRegion mpp = lrt->get_logical_subregion_by_color(
+                        ctx,
+                        la.logicalPartition,
+                        DomainPoint::from_point<1>(0) // Only one partition.
+                    );
+                    //
                     launcher.add_region_requirement(
                         RegionRequirement(
-                            pullsr,
+                            mpp,
                             READ_ONLY,
                             SIMULTANEOUS,
                             a->logicalRegion
@@ -248,6 +268,7 @@ public:
             }
             sclrs.unmapRegion(ctx, lrt);
             neighbors.unmapRegion(ctx, lrt);
+            pullBEs.unmapRegion(ctx, lrt);
         }
     }
 
