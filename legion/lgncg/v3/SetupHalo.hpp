@@ -479,6 +479,7 @@ SetupHaloTopLevel(
     A.synchronizers.unmapRegion(ctx, lrt);
     A.sendLength.unmapRegion(ctx, lrt);
     A.pullBEs.unmapRegion(ctx, lrt);
+    //
     const double initEnd = mytimer();
     const double initTime = initEnd - startTime;
     cout << "--> Time=" << initTime << "s" << endl;

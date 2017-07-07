@@ -607,6 +607,7 @@ protected:
         //
         pullBEs = new Array<BaseExtent>(regions[cid++], ctx, rt);
         assert(pullBEs->data());
+        //
         if (withGhosts(iFlags)) {
             cid += mSetupGhostStructures(regions, cid, ctx, rt);
         }
@@ -695,10 +696,10 @@ SetupGhostArrays(
     assert(!x.hasGhosts());
     //
     const SparseMatrixScalars *const Asclrs = A.sclrs->data();
+    assert(Asclrs);
     const int nNeighbors = Asclrs->numberOfSendNeighbors;
 
     for (int n = 0; n < nNeighbors; ++n) {
-        //
         auto xis = x.logicalRegion.get_index_space();
         auto xip = lrt->get_index_partition(ctx, xis, 0 /* color */);
         auto xlp = lrt->get_logical_partition(ctx, x.logicalRegion, xip);
@@ -707,7 +708,7 @@ SetupGhostArrays(
             xlp,
             DomainPoint::from_point<1>(n + 1) // First is private.
         );
-        auto *dst= new LogicalArray<floatType>(xSubReg, ctx, lrt);
+        auto *dst = new LogicalArray<floatType>(xSubReg, ctx, lrt);
         dst->setParentLogicalRegion(x.logicalRegion);
         // Cache in x.
         x.ghosts.push_back(dst);
