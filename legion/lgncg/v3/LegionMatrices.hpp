@@ -457,35 +457,20 @@ struct SparseMatrix : public PhysicalMultiBase {
         Context ctx,
         HighLevelRuntime *runtime
     ) {
-        // Set of region IDs that used by this shard.
-        std::set<int> regionInUse;
         const int *const nd = neighbors->data();
         const SparseMatrixScalars *const sclrsd = sclrs->data();
-        const int me = geom->data()->rank;
+        // Number of regions consumed.
+        int cid = baseRID;
         // Setup my push Array.
-        pullBuffer = new Array<floatType>(regions[baseRID + me], ctx, runtime);
+        pullBuffer = new Array<floatType>(regions[cid++], ctx, runtime);
         assert(pullBuffer->data());
-        assert(regionInUse.find(baseRID + me) == regionInUse.end());
-        regionInUse.insert(baseRID + me);
         // Get neighbor regions.
         for (int n = 0; n < sclrsd->numberOfSendNeighbors; ++n) {
             const int nid = nd[n];
-            const size_t targetRID = baseRID + nid;
-            nidToPullRegion[nid] = regions[targetRID];
-            // Make sure that it isn't already in the map.
-            assert(regionInUse.find(targetRID) == regionInUse.end());
-            regionInUse.insert(targetRID);
-        }
-        // Unmap unused regions.
-        // Each shard shared its pullBuffer region.
-        const int totalNumSharedRegs = geom->data()->size;
-        for (size_t rid = baseRID; rid < baseRID + totalNumSharedRegs; ++rid) {
-            if (regionInUse.find(rid) == regionInUse.end()) {
-                runtime->unmap_region(ctx, regions[rid]);
-            }
+            nidToPullRegion[nid] = regions[cid++];
         }
         // Return number of regions that we have consumed.
-        return geom->data()->size;
+        return cid - baseRID;
     }
 
     /**
