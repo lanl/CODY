@@ -72,11 +72,10 @@ genProblemTask(
     const std::vector<PhysicalRegion> &regions,
     Context ctx, HighLevelRuntime *runtime
 ) {
-    const int taskID = getTaskID(task);
+    const HPCG_Params params = *(HPCG_Params *)task->args;
     //
-    HPCG_Params params = *(HPCG_Params *)task->args;
     // Number of processes, my process ID
-    int size = params.comm_size, rank = taskID;
+    int size = params.commSize, rank = params.rank;
     //
     local_int_t nx, ny,nz;
     nx = (local_int_t)params.nx;
@@ -121,7 +120,7 @@ generateInitGeometry(
     Geometry &globalGeom
 ) {
     // Number of processes, my process ID
-    const int size = params.comm_size, rank = 0;
+    const int size = params.commSize, rank = 0;
     //
     local_int_t nx, ny,nz;
     nx = (local_int_t)params.nx;
@@ -240,20 +239,23 @@ mainTask(
     {
         cout << "*** Launching Initialization Tasks..." << endl;;
         const double initStart = mytimer();
-        IndexLauncher launcher(
-            GEN_PROB_TID,
-            A.launchDomain,
-            TaskArgument(&params, sizeof(params)),
-            ArgumentMap()
-        );
-        A.intent(RW_E, launcher);
-        b.intent(RW_E, launcher);
-        x.intent(RW_E, launcher);
-        xexact.intent(RW_E, launcher);
-        //
-        auto futureMap = runtime->execute_index_space(ctx, launcher);
+        for (int shard = 0; shard < initGeom.size; ++shard) {
+            // Update params to reflect rank.
+            params.rank = shard;
+            TaskLauncher launcher(
+                GEN_PROB_TID,
+                TaskArgument(&params, sizeof(params))
+            );
+            A.intent(     RW_E, shard, launcher, ctx, runtime);
+            b.intent(     RW_E, shard, launcher, ctx, runtime);
+            x.intent(     RW_E, shard, launcher, ctx, runtime);
+            xexact.intent(RW_E, shard, launcher, ctx, runtime);
+            //
+            runtime->execute_task(ctx, launcher);
+        }
+        // TODO add waits
         cout << "*** Waiting for Initialization Tasks" << endl;
-        futureMap.wait_all_results();
+        //
         const double initEnd = mytimer();
         double initTime = initEnd - initStart;
         cout << "--> Time=" << initTime << "s" << endl;
@@ -263,6 +265,7 @@ mainTask(
     // PhaseBarriers.
     SetupHaloTopLevel(A, initGeom, ctx, runtime);
 
+#if 0
     ////////////////////////////////////////////////////////////////////////////
     // Launch the tasks to begin the solve.
     ////////////////////////////////////////////////////////////////////////////
@@ -289,6 +292,7 @@ mainTask(
         const double totalTime = end - start;
         cout << "--> Time=" << totalTime << "s" << endl;
     }
+#endif
     //
     cout << "*** Cleaning Up..." << endl;
     destroyLogicalStructures(

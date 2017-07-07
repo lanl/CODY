@@ -76,12 +76,17 @@ public:
     intent(
         Legion::PrivilegeMode privMode,
         Legion::CoherenceProperty cohProp,
-        Legion::IndexLauncher &launcher
+        int shard,
+        Legion::TaskLauncher &launcher,
+        LegionRuntime::HighLevel::Context ctx,
+        LegionRuntime::HighLevel::HighLevelRuntime *lrt
     ) {
+        auto lsr = lrt->get_logical_subregion_by_color(
+            ctx, logicalPartition, shard
+        );
         launcher.add_region_requirement(
             RegionRequirement(
-                logicalPartition,
-                0,
+                lsr,
                 privMode,
                 cohProp,
                 logicalRegion
@@ -177,10 +182,13 @@ public:
     intent(
         Legion::PrivilegeMode privMode,
         Legion::CoherenceProperty cohProp,
-        Legion::IndexLauncher &launcher
+        int shard,
+        Legion::TaskLauncher &launcher,
+        LegionRuntime::HighLevel::Context ctx,
+        LegionRuntime::HighLevel::HighLevelRuntime *lrt
     ) {
         for (auto &a : mLogicalItems) {
-            a->intent(privMode, cohProp, launcher);
+            a->intent(privMode, cohProp, shard, launcher, ctx, lrt);
         }
     }
 };

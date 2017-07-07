@@ -29,13 +29,15 @@ extern LegionRuntime::Logger::Category Logger;
 #define HPCG_fout Logger.print()
 
 struct HPCG_Params_STRUCT {
-  int comm_size; //!< Number of MPI processes in MPI_COMM_WORLD
-  int numThreads; //!< This process' number of threads
-  int nx; //!< Number of x-direction grid points for each local subdomain
-  int ny; //!< Number of y-direction grid points for each local subdomain
-  int nz; //!< Number of z-direction grid points for each local subdomain
-  int runningTime; //!< Number of seconds to run the timed portion of the benchmark
-  int stencilSize; //!< Size of the stencil
+    int rank; //!< Task ID.
+    int commSize ; //!< Total number of shards.
+    int numThreads; //!< This process' number of threads.
+    int nx; //!< Number of x-direction grid points for each local subdomain.
+    int ny; //!< Number of y-direction grid points for each local subdomain.
+    int nz; //!< Number of z-direction grid points for each local subdomain.
+    //!< Number of seconds to run the timed portion of the benchmark.
+    int runningTime;
+    int stencilSize; //!< Size of the stencil
 };
 /*!
   HPCG_Params is a shorthand for HPCG_Params_STRUCT

@@ -187,11 +187,13 @@ public:
         Legion::PrivilegeMode privMode,
         Legion::CoherenceProperty cohProp,
         ItemFlags iFlags,
-        Legion::IndexLauncher &launcher,
+        int shard,
+        Legion::TaskLauncher &launcher,
         LegionRuntime::HighLevel::Context ctx,
         LegionRuntime::HighLevel::HighLevelRuntime *lrt
     ) {
-        LogicalMultiBase::intent(privMode, cohProp, launcher);
+        LogicalMultiBase::intent(privMode, cohProp, shard, launcher, ctx, lrt);
+#if 0
         //
         if (withGhosts(iFlags)) {
             for (auto &a : mLogicalItemsGhost) {
@@ -217,6 +219,7 @@ public:
                 }
             }
         }
+#endif
     }
 
     /**
