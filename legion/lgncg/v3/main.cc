@@ -265,26 +265,31 @@ mainTask(
     // PhaseBarriers.
     SetupHaloTopLevel(A, initGeom, ctx, runtime);
 
-#if 0
     ////////////////////////////////////////////////////////////////////////////
     // Launch the tasks to begin the solve.
     ////////////////////////////////////////////////////////////////////////////
     {
         cout << "*** Starting Solve..." << endl;
         const double start = mytimer();
-        IndexLauncher launcher(
-            START_SOLVE_TID,
-            A.launchDomain,
-            TaskArgument(&params, sizeof(params)),
-            ArgumentMap()
-        );
-        A.intent(RW_E, IFLAG_W_GHOSTS, launcher, ctx, runtime);
-        b.intent(RW_E, launcher);
-        x.intent(RW_E, launcher);
-        xexact.intent(RW_E, launcher);
         //
         MustEpochLauncher mel;
-        mel.add_index_task(launcher);
+        //
+        for (int shard = 0; shard < initGeom.size; ++shard) {
+            // Update params to reflect rank.
+            params.rank = shard;
+            TaskLauncher launcher(
+                START_SOLVE_TID,
+                TaskArgument(&params, sizeof(params))
+            );
+            const ItemFlags AFlags = IFLAG_W_GHOSTS;
+            A.intent(     RW_E, AFlags, shard, launcher, ctx, runtime);
+            b.intent(     RW_E,         shard, launcher, ctx, runtime);
+            x.intent(     RW_E,         shard, launcher, ctx, runtime);
+            xexact.intent(RW_E,         shard, launcher, ctx, runtime);
+            //
+            mel.add_single_task(DomainPoint::from_point<1>(shard), launcher);
+        }
+        //
         FutureMap fm = runtime->execute_must_epoch(ctx, mel);
         fm.wait_all_results();
         //
@@ -292,7 +297,6 @@ mainTask(
         const double totalTime = end - start;
         cout << "--> Time=" << totalTime << "s" << endl;
     }
-#endif
     //
     cout << "*** Cleaning Up..." << endl;
     destroyLogicalStructures(

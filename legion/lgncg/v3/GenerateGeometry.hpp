@@ -19,35 +19,27 @@
 
 #pragma once
 
-#include <cmath>
-#include <cstdlib>
-
 #include "Geometry.hpp"
 #include "ComputeOptimalShapeXYZ.hpp"
 #include "GenerateGeometry.hpp"
 
-#ifdef HPCG_DEBUG
-#include <fstream>
-#include "hpcg.hpp"
-using std::endl;
-
-#include <cassert>
-#endif
+#include <cmath>
+#include <cstdlib>
 
 /*!
-  Computes the factorization of the total number of processes into a
-  3-dimensional process grid that is as close as possible to a cube. The
-  quality of the factorization depends on the prime number structure of the
-  total number of processes. It then stores this decompostion together with the
-  parallel parameters of the run in the geometry data structure.
+    Computes the factorization of the total number of processes into a
+    3-dimensional process grid that is as close as possible to a cube. The
+    quality of the factorization depends on the prime number structure of the
+    total number of processes. It then stores this decompostion together with
+    the parallel parameters of the run in the geometry data structure.
 
-  @param[in]  size total number of MPI processes
-  @param[in]  rank this process' rank among other MPI processes
-  @param[in]  numThreads number of OpenMP threads in this process
-  @param[in]  nx, ny, nz number of grid points for each local block in the x, y,
-  and z dimensions, respectively
-  @param[out] geom data structure that will store the above parameters and the
-  factoring of total number of processes into three dimensions
+    @param[in]  size total number of MPI processes
+    @param[in]  rank this process' rank among other MPI processes
+    @param[in]  numThreads number of OpenMP threads in this process
+    @param[in]  nx, ny, nz number of grid points for each local block in the x,
+                y, and z dimensions, respectively
+    @param[out] geom data structure that will store the above parameters and the
+    factoring of total number of processes into three dimensions
 */
 inline void
 GenerateGeometry(
