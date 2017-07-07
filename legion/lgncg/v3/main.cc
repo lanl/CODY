@@ -239,6 +239,9 @@ mainTask(
     {
         cout << "*** Launching Initialization Tasks..." << endl;;
         const double initStart = mytimer();
+        //
+        MustEpochLauncher mel;
+        //
         for (int shard = 0; shard < initGeom.size; ++shard) {
             // Update params to reflect rank.
             params.rank = shard;
@@ -251,10 +254,13 @@ mainTask(
             x.intent(     RW_E, shard, launcher, ctx, runtime);
             xexact.intent(RW_E, shard, launcher, ctx, runtime);
             //
-            runtime->execute_task(ctx, launcher);
+            mel.add_single_task(DomainPoint::from_point<1>(shard), launcher);
         }
-        // TODO add waits
+        //
         cout << "*** Waiting for Initialization Tasks" << endl;
+        //
+        FutureMap fm = runtime->execute_must_epoch(ctx, mel);
+        fm.wait_all_results();
         //
         const double initEnd = mytimer();
         double initTime = initEnd - initStart;
@@ -411,6 +417,5 @@ int
 main(int argc, char **argv)
 {
     LegionInit();
-    auto ret = Runtime::start(argc, argv);
-    return ret;
+    return Runtime::start(argc, argv);
 }

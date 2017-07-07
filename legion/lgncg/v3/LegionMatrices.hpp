@@ -266,6 +266,7 @@ public:
                     ).add_field(a->fid);
                 }
             }
+            //
             sclrs.unmapRegion(ctx, lrt);
             neighbors.unmapRegion(ctx, lrt);
             pullBEs.unmapRegion(ctx, lrt);
