@@ -371,7 +371,7 @@ startSolveTask(
     const int optMaxIters  = 10 * refMaxIters;
     //
     // int numberOfCalls = 10; FIXME
-    int numberOfCalls = 3;
+    int numberOfCalls = 2;
     // Check if QuickPath option is enabled.  If the running time is set to
     // zero, we minimize all paths through the program.
     bool quickPath = (params.runningTime == 0);

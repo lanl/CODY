@@ -39,9 +39,9 @@ GEN_GPU_SRC	?= 					# .cu files
 
 # You can modify these variables, some will be appended to by the runtime makefile
 INC_FLAGS	?=
-CC_FLAGS	?= -Wall -std=c++11 -Ofast -ftree-vectorize -ffast-math
+CC_FLAGS	?= -DNDEBUG -Wall -std=c++11 -Ofast -ftree-vectorize -ffast-math
 NVCC_FLAGS	?=
-GASNET_FLAGS	?=
+GASNET_FLAG	?=
 LD_FLAGS	?=
 
 ###########################################################################

@@ -512,7 +512,7 @@ struct SparseMatrix : public PhysicalMultiBase {
     // A mapping between neighbor IDs and their regions.
     std::map<int, PhysicalRegion> nidToPullRegion;
     // Pull regions that I populate for consumption by other tasks.
-    std::vector<PhysicalRegion> pullBuffers;
+    std::vector< Array<floatType> *> pullBuffers;
 
     /**
      *
@@ -530,7 +530,9 @@ struct SparseMatrix : public PhysicalMultiBase {
         int cid = baseRID;
         // Setup my push Arrays.
         for (int n = 0; n < sclrsd->numberOfSendNeighbors; ++n) {
-            pullBuffers.push_back(regions[cid++]);
+            pullBuffers.push_back(
+                new Array<floatType>(regions[cid++], ctx, runtime)
+            );
         }
         // Get neighbor regions that I will pull from.
         for (int n = 0; n < sclrsd->numberOfRecvNeighbors; ++n) {
@@ -592,6 +594,7 @@ struct SparseMatrix : public PhysicalMultiBase {
         delete synchronizers;
         // Task-local allocation of non-region memory.
         if (elementsToSend) delete[] elementsToSend;
+        for (auto *i : pullBuffers) delete i;
     }
 
 protected:

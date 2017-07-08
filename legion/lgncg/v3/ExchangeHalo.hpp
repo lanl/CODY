@@ -80,7 +80,6 @@ ExchangeHalo(
     Synchronizers *syncs = A.synchronizers->data();
     PhaseBarriers &myPBs = syncs->mine;
     const int *const neighbors = A.neighbors->data();
-    const local_int_t totalToBeSent = Asclrs->totalToBeSent;
     // Non-region memory populated during SetupHalo().
     const local_int_t *const elementsToSend = A.elementsToSend;
     assert(elementsToSend);
@@ -98,16 +97,16 @@ ExchangeHalo(
     // Fill up pull buffers (the buffers that neighboring task will pull from).
     const local_int_t *const sendLengthsd = A.sendLength->data();
     assert(sendLengthsd);
-    int txidx = 0;
-    for (int n = 0; n < nNeighbors; ++n) {
-        Array<floatType> pb(A.pullBuffers[n], ctx, lrt);
-        floatType *pbd = pb.data();
+    //
+    for (int n = 0, txidx = 0; n < nNeighbors; ++n) {
+        Array<floatType> *pb = A.pullBuffers[n];
+        floatType *pbd = pb->data();
         assert(pbd);
+        //
         for (int i = 0; i < sendLengthsd[n]; ++i) {
             pbd[i] = xv[elementsToSend[txidx++]];
         }
     }
-    assert(txidx == totalToBeSent);
     myPBs.ready.arrive(1);
     myPBs.ready = lrt->advance_phase_barrier(ctx, myPBs.ready);
     //
