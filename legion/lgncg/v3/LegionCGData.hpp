@@ -133,9 +133,8 @@ public:
         p.partition(partLens, ctx, lrt);
         //
         const int numParts = 1;
-        const bool disjoint = true;
-        r.partition( numParts, disjoint, ctx, lrt);
-        Ap.partition(numParts, disjoint, ctx, lrt);
+        r.partition( numParts, ctx, lrt);
+        Ap.partition(numParts, ctx, lrt);
     }
 
     /**

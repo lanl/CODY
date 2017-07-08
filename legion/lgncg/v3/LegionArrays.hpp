@@ -94,7 +94,6 @@ public:
     void
     partition(
         size_t nParts,
-        bool disjoint,
         Legion::Context ctx,
         Legion::HighLevelRuntime *lrt
     ) {
@@ -133,7 +132,7 @@ public:
             this->mIndexSpace,
             colorDomain,
             disjointColoring,
-            disjoint
+            true
         );
         // Logical partitions.
         this->logicalPartition = lrt->get_logical_partition(
