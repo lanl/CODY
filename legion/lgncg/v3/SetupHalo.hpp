@@ -129,6 +129,7 @@ GetNeighborInfo(
         }
     }
     // Store contents in our matrix struct.
+    Asclrs->numberOfRecvNeighbors = receiveList.size();
     Asclrs->numberOfExternalValues = externalToLocalMap.size();
     //
     Asclrs->localNumberOfColumns = Asclrs->localNumberOfRows
@@ -293,36 +294,6 @@ SetupHalo(
     }
 #endif
 
-#if 0
-    {
-        BaseExtent *ApullBEs = A.pullBEs->data();
-        auto &nidToPullRegion = A.nidToPullRegion;
-
-        const int nNeighbors = Asclrs->numberOfSendNeighbors;
-        for (int n = 0; n < nNeighbors; ++n) {
-            const int nid = neighbors[n];
-            auto it = nidToPullRegion.find(nid);
-            // Make sure we found it.
-            assert(it != nidToPullRegion.end());
-            // Grab Logical Region from Physical.
-            LogicalRegion lr = it->second.get_logical_region();
-            // Create Array structure from LogicalRegion.
-            LogicalArray<floatType> la(lr, ctx, lrt);
-            // Extract my piece of the pull buffer.
-            la.partition(ApullBEs[n], ctx, lrt);
-            LogicalRegion subReg = lrt->get_logical_subregion_by_color(
-                ctx,
-                la.logicalPartition,
-                DomainPoint::from_point<1>(0) // Only one partition.
-            );
-            // Stash sub-region Array.
-            auto *lsr = new LogicalArray<floatType>(subReg, ctx, lrt);
-            lsr->setParentLogicalRegion(lr);
-            A.nidToRemotePullBuffer[nid] = lsr;
-        }
-    }
-#endif
-
     delete[] neighbors;
     delete[] receiveLength;
     delete[] sendLength;
@@ -374,7 +345,7 @@ SetupHaloTopLevel(
     Synchronizers *synchronizers = aSynchronizers.data();
     assert(synchronizers);
     //
-    cout << "--> Memory for Send/Recv Lengths="
+    cout << "--> Memory for Send Lengths="
          << (sizeof(local_int_t) * nShards * maxNumNeighbors) / 1024.0 / 1024.0
          << " MB" << endl;
     Array<local_int_t> aSendLengths(

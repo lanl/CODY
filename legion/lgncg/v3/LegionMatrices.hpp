@@ -58,22 +58,24 @@
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 struct SparseMatrixScalars {
-    //Max number of non-zero elements in any row.
+    // Max number of non-zero elements in any row.
     local_int_t maxNonzerosPerRow = 0;
-    //Total number of matrix rows across all processes.
+    // Total number of matrix rows across all processes.
     global_int_t totalNumberOfRows = 0;
-    //Total number of matrix non-zeros across all processes.
+    // Total number of matrix non-zeros across all processes.
     global_int_t totalNumberOfNonzeros = 0;
-    //Number of rows local to this process.
+    // Number of rows local to this process.
     local_int_t localNumberOfRows = 0;
-    //Number of columns local to this process.
+    // Number of columns local to this process.
     local_int_t localNumberOfColumns = 0;
-    //Number of non-zeros local to this process.
+    // Number of non-zeros local to this process.
     global_int_t localNumberOfNonzeros = 0;
-    //Number of entries that are external to this process.
+    // Number of entries that are external to this process.
     local_int_t numberOfExternalValues = 0;
-    //Number of neighboring processes that will be send local data.
+    // Number of neighboring processes that will be sent local data.
     int numberOfSendNeighbors = 0;
+    // Number of neighboring processes from which I'll receive data.
+    int numberOfRecvNeighbors = 0;
     //Total number of entries to be sent.
     local_int_t totalToBeSent = 0;
 };
@@ -510,10 +512,10 @@ struct SparseMatrix : public PhysicalMultiBase {
     local_int_t *elementsToSend = nullptr;
     // A mapping between neighbor IDs and their regions.
     std::map<int, PhysicalRegion> nidToPullRegion;
-    // A mapping between neighbor IDs and ghost Arrays.
-    std::map< int, LogicalArray<floatType> *> nidToRemotePullBuffer;
-    // The Array that holds push values.
-    Array<floatType> *pullBuffer = nullptr;
+    // Pull regions that I populate for consumption by other tasks.
+    std::vector<PhysicalRegion> pullBuffers;
+    // A mapping between neighbor IDs and my ghost regions.
+    std::map<int, PhysicalRegion> nidToRemotePullRegions;
 
     /**
      *
@@ -529,11 +531,12 @@ struct SparseMatrix : public PhysicalMultiBase {
         const SparseMatrixScalars *const sclrsd = sclrs->data();
         // Number of regions consumed.
         int cid = baseRID;
-        // Setup my push Array.
-        pullBuffer = new Array<floatType>(regions[cid++], ctx, runtime);
-        assert(pullBuffer->data());
-        // Get neighbor regions.
+        // Setup my push Arrays.
         for (int n = 0; n < sclrsd->numberOfSendNeighbors; ++n) {
+            pullBuffers.push_back(regions[cid++]);
+        }
+        // Get neighbor regions that I will pull from.
+        for (int n = 0; n < sclrsd->numberOfRecvNeighbors; ++n) {
             const int nid = nd[n];
             nidToPullRegion[nid] = regions[cid++];
         }
@@ -592,12 +595,6 @@ struct SparseMatrix : public PhysicalMultiBase {
         delete synchronizers;
         // Task-local allocation of non-region memory.
         if (elementsToSend) delete[] elementsToSend;
-        if (withGhosts(mUnpackFlags)) {
-            for (auto &i : nidToRemotePullBuffer) {
-                delete i.second;
-            }
-            delete pullBuffer;
-        }
     }
 
 protected:
