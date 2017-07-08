@@ -47,16 +47,6 @@ regionToRegionCopyTask(
     Array<floatType> src(regions[rid++], ctx, lrt);
     Array<floatType> dst(regions[rid++], ctx, lrt);
 
-#if 1 // Debug
-    std::pair<int , int> tArgs = *(std::pair<int, int> *)task->args;
-    const int parentColor = tArgs.first;
-    const int targetNeighbor = tArgs.second;
-    std::string pcs = std::to_string(parentColor);
-    std::string tns = std::to_string(targetNeighbor);
-    std::string fName = "r2r-t" + pcs + "-pull-from-n" + tns + ".txt";
-    PrintVector(src, fName, ctx, lrt);
-#endif
-
     assert(src.length() == dst.length());
 
     const floatType *const sv = src.data();
@@ -65,7 +55,5 @@ regionToRegionCopyTask(
     floatType *const dv = dst.data();
     assert(dv);
 
-    for (size_t i = 0; i < src.length(); ++i) {
-        dv[i] = sv[i];
-    }
+    for (size_t i = 0; i < src.length(); ++i) dv[i] = sv[i];
 }

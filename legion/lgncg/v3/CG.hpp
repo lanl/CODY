@@ -126,10 +126,10 @@ CG(
 
     normr = 0.0;
 
-    Array<floatType> &r  = *(data.r); // Residual vector
-    Array<floatType> &z  = *(data.z); // Preconditioned residual vector
-    Array<floatType> &p  = *(data.p); // Direction vector (in MPI mode ncol>=nrow)
-    Array<floatType> &Ap = *(data.Ap);
+    Array<floatType> &r  = *(data.r); // Residual vector.
+    Array<floatType> &z  = *(data.z); // Preconditioned residual vector.
+    Array<floatType> &p  = *(data.p); // Direction vector (ncol >= nrow).
+    Array<floatType> &Ap = *(data.Ap);// Holds result from A * p.
 
     Item< DynColl<floatType> > &dcFT = *A.dcAllRedSumFT;
 

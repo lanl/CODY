@@ -120,6 +120,7 @@ ComputeDotProduct(
     //
     floatType *xv = x.data();
     assert(xv);
+    //
     floatType *yv = y.data();
     assert(yv);
 
