@@ -50,6 +50,7 @@
 #include "SetupHalo.hpp"
 #include "CG.hpp"
 
+#include "IOOps.hpp"
 #include "LegionStuff.hpp"
 #include "LegionArrays.hpp"
 #include "LegionMatrices.hpp"
@@ -72,10 +73,10 @@ genProblemTask(
     const std::vector<PhysicalRegion> &regions,
     Context ctx, HighLevelRuntime *runtime
 ) {
+    const int taskID = getTaskID(task);
     const HPCG_Params params = *(HPCG_Params *)task->args;
-    //
     // Number of processes, my process ID
-    int size = params.commSize, rank = params.rank;
+    const int size = params.commSize, rank = taskID;
     //
     local_int_t nx, ny,nz;
     nx = (local_int_t)params.nx;
@@ -98,11 +99,23 @@ genProblemTask(
     Array<floatType> xexact(regions[rid++], ctx, runtime);
     //
     Geometry *geom = A.geom->data();
-    GenerateGeometry(size, rank, params.numThreads,
-                     nx, ny, nz, params.stencilSize, geom);
+    GenerateGeometry(
+        size,
+        rank,
+        params.numThreads,
+        nx, ny, nz,
+        params.stencilSize,
+        geom
+    );
     //
-    ierr = CheckAspectRatio(0.125, geom->npx, geom->npy, geom->npz,
-                            "process grid", rank == 0);
+    ierr = CheckAspectRatio(
+        0.125,
+        geom->npx,
+        geom->npy,
+        geom->npz,
+        "process grid",
+        rank == 0
+    );
     if (ierr) exit(ierr);
     //
     GenerateProblem(A, &b, &x, &xexact, ctx, runtime);
@@ -243,8 +256,6 @@ mainTask(
         MustEpochLauncher mel;
         //
         for (int shard = 0; shard < initGeom.size; ++shard) {
-            // Update params to reflect rank.
-            params.rank = shard;
             TaskLauncher launcher(
                 GEN_PROB_TID,
                 TaskArgument(&params, sizeof(params))
@@ -281,8 +292,6 @@ mainTask(
         MustEpochLauncher mel;
         //
         for (int shard = 0; shard < initGeom.size; ++shard) {
-            // Update params to reflect rank.
-            params.rank = shard;
             TaskLauncher launcher(
                 START_SOLVE_TID,
                 TaskArgument(&params, sizeof(params))
@@ -325,7 +334,7 @@ startSolveTask(
     Context ctx,
     HighLevelRuntime *lrt
 ) {
-    HPCG_Params params = *(HPCG_Params *)task->args;
+    const HPCG_Params params = *(HPCG_Params *)task->args;
     //
     size_t rid = 0;
     const ItemFlags AFlags = IFLAG_W_GHOSTS;
@@ -339,7 +348,7 @@ startSolveTask(
     lCGData.allocate("cgdata", A, ctx, lrt);
     lCGData.partition(A, ctx, lrt);
     // Map CG data locally.
-    vector<PhysicalRegion> cgRegions;
+    vector<PhysicalRegion> cgRegions(4);
     //
     cgRegions.push_back( lCGData.r.mapRegion(RW_E, ctx, lrt));
     cgRegions.push_back( lCGData.z.mapRegion(RW_E, ctx, lrt));
@@ -348,6 +357,9 @@ startSolveTask(
     //
     const int cgDataBaseRID = 0;
     CGData data(cgRegions, cgDataBaseRID, ctx, lrt);
+
+    // Sanity
+    assert(getTaskID(task) == A.geom->data()->rank);
 
     ////////////////////////////////////////////////////////////////////////////
     // Setup halo information before we begin.

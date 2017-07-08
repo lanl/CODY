@@ -17,12 +17,12 @@
  HPCG routine
  */
 
-#include <algorithm>
-#include <iostream>
+#include "CheckAspectRatio.hpp"
 
 #include "hpcg.hpp"
 
-#include "CheckAspectRatio.hpp"
+#include <algorithm>
+#include <iostream>
 
 int
 CheckAspectRatio(double smallest_ratio, int x, int y, int z, const char *what, bool DoIo) {
@@ -30,10 +30,10 @@ CheckAspectRatio(double smallest_ratio, int x, int y, int z, const char *what, b
 
   if (current_ratio < smallest_ratio) { // ratio of the smallest to the largest
     if (DoIo) {
-        HPCG_fout << "The " << what << " sizes (" << x << "," << y << "," << z <<
+        std::cerr << "The " << what << " sizes (" << x << "," << y << "," << z <<
         ") are invalid because the ratio min(x,y,z)/max(x,y,z)=" << current_ratio <<
         " is too small (at least " << smallest_ratio << " is required).";
-        HPCG_fout << "The shape should resemble a 3D cube. Please adjust and try again.";
+        std::cerr << "The shape should resemble a 3D cube. Please adjust and try again.";
     }
     return 127;
   }

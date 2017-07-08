@@ -34,37 +34,35 @@
 /**
  *
  */
-std::ostream &
-operator<<(std::ostream &os, const HPCG_Params &params) {
+inline void
+emit(const HPCG_Params &params) {
     using namespace std;
     //
-    os << "runningTime: " << params.runningTime << endl;
-    os << "commSize: "    << params.commSize << endl;
-    os << "numThreads: "  << params.numThreads << endl;
-    os << "nx: "          << params.nx << endl;
-    os << "ny: "          << params.ny << endl;
-    os << "nz: "          << params.nz << endl;
-    return os;
+    cout << "runningTime: " << params.runningTime << endl;
+    cout << "commSize: "    << params.commSize << endl;
+    cout << "numThreads: "  << params.numThreads << endl;
+    cout << "nx: "          << params.nx << endl;
+    cout << "ny: "          << params.ny << endl;
+    cout << "nz: "          << params.nz << endl;
 }
 
 /**
  *
  */
-std::ostream &
-operator<<(std::ostream &os, const Geometry &geom) {
+inline void
+emit(const Geometry &geom) {
     using namespace std;
-    os << "Size: "       << geom.size << endl;
-    os << "Rank: "       << geom.rank << endl;
-    os << "numThreads: " << geom.numThreads << endl;
-    os << "nx: "         << geom.nx << endl;
-    os << "ny: "         << geom.ny << endl;
-    os << "nz: "         << geom.nz << endl;
-    os << "stencilSize: "<< geom.stencilSize<< endl;
-    os << "npx: "        << geom.npx << endl;
-    os << "npy: "        << geom.npy << endl;
-    os << "npz: "        << geom.npz << endl;
-    os << "ipx: "        << geom.ipx << endl;
-    os << "ipy: "        << geom.ipy << endl;
-    os << "ipz: "        << geom.ipz << endl;
-    return os;
+    cout << "Size: "       << geom.size << endl;
+    cout << "Rank: "       << geom.rank << endl;
+    cout << "numThreads: " << geom.numThreads << endl;
+    cout << "nx: "         << geom.nx << endl;
+    cout << "ny: "         << geom.ny << endl;
+    cout << "nz: "         << geom.nz << endl;
+    cout << "stencilSize: "<< geom.stencilSize<< endl;
+    cout << "npx: "        << geom.npx << endl;
+    cout << "npy: "        << geom.npy << endl;
+    cout << "npz: "        << geom.npz << endl;
+    cout << "ipx: "        << geom.ipx << endl;
+    cout << "ipy: "        << geom.ipy << endl;
+    cout << "ipz: "        << geom.ipz << endl;
 }

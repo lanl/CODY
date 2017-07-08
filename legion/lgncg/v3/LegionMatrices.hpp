@@ -132,17 +132,19 @@ struct LogicalSparseMatrix : public LogicalMultiBase {
     //
     LogicalArray<BaseExtent> pullBEs;
     ////////////////////////////////////////////////////////////////////////////
-    // mLogicalItemsGhost structures.
+    // Vector index is for a given shard that is sharing pull region info.
+    // Innermost vector is for neighboring regions that we are sharing.
     ////////////////////////////////////////////////////////////////////////////
-    // Buffer that will be used  to pull data from during ExchangeHalo.
-    LogicalArray<floatType> pullBuffer;
+    // TODO Free up resources properly in destructor.
+    std::vector< std::vector< LogicalArray<floatType> *> > srcSharedRegions;
+    // Similar structure the pullers will use to setup RegionRequirements.
+    std::vector< std::vector< LogicalArray<floatType> *> > dstSharedRegions;
 
 protected:
     // Number of shards used for SparseMatrix decomposition.
     int mSize = 0;
     //
-    std::deque<LogicalItemBase *> mLogicalItemsGhost;
-    //
+    bool mSharedRegionsPopulated = false;
 
     /**
      * Order matters here. If you update this, also update unpack.
@@ -165,8 +167,6 @@ protected:
                          &synchronizers,
                          &pullBEs
         };
-        //
-        mLogicalItemsGhost = {&pullBuffer};
     }
 
 public:
@@ -177,6 +177,87 @@ public:
         // -1 signifies that regions have not yet been allocated.
         mSize = -1;
         mPopulateRegionList();
+    }
+
+    /**
+     *
+     */
+    void
+    mPopulateSharedRegions(
+        Context ctx,
+        HighLevelRuntime *lrt
+    ) {
+        using namespace std;
+        // FIXME ugly.
+        const int maxNumNeighbors = HPCG_STENCIL - 1;
+        //
+        Array<SparseMatrixScalars> aSparseMatrixScalars(
+            sclrs.mapRegion(RO_E, ctx, lrt), ctx, lrt
+        );
+        SparseMatrixScalars *sclrsd = aSparseMatrixScalars.data();
+        assert(sclrsd);
+        //
+        Array<int> aNeighbors(
+            neighbors.mapRegion(RO_E, ctx, lrt), ctx, lrt
+        );
+        assert(aNeighbors.data());
+        // For convenience we'll interpret this as a 2D array.
+        Array2D<int> neighborsd(
+            mSize, maxNumNeighbors, aNeighbors.data()
+        );
+        //
+        Array<local_int_t> aSendLengths(
+            sendLength.mapRegion(RO_E, ctx, lrt), ctx, lrt
+        );
+        assert(aSendLengths.data());
+        Array2D<local_int_t> sendLengthsd(
+            mSize, maxNumNeighbors, aSendLengths.data()
+        );
+        // Iterate over all shards and populate table that maps task IDs to
+        // their index into the neighbor list.
+        vector< map<int, int> > tidToNIdx(mSize);
+        for (int shard = 0; shard < mSize; ++shard) {
+            // Get total number of neighbors this shard has
+            const SparseMatrixScalars &myScalars = sclrsd[shard];
+            const int nNeighbors = myScalars.numberOfSendNeighbors;
+            //
+            for (int n = 0; n < nNeighbors; ++n) {
+                int tid = neighborsd(shard, n);
+                tidToNIdx[shard][tid] = n;
+            }
+        }
+        // We are going to need mSize slots for the vectors.
+        srcSharedRegions.resize(mSize);
+        dstSharedRegions.resize(mSize);
+        // Figure out how many receive neighbors each shard has.
+        for (int shard = 0; shard < mSize; ++shard) {
+            const int nRecvNeighbors = tidToNIdx[shard].size();
+            dstSharedRegions[shard].resize(nRecvNeighbors);
+        }
+        //
+        for (int shard = 0; shard < mSize; ++shard) {
+            const int nNeighbors = sclrsd[shard].numberOfSendNeighbors;
+            for (int n = 0; n < nNeighbors; ++n) {
+                const int nid = neighborsd(shard, n);
+                auto *sa = new LogicalArray<floatType>();
+                string rName = "A-pullRegion-SourceRank=" + to_string(shard)
+                             + "DestinationRank=" + to_string(nid);
+                sa->allocate(
+                    rName,
+                    sendLengthsd(shard, n),
+                    ctx,
+                    lrt
+                );
+                srcSharedRegions[shard].push_back(sa);
+                dstSharedRegions[nid][tidToNIdx[nid][shard]] = sa;
+            }
+        }
+        //
+        sclrs.unmapRegion(ctx, lrt);
+        neighbors.unmapRegion(ctx, lrt);
+        sendLength.unmapRegion(ctx, lrt);
+        //
+        mSharedRegionsPopulated = true;
     }
 
     /**
@@ -195,6 +276,9 @@ public:
         LogicalMultiBase::intent(privMode, cohProp, shard, launcher, ctx, lrt);
         //
         if (withGhosts(iFlags)) {
+            if (!mSharedRegionsPopulated) {
+                mPopulateSharedRegions(ctx, lrt);
+            }
             // FIXME ugly.
             const int maxNumNeighbors = HPCG_STENCIL - 1;
             //
@@ -212,64 +296,39 @@ public:
             Array2D<int> neighborsd(
                 mSize, maxNumNeighbors, aNeighbors.data()
             );
-
-            Array<BaseExtent> aBE(
-                    pullBEs.mapRegion(RO_E, ctx, lrt), ctx, lrt
-            );
-            assert(aBE.data());
-            // For convenience we'll interpret this as a 2D array.
-            Array2D<BaseExtent> pullBEsd(
-                mSize, maxNumNeighbors, aBE.data()
-            );
-            /* NOTE disregard for passed args here. */
-            for (auto *a : mLogicalItemsGhost) {
-                auto mine = lrt->get_logical_subregion_by_color(
-                    ctx,
-                    a->logicalPartition,
-                    shard
-                );
+            const int nNeighbors = sclrsd[shard].numberOfSendNeighbors;
+            // First nNeighbors regions are the ones I'm populating. That is,
+            // I'm the source for the values and my neighbors pull from those.
+            for (int n = 0; n < nNeighbors; ++n) {
+                auto *ap = srcSharedRegions[shard][n];
+                auto &lr = ap->logicalRegion;
                 launcher.add_region_requirement(
                     RegionRequirement(
-                        mine,
+                        lr,
                         READ_WRITE,
                         SIMULTANEOUS,
-                        a->logicalRegion
+                        lr
+                    ).add_flags(NO_ACCESS_FLAG)
+                ).add_field(ap->fid);
+            }
+            // Next nNeighbors regions are the ones I need for my computation.
+            // That is, they are the once that other tasks have populated.
+            const int nRecvNeighbors = dstSharedRegions[shard].size();
+            for (int n = 0; n < nRecvNeighbors; ++n) {
+                auto *ap = dstSharedRegions[shard][n];
+                auto &lr = ap->logicalRegion;
+                launcher.add_region_requirement(
+                    RegionRequirement(
+                        lr,
+                        READ_ONLY,
+                        SIMULTANEOUS,
+                        lr
                     )
-                ).add_field(a->fid);
-                //
-                const int nPullNeighbors = sclrsd[shard].numberOfSendNeighbors;
-                for (int n = 0; n < nPullNeighbors; ++n) {
-                    const int nid = neighborsd(shard, n);
-                    auto pullsr = lrt->get_logical_subregion_by_color(
-                        ctx,
-                        a->logicalPartition,
-                        nid
-                    );
-                    // Create Array structure from LogicalRegion.
-                    LogicalArray<floatType> la(pullsr, ctx, lrt);
-                    // Extract my piece of the pull buffer.
-                    la.partition(pullBEsd(shard, n), ctx, lrt);
-                    // My get just my pull piece from neighbor.
-                    LogicalRegion mpp = lrt->get_logical_subregion_by_color(
-                        ctx,
-                        la.logicalPartition,
-                        DomainPoint::from_point<1>(0) // Only one partition.
-                    );
-                    //
-                    launcher.add_region_requirement(
-                        RegionRequirement(
-                            mpp,
-                            READ_ONLY,
-                            SIMULTANEOUS,
-                            a->logicalRegion
-                        ).add_flags(NO_ACCESS_FLAG)
-                    ).add_field(a->fid);
-                }
+                ).add_field(ap->fid);
             }
             //
             sclrs.unmapRegion(ctx, lrt);
             neighbors.unmapRegion(ctx, lrt);
-            pullBEs.unmapRegion(ctx, lrt);
         }
     }
 
@@ -314,11 +373,6 @@ public:
         aalloca(synchronizers, mSize, ctx, lrt);
         //
         aalloca(pullBEs, mSize * maxNumNeighbors, ctx, lrt);
-        ////////////////////////////////////////////////////////////////////////
-        // IFLAG_W_GHOSTS structures.
-        ////////////////////////////////////////////////////////////////////////
-        // FIXME: A bit wasteful on storage.
-        aalloca(pullBuffer, globalXYZ, ctx, lrt);
     }
 
     /**
@@ -347,10 +401,6 @@ public:
         recvLength.partition(      nParts, disjoint, ctx, lrt);
         synchronizers.partition(   nParts, disjoint, ctx, lrt);
         pullBEs.partition(         nParts, disjoint, ctx, lrt);
-        ////////////////////////////////////////////////////////////////////////
-        // IFLAG_W_GHOSTS structures.
-        ////////////////////////////////////////////////////////////////////////
-        pullBuffer.partition(nParts, !disjoint, ctx, lrt);
         //
         // For the DynamicCollectives we need partition info before population.
         const auto nArrivals = nParts;
@@ -372,10 +422,6 @@ public:
         LegionRuntime::HighLevel::HighLevelRuntime *lrt
     ) {
         for (auto *i : mLogicalItems) {
-            i->deallocate(ctx, lrt);
-        }
-        // IFLAG_W_GHOSTS structures.
-        for (auto *i : mLogicalItemsGhost) {
             i->deallocate(ctx, lrt);
         }
     }

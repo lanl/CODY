@@ -30,7 +30,7 @@ ALT_MAPPERS     ?= 0		# Include alternative mappers (not recommended)
 OUTFILE		?= legion-hpcg
 # List all the application source files here
 GEN_SRC		?= \
-main.cc init.cc mytimer.cc IOOps.cc \
+main.cc init.cc mytimer.cc \
 ReadHpcgDat.cc CheckAspectRatio.cc \
 MixedBaseCounter.cc ComputeOptimalShapeXYZ.cc \
 ReduceSum.cc

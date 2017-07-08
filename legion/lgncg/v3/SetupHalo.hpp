@@ -345,7 +345,6 @@ SetupHaloTopLevel(
     const double startTime = mytimer();
     const int nShards = geom.size;
     // Extract required info from logical structures.
-    //
     cout << "--> Memory for SparseMatrixScalars="
          << (sizeof(SparseMatrixScalars) * nShards) / 1024.0 / 1024.0
          << " MB" << endl;
@@ -370,7 +369,7 @@ SetupHaloTopLevel(
          << (sizeof(Synchronizers) * nShards) / 1024.0 / 1024.0
          << " MB" << endl;
     Array<Synchronizers> aSynchronizers(
-            A.synchronizers.mapRegion(RW_E, ctx, lrt), ctx, lrt
+        A.synchronizers.mapRegion(RW_E, ctx, lrt), ctx, lrt
     );
     Synchronizers *synchronizers = aSynchronizers.data();
     assert(synchronizers);
@@ -379,7 +378,7 @@ SetupHaloTopLevel(
          << (sizeof(local_int_t) * nShards * maxNumNeighbors) / 1024.0 / 1024.0
          << " MB" << endl;
     Array<local_int_t> aSendLengths(
-            A.sendLength.mapRegion(RO_E, ctx, lrt), ctx, lrt
+        A.sendLength.mapRegion(RO_E, ctx, lrt), ctx, lrt
     );
     Array2D<local_int_t> ASendLengths(
         geom.size, maxNumNeighbors, aSendLengths.data()
