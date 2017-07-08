@@ -57,15 +57,15 @@
 /**
  * Tally total number of non-zeros in simulation.
  */
-static inline floatType 
+static inline floatType
 allReduceSum(
     Item< DynColl<floatType> > &dc,
     LegionRuntime::HighLevel::Context ctx,
     LegionRuntime::HighLevel::Runtime *runtime
 ) {
-    TaskLauncher tlLocalNZ(LOCAL_PARTIAL_SUM_TID, TaskArgument(NULL, 0));
+    TaskLauncher tl(LOCAL_PARTIAL_SUM_TID, TaskArgument(NULL, 0));
     //
-    tlLocalNZ.add_region_requirement(
+    tl.add_region_requirement(
         RegionRequirement(
             dc.logicalRegion,
             RO_E,
@@ -73,13 +73,14 @@ allReduceSum(
         )
     ).add_field(dc.fid);
     //
-    Future future = runtime->execute_task(ctx, tlLocalNZ);
+    Future f = runtime->execute_task(ctx, tl);
     //
-    runtime->defer_dynamic_collective_arrival(ctx, dc.data()->dc, future);
-    dc.data()->dc = runtime->advance_dynamic_collective(ctx, dc.data()->dc);
+    DynamicCollective &dynCol = dc.data()->dc;
+    runtime->defer_dynamic_collective_arrival(ctx, dynCol, f);
+    dynCol  = runtime->advance_dynamic_collective(ctx, dynCol);
     //
-    Future fSum = runtime->get_dynamic_collective_result(ctx, dc.data()->dc);
-
+    Future fSum = runtime->get_dynamic_collective_result(ctx, dynCol);
+    //
     return fSum.get<floatType>();
 }
 
@@ -99,6 +100,7 @@ allReduceSum(
 
     @see ComputeDotProduct
 */
+
 inline int
 ComputeDotProduct(
     local_int_t n,
@@ -115,21 +117,22 @@ ComputeDotProduct(
 
     floatType &local_result = dcAllreduceSum.data()->localBuffer;
     local_result = 0.0;
+    //
     floatType *xv = x.data();
+    assert(xv);
     floatType *yv = y.data();
+    assert(yv);
 
     if (yv == xv) {
-      for (local_int_t i = 0; i < n; i++) local_result += xv[i] * xv[i];
+        for (local_int_t i = 0; i < n; i++) local_result += xv[i] * xv[i];
     }
     else {
-      for (local_int_t i = 0; i < n; i++) local_result += xv[i] * yv[i];
+        for (local_int_t i = 0; i < n; i++) local_result += xv[i] * yv[i];
     }
     // Collect all partial sums.
     floatType t0 = mytimer();
-    floatType global_result = 0.0;
-    global_result = allReduceSum(dcAllreduceSum, ctx, runtime);
-    result = global_result;
+    result = allReduceSum(dcAllreduceSum, ctx, runtime);
     time_allreduce += mytimer() - t0;
-
+    //
     return 0;
 }
