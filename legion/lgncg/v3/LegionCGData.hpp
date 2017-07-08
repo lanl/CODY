@@ -119,7 +119,7 @@ public:
         local_int_t totLen = nrow;
         partLens.push_back(nrow);
         // The rest are based on receive lengths.
-        const int nNeighbors = A.sclrs->data()->numberOfSendNeighbors;
+        const int nNeighbors = A.sclrs->data()->numberOfRecvNeighbors;
         const local_int_t *const recvLength = A.recvLength->data();
         //
         for (int n = 0; n < nNeighbors; ++n) {

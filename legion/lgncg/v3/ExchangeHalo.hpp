@@ -93,41 +93,49 @@ ExchangeHalo(
     floatType *const xv = x.data();
     assert(xv);
 
-    floatType *pullBuffer = A.pullBuffer->data();
-    assert(pullBuffer);
-
     myPBs.done.wait();
     myPBs.done = lrt->advance_phase_barrier(ctx, myPBs.done);
-    // Fill up pull buffer (the buffer that neighbor task will pull from).
-    for (local_int_t i = 0; i < totalToBeSent; i++) {
-        pullBuffer[i] = xv[elementsToSend[i]];
+    // Fill up pull buffers (the buffers that neighboring task will pull from).
+    const local_int_t *const sendLengthsd = A.sendLength->data();
+    assert(sendLengthsd);
+    int txidx = 0;
+    for (int n = 0; n < nNeighbors; ++n) {
+        Array<floatType> pb(A.pullBuffers[n], ctx, lrt);
+        floatType *pbd = pb.data();
+        assert(pbd);
+        for (int i = 0; i < sendLengthsd[n]; ++i) {
+            pbd[i] = xv[elementsToSend[txidx++]];
+        }
+        PrintVector(
+            pb,
+            "pullBuffer-t" + to_string(A.geom->data()->rank) +
+            "-n" + to_string(neighbors[n]) + ".txt",
+            ctx,
+            lrt
+        );
     }
-    PrintVector(*A.pullBuffer,
-                "pullBuffer-t" + to_string(A.geom->data()->rank) + ".txt",
-                ctx, lrt);
+    assert(txidx == totalToBeSent);
     myPBs.ready.arrive(1);
     myPBs.ready = lrt->advance_phase_barrier(ctx, myPBs.ready);
-
+    //
     for (int n = 0; n < nNeighbors; ++n) {
         //
         const int nid = neighbors[n];
         // Source
-        auto srcIt = A.nidToRemotePullBuffer.find(nid);
-        assert(srcIt != A.nidToRemotePullBuffer.end());
-        //
-        LogicalArray<floatType> *srcArray = srcIt->second;
-        assert(srcArray->hasParentLogicalRegion());
+        auto srcIt = A.nidToPullRegion.find(nid);
+        assert(srcIt != A.nidToPullRegion.end());
+        auto srclr = srcIt->second.get_logical_region();
         // Destination.
         LogicalArray<floatType> *dstArray = x.ghosts[n];
         assert(dstArray->hasParentLogicalRegion());
         // Setup copy.
         RegionRequirement srcrr(
-            srcArray->logicalRegion,
+            srclr,
             READ_ONLY,
             EXCLUSIVE,
-            srcArray->getParentLogicalRegion()
+            srclr
         );
-        srcrr.add_field(srcArray->fid);
+        srcrr.add_field(0);
 
         RegionRequirement dstrr(
             dstArray->logicalRegion,

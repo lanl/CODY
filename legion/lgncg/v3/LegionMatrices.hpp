@@ -514,8 +514,6 @@ struct SparseMatrix : public PhysicalMultiBase {
     std::map<int, PhysicalRegion> nidToPullRegion;
     // Pull regions that I populate for consumption by other tasks.
     std::vector<PhysicalRegion> pullBuffers;
-    // A mapping between neighbor IDs and my ghost regions.
-    std::map<int, PhysicalRegion> nidToRemotePullRegions;
 
     /**
      *
