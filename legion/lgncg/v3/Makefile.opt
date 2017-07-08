@@ -17,6 +17,8 @@ ifndef LG_RT_DIR
 $(error LG_RT_DIR variable is not defined, aborting build)
 endif
 
+CXX=g++ -g -pg
+
 # Flags for directing the runtime makefile what to include
 DEBUG           ?= 0		# Include debugging symbols
 OUTPUT_LEVEL    ?= LEVEL_NONE # Compile time logging level
@@ -39,7 +41,7 @@ GEN_GPU_SRC	?= 					# .cu files
 
 # You can modify these variables, some will be appended to by the runtime makefile
 INC_FLAGS	?=
-CC_FLAGS	?= -DNDEBUG -Wall -std=c++11 -Ofast -ftree-vectorize -ffast-math
+CC_FLAGS	?= -Wall -std=c++11 -Ofast -ftree-vectorize -ffast-math
 NVCC_FLAGS	?=
 GASNET_FLAG	?=
 LD_FLAGS	?=
