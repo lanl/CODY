@@ -106,13 +106,6 @@ ExchangeHalo(
         for (int i = 0; i < sendLengthsd[n]; ++i) {
             pbd[i] = xv[elementsToSend[txidx++]];
         }
-        PrintVector(
-            pb,
-            "pullBuffer-t" + to_string(A.geom->data()->rank) +
-            "-n" + to_string(neighbors[n]) + ".txt",
-            ctx,
-            lrt
-        );
     }
     assert(txidx == totalToBeSent);
     myPBs.ready.arrive(1);

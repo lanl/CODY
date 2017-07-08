@@ -140,6 +140,7 @@ CG(
     CopyVector(x, p, ctx, lrt);
     //
     TICK(); ComputeSPMV(A, p, Ap, ctx, lrt);  TOCK(t3); // Ap = A*p
+
     // r = b - Ax (x stored in p)
     TICK(); ComputeWAXPBY(nrow, 1.0, b, -1.0, Ap, r); TOCK(t2);
 
