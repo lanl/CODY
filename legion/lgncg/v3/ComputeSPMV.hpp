@@ -74,7 +74,6 @@ ComputeSPMV(
     assert(y.length() >= size_t(Asclrs->localNumberOfRows));
 
     ExchangeHalo(A, x, ctx, lrt);
-#if 0
     //
     const floatType *const xv = x.data();
     floatType *const yv       = y.data();
@@ -100,6 +99,6 @@ ComputeSPMV(
         }
         yv[i] = sum;
     }
-#endif
+    //
     return 0;
 }
