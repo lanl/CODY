@@ -228,16 +228,16 @@ GenerateProblem(
                 // Current index in current row
                 global_int_t currentIndexG = 0;
                 local_int_t currentNonZeroElemIndex = 0;
-                for (int sz=-1; sz<=1; sz++) {
-                    if (giz+sz>-1 && giz+sz<gnz) {
-                        for (int sy=-1; sy<=1; sy++) {
-                            if (giy+sy>-1 && giy+sy<gny) {
-                                for (int sx=-1; sx<=1; sx++) {
-                                    if (gix+sx>-1 && gix+sx<gnx) {
+                for (int sz = -1; sz <= 1; sz++) {
+                    if (giz + sz > -1 && giz + sz < gnz) {
+                        for (int sy = -1; sy <= 1; sy++) {
+                            if (giy + sy > -1 && giy + sy < gny) {
+                                for (int sx = -1; sx <= 1; sx++) {
+                                    if (gix + sx > -1 && gix + sx < gnx) {
                                         global_int_t curcol = currentGlobalRow
                                                             + sz*gnx*gny
                                                             + sy*gnx+sx;
-                                        if (curcol==currentGlobalRow) {
+                                        if (curcol == currentGlobalRow) {
                                             matrixDiagonal[currentLocalRow] = 26.0;
                                             matrixValues(currentLocalRow, currentNonZeroElemIndex) = 26.0;
                                         } else {
