@@ -83,6 +83,11 @@ public:
         LegionRuntime::HighLevel::Context ctx,
         LegionRuntime::HighLevel::HighLevelRuntime *lrt
     ) {
+        #define aalloca(sName, size, ctx, rtp)                                 \
+        do {                                                                   \
+            sName.allocate(name + "-" #sName, size, ctx, rtp);                 \
+        } while(0)
+
         const local_int_t nrow = A.sclrs->data()->localNumberOfRows;
         const local_int_t ncol = A.sclrs->data()->localNumberOfColumns;
         //
@@ -90,6 +95,8 @@ public:
         aalloca(z,  ncol, ctx, lrt);
         aalloca(p,  ncol, ctx, lrt);
         aalloca(Ap, nrow, ctx, lrt);
+
+        #undef aalloca
     }
 
     /**

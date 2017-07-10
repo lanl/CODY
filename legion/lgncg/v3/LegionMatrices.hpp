@@ -344,6 +344,11 @@ public:
         LegionRuntime::HighLevel::Context ctx,
         LegionRuntime::HighLevel::HighLevelRuntime *lrt
     ) {
+        #define aalloca(sName, size, ctx, rtp)                                 \
+        do {                                                                   \
+            sName.allocate(name + "-" #sName, size, ctx, rtp);                 \
+        } while(0)
+
         mSize = geom.size;
         const auto globalXYZ   = getGlobalXYZ(geom);
         const auto stencilSize = geom.stencilSize;
@@ -375,7 +380,10 @@ public:
         aalloca(synchronizers, mSize, ctx, lrt);
         //
         aalloca(pullBEs, mSize * maxNumNeighbors, ctx, lrt);
+
+        #undef aalloca
     }
+
 
     /**
      *

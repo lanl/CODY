@@ -335,8 +335,10 @@ startSolveTask(
     //
     size_t rid = 0;
     const ItemFlags AFlags = IFLAG_W_GHOSTS;
+    //
     SparseMatrix     A     (regions, rid, AFlags, ctx, lrt);
     rid += A.nRegionEntries();
+    //
     Array<floatType> b     (regions[rid++], ctx, lrt);
     Array<floatType> x     (regions[rid++], ctx, lrt);
     Array<floatType> xexact(regions[rid++], ctx, lrt);
