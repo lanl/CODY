@@ -520,35 +520,6 @@ struct SparseMatrix : public PhysicalMultiBase {
     /**
      *
      */
-    int
-    mSetupGhostStructures(
-        const std::vector<PhysicalRegion> &regions,
-        size_t baseRID,
-        Context ctx,
-        HighLevelRuntime *runtime
-    ) {
-        const int *const nd = neighbors->data();
-        const SparseMatrixScalars *const sclrsd = sclrs->data();
-        // Number of regions consumed.
-        int cid = baseRID;
-        // Setup my push Arrays.
-        for (int n = 0; n < sclrsd->numberOfSendNeighbors; ++n) {
-            pullBuffers.push_back(
-                new Array<floatType>(regions[cid++], ctx, runtime)
-            );
-        }
-        // Get neighbor regions that I will pull from.
-        for (int n = 0; n < sclrsd->numberOfRecvNeighbors; ++n) {
-            const int nid = nd[n];
-            nidToPullRegion[nid] = regions[cid++];
-        }
-        // Return number of regions that we have consumed.
-        return cid - baseRID;
-    }
-
-    /**
-     *
-     */
     SparseMatrix(void) = default;
 
     /**
@@ -678,6 +649,35 @@ protected:
         }
         // Calculate number of region entries for this structure.
         mNRegionEntries = cid - baseRID;
+    }
+
+    /**
+     *
+     */
+    int
+    mSetupGhostStructures(
+        const std::vector<PhysicalRegion> &regions,
+        size_t baseRID,
+        Context ctx,
+        HighLevelRuntime *runtime
+    ) {
+        const int *const nd = neighbors->data();
+        const SparseMatrixScalars *const sclrsd = sclrs->data();
+        // Number of regions consumed.
+        int cid = baseRID;
+        // Setup my push Arrays.
+        for (int n = 0; n < sclrsd->numberOfSendNeighbors; ++n) {
+            pullBuffers.push_back(
+                new Array<floatType>(regions[cid++], ctx, runtime)
+            );
+        }
+        // Get neighbor regions that I will pull from.
+        for (int n = 0; n < sclrsd->numberOfRecvNeighbors; ++n) {
+            const int nid = nd[n];
+            nidToPullRegion[nid] = regions[cid++];
+        }
+        // Return number of regions that we have consumed.
+        return cid - baseRID;
     }
 };
 
