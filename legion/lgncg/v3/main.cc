@@ -193,6 +193,7 @@ createLogicalStructures(
     for (int level = 1; level < NUM_MG_LEVELS; ++level) {
         GenerateCoarseProblemTopLevel(
             *curLevelMatrix,
+            level,
             ctx,
             runtime
         );

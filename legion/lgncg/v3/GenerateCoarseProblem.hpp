@@ -58,6 +58,7 @@
 inline void
 GenerateCoarseProblemTopLevel(
     LogicalSparseMatrix &Af,
+    int level,
     Context ctx,
     HighLevelRuntime *runtime
 ) {
@@ -94,8 +95,12 @@ GenerateCoarseProblemTopLevel(
     );
     //
     LogicalSparseMatrix *Ac = new LogicalSparseMatrix();
-    Ac->allocate("Ac", *geomc, ctx, runtime);
+    //
+    std::string name = "A-L" + std::to_string(level);
+    Ac->allocate(name, *geomc, ctx, runtime);
+    //
     Ac->partition(geomc->size, ctx, runtime);
+    //
     Ac->geom = geomc;
     Af.Ac = Ac;
 }
