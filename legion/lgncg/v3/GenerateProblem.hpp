@@ -66,10 +66,12 @@
 static inline global_int_t
 getTotalNumberOfNonZeros(
     SparseMatrix &A,
+    global_int_t localNumberOfNonzeros,
     LegionRuntime::HighLevel::Context ctx,
     LegionRuntime::HighLevel::Runtime *runtime
 ) {
     Item< DynColl<global_int_t> > *dcars = A.dcAllRedSumGI;
+    dcars->data()->localBuffer = localNumberOfNonzeros;
     //
     TaskLauncher tlLocalNZ(
         LOCAL_NONZEROS_TID,
@@ -273,8 +275,12 @@ GenerateProblem(
     Asclrs->localNumberOfColumns  = localNumberOfRows;
     Asclrs->localNumberOfNonzeros = localNumberOfNonzeros;
     //
-    A.dcAllRedSumGI->data()->localBuffer = localNumberOfNonzeros;
-    Asclrs->totalNumberOfNonzeros = getTotalNumberOfNonZeros(A, ctx, runtime);
+    Asclrs->totalNumberOfNonzeros = getTotalNumberOfNonZeros(
+        A,
+        localNumberOfNonzeros,
+        ctx,
+        runtime
+    );
     // If this assert fails, it most likely means that the global_int_t is
     // set to int and should be set to long long This assert is usually the
     // first to fail as problem size increases beyond the 32-bit integer
