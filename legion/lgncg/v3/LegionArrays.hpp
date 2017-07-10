@@ -159,24 +159,23 @@ public:
         Rect<1> colorBounds(Point<1>(0), Point<1>(nParts - 1));
         Domain colorDomain = Domain::from_rect<1>(colorBounds);
         //
-        size_t parti = 0;
-        size_t x0 = 0, x1 = partLens[parti] - 1;
+        size_t x0 = 0, x1 = 0;
         DomainColoring disjointColoring;
-        // provides a task ID to sub-grid bounds mapping.
+        // Provides a task ID to sub-grid bounds mapping.
         std::vector< Rect<1> > subGridBounds;
         for (size_t color = 0; color < nParts; ++color) {
+            x1 = x0 + partLens[color] - 1;
             Rect<1> subRect((Point<1>(x0)), (Point<1>(x1)));
-            // cache the subgrid bounds
+            // Cache the subgrid bounds.
             subGridBounds.push_back(subRect);
-#if 0 // nice debug
-            printf("vec len=%ld\n", (long)partLens[parti]);
+#if 0 // Debug.
+            printf("vec len=%ld\n", (long)partLens[color]);
             printf("vec disjoint partition: (%ld) to (%ld)\n",
                     (long)subRect.lo.x[0], (long)subRect.hi.x[0]);
 #endif
             disjointColoring[color] = Domain::from_rect<1>(subRect);
-            // slide window
-            x0 += partLens[parti];
-            x1 = (x0 + partLens[++parti] - 1);
+            // Slide window.
+            x0 += partLens[color];
         }
         this->indexPartition = lrt->create_index_partition(
             ctx,
