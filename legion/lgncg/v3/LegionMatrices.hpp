@@ -131,8 +131,6 @@ struct LogicalSparseMatrix : public LogicalMultiBase {
     LogicalArray<local_int_t> recvLength;
     // Synchronization structures.
     LogicalArray<Synchronizers> synchronizers;
-    //
-    LogicalArray<BaseExtent> pullBEs;
     ////////////////////////////////////////////////////////////////////////////
     // Vector index is for a given shard that is sharing pull region info.
     // Innermost vector is for neighboring regions that we are sharing.
@@ -166,8 +164,7 @@ protected:
                          &neighbors,
                          &sendLength,
                          &recvLength,
-                         &synchronizers,
-                         &pullBEs
+                         &synchronizers
         };
     }
 
@@ -378,8 +375,6 @@ public:
         aalloca(recvLength, mSize * maxNumNeighbors, ctx, lrt);
         //
         aalloca(synchronizers, mSize, ctx, lrt);
-        //
-        aalloca(pullBEs, mSize * maxNumNeighbors, ctx, lrt);
 
         #undef aalloca
     }
@@ -490,11 +485,6 @@ struct SparseMatrix : public PhysicalMultiBase {
     Array<local_int_t> *recvLength = nullptr;
     //
     Item<Synchronizers> *synchronizers = nullptr;
-    // The bases and extents that I will be getting from my neighbors that lets
-    // me know which contiguous set of points will make up values I need to
-    // read.
-    Array<BaseExtent> *pullBEs = nullptr;
-
     ////////////////////////////////////////////////////////////////////////////
     // Task-launch-specific structures.
     ////////////////////////////////////////////////////////////////////////////
@@ -663,9 +653,6 @@ protected:
         //
         synchronizers = new Item<Synchronizers>(regions[cid++], ctx, rt);
         assert(synchronizers->data());
-        //
-        pullBEs = new Array<BaseExtent>(regions[cid++], ctx, rt);
-        assert(pullBEs->data());
         //
         if (withGhosts(iFlags)) {
             cid += mSetupGhostStructures(regions, cid, ctx, rt);

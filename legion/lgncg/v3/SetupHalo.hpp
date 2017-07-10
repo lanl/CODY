@@ -354,16 +354,6 @@ SetupHaloTopLevel(
     Array2D<local_int_t> ASendLengths(
         geom.size, maxNumNeighbors, aSendLengths.data()
     );
-    //
-    cout << "--> Memory for Bases/Extents="
-         << (sizeof(BaseExtent) * nShards * maxNumNeighbors) / 1024.0 / 1024.0
-         << " MB" << endl;
-    Array<BaseExtent> aPullBEs(
-            A.pullBEs.mapRegion(RW_E, ctx, lrt), ctx, lrt
-    );
-    Array2D<BaseExtent> pullBEs(
-        geom.size, maxNumNeighbors, aPullBEs.data()
-    );
     // Iterate over all shards and populate table that maps task IDs to their
     // index into the neighbor list.
     vector< map<int, int> > tidToNIdx(nShards);
@@ -408,15 +398,6 @@ SetupHaloTopLevel(
             // Share my Synchronizers with that neighbor.
             synchronizers[myn].neighbors[tidToNIdx[myn][shard]] = pbs;
         }
-        // Share base/extent (partitioning data) info with my neighbors.
-        int curBase = 0;
-        for (int n = 0; n < nNeighbors; ++n) {
-            // Get nth neighbor ID.
-            const int myn = neighbors(shard, n);
-            const local_int_t sendl = ASendLengths(shard, n);
-            pullBEs(myn, tidToNIdx[myn][shard]) = BaseExtent(curBase, sendl);
-            curBase += sendl;
-        }
     }
 #if 0 // Debug Synchronizers
     for (int shard = 0; shard < nShards; ++shard) {
@@ -432,25 +413,11 @@ SetupHaloTopLevel(
         }
     }
 #endif
-#if 0 // Debug BaseExtent
-    for (int shard = 0; shard < nShards; ++shard) {
-        const SparseMatrixScalars &myScalars = smScalars[shard];
-        const int nNeighbors = myScalars.numberOfSendNeighbors;
-        cout << "task=" << shard << " base/extent data: " << endl;
-        for (int n = 0; n < nNeighbors; ++n) {
-            BaseExtent be = pullBEs(shard, n);
-            cout << "nid=" << neighbors(shard, n) << endl;
-            cout << "--------> .base=" << be.base << endl;
-            cout << "--------> .xtnt=" << be.extent << endl;
-        }
-    }
-#endif
     // Cleanup and reporting.
     A.sclrs.unmapRegion(ctx, lrt);
     A.neighbors.unmapRegion(ctx, lrt);
     A.synchronizers.unmapRegion(ctx, lrt);
     A.sendLength.unmapRegion(ctx, lrt);
-    A.pullBEs.unmapRegion(ctx, lrt);
     //
     const double initEnd = mytimer();
     const double initTime = initEnd - startTime;
