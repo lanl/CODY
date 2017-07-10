@@ -336,8 +336,13 @@ mainTask(
                 START_SOLVE_TID,
                 TaskArgument(&params, sizeof(params))
             );
-            const ItemFlags AFlags = IFLAG_W_GHOSTS;
-            A.intent(     RW_E, AFlags, shard, launcher, ctx, runtime);
+            const ItemFlags aif = IFLAG_W_GHOSTS;
+            // Add all matrix levels.
+            LogicalSparseMatrix *curLevelMatrix = &A;
+            for (int level = 0; level < NUM_MG_LEVELS; ++level) {
+                curLevelMatrix->intent(RW_E, aif, shard, launcher, ctx, runtime);
+                curLevelMatrix = curLevelMatrix->Ac;
+            }
             b.intent(     RW_E,         shard, launcher, ctx, runtime);
             x.intent(     RW_E,         shard, launcher, ctx, runtime);
             xexact.intent(RW_E,         shard, launcher, ctx, runtime);
@@ -377,10 +382,17 @@ startSolveTask(
     const HPCG_Params params = *(HPCG_Params *)task->args;
     //
     size_t rid = 0;
-    const ItemFlags AFlags = IFLAG_W_GHOSTS;
+    const ItemFlags aif = IFLAG_W_GHOSTS;
     //
-    SparseMatrix     A     (regions, rid, AFlags, ctx, lrt);
+    SparseMatrix A(regions, rid, aif, ctx, lrt);
     rid += A.nRegionEntries();
+    //
+    SparseMatrix *curLevelMatrix = &A;
+    for (int level = 1; level < NUM_MG_LEVELS; ++level) {
+        curLevelMatrix->Ac = new SparseMatrix(regions, rid, aif, ctx, lrt);
+        rid += curLevelMatrix->Ac->nRegionEntries();
+        curLevelMatrix = curLevelMatrix->Ac;
+    }
     //
     Array<floatType> b     (regions[rid++], ctx, lrt);
     Array<floatType> x     (regions[rid++], ctx, lrt);
