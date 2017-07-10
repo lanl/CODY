@@ -145,7 +145,7 @@ CG(
     TICK(); ComputeWAXPBY(nrow, 1.0, b, -1.0, Ap, r); TOCK(t2);
 
     TICK();
-    ComputeDotProduct(nrow, r, r, normr, dcFT, t4, ctx, lrt);
+    ComputeDotProduct(nrow, r, r, normr, t4, dcFT, ctx, lrt);
     TOCK(t1);
 
     normr = sqrt(normr);
@@ -174,14 +174,14 @@ CG(
             TICK(); CopyVector(z, p, ctx, lrt); TOCK(t2); // Copy Mr to p
             // rtz = r'*z
             TICK();
-            ComputeDotProduct(nrow, r, z, rtz, dcFT, t4, ctx, lrt);
+            ComputeDotProduct(nrow, r, z, rtz, t4, dcFT, ctx, lrt);
             TOCK(t1);
         }
         else {
             oldrtz = rtz;
             //
             TICK(); // rtz = r'*z
-            ComputeDotProduct(nrow, r, z, rtz, dcFT, t4, ctx, lrt);
+            ComputeDotProduct(nrow, r, z, rtz, t4, dcFT, ctx, lrt);
             TOCK(t1);
             beta = rtz / oldrtz;
             //
@@ -195,7 +195,7 @@ CG(
         TOCK(t3);
         //
         TICK(); // alpha = p'*Ap
-        ComputeDotProduct(nrow, p, Ap, pAp, dcFT, t4, ctx, lrt);
+        ComputeDotProduct(nrow, p, Ap, pAp, t4, dcFT, ctx, lrt);
         TOCK(t1);
         //
         alpha = rtz / pAp;
@@ -207,7 +207,7 @@ CG(
         TOCK(t2);
         //
         TICK();
-        ComputeDotProduct(nrow, r, r, normr, dcFT, t4, ctx, lrt);
+        ComputeDotProduct(nrow, r, r, normr, t4, dcFT, ctx, lrt);
         TOCK(t1);
         normr = sqrt(normr);
         //

@@ -48,8 +48,8 @@
 
 #pragma once
 
-#include "LegionStuff.hpp"
 #include "LegionArrays.hpp"
+
 #include "mytimer.hpp"
 
 #include <cassert>
@@ -59,6 +59,7 @@
  */
 static inline floatType
 allReduceSum(
+    floatType localResult,
     Item< DynColl<floatType> > &dc,
     LegionRuntime::HighLevel::Context ctx,
     LegionRuntime::HighLevel::Runtime *runtime
@@ -73,11 +74,14 @@ allReduceSum(
         )
     ).add_field(dc.fid);
     //
+    dc.data()->localBuffer = localResult;
+    //
     Future f = runtime->execute_task(ctx, tl);
     //
     DynamicCollective &dynCol = dc.data()->dc;
+    //
     runtime->defer_dynamic_collective_arrival(ctx, dynCol, f);
-    dynCol  = runtime->advance_dynamic_collective(ctx, dynCol);
+    dynCol = runtime->advance_dynamic_collective(ctx, dynCol);
     //
     Future fSum = runtime->get_dynamic_collective_result(ctx, dynCol);
     //
@@ -93,7 +97,7 @@ allReduceSum(
     @param[in] n the number of vector elements (on this processor)
     @param[in] x, y the input vectors
     @param[in] result a pointer to scalar value, on exit will contain result.
-    @param[out] time_allreduce the time it took to perform the communication
+    @param[out] timeAllreduce the time it took to perform the communication
     between processes
 
     @return returns 0 upon success and non-zero otherwise
@@ -106,34 +110,30 @@ ComputeDotProduct(
     local_int_t n,
     Array<floatType> &x,
     Array<floatType> &y,
-    double &result,
+    floatType &result,
+    floatType &timeAllreduce,
     Item< DynColl<floatType> > &dcAllreduceSum,
-    double &time_allreduce,
     LegionRuntime::HighLevel::Context ctx,
     LegionRuntime::HighLevel::Runtime *runtime
 ) {
     assert(x.length() >= size_t(n));
     assert(y.length() >= size_t(n));
-
-    floatType &local_result = dcAllreduceSum.data()->localBuffer;
-    local_result = 0.0;
     //
-    floatType *xv = x.data();
+    const floatType *const xv = x.data();
     assert(xv);
     //
-    floatType *yv = y.data();
+    const floatType *const yv = y.data();
     assert(yv);
 
-    if (yv == xv) {
-        for (local_int_t i = 0; i < n; i++) local_result += xv[i] * xv[i];
-    }
-    else {
-        for (local_int_t i = 0; i < n; i++) local_result += xv[i] * yv[i];
+    floatType localResult = 0.0;
+
+    for (local_int_t i = 0; i < n; i++) {
+        localResult += xv[i] * yv[i];
     }
     // Collect all partial sums.
     floatType t0 = mytimer();
-    result = allReduceSum(dcAllreduceSum, ctx, runtime);
-    time_allreduce += mytimer() - t0;
+    result = allReduceSum(localResult, dcAllreduceSum, ctx, runtime);
+    timeAllreduce += mytimer() - t0;
     //
     return 0;
 }

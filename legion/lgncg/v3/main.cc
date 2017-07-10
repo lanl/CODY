@@ -347,8 +347,8 @@ startSolveTask(
     lCGData.allocate("cgdata", A, ctx, lrt);
     lCGData.partition(A, ctx, lrt);
     // Map CG data locally.
-    const int nCGDataRegions = 4;
     vector<PhysicalRegion> cgRegions;
+    const int nCGDataRegions = 4;
     cgRegions.reserve(nCGDataRegions);
     //
     cgRegions.push_back( lCGData.r.mapRegion(RW_E, ctx, lrt));
