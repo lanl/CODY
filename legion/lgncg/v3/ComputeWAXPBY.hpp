@@ -26,6 +26,7 @@
  *
  * LA-CC 10-123
  */
+
 //@HEADER
 // ***************************************************
 //
@@ -40,16 +41,17 @@
 //@HEADER
 
 /*!
- @file ComputeWAXPBY_ref.cpp
+    @file ComputeWAXPBY.cpp
 
- HPCG routine
+    HPCG routine
  */
 
 #pragma once
 
+#include "LegionArrays.hpp"
+
 #include <cassert>
 
-#include "LegionArrays.hpp"
 
 /*!
     Routine to compute the update of a vector with the sum of two
@@ -77,21 +79,23 @@ ComputeWAXPBY(
     const Array<floatType> &y,
     Array<floatType> &w
 ) {
-	// Test vector lengths
-	assert(x.length() >= size_t(n));
-	assert(y.length() >= size_t(n));
+    // Test vector lengths
+    assert(x.length() >= size_t(n));
+    assert(y.length() >= size_t(n));
 
-	const floatType *const xv = x.data();
-	const floatType *const yv = y.data();
-	double *const wv          = w.data();
+    const floatType *const xv = x.data();
+    const floatType *const yv = y.data();
+    double *const wv          = w.data();
 
     if (alpha == 1.0) {
-        for (local_int_t i = 0; i<n; i++) wv[i] = xv[i] + beta * yv[i];
-    } else if (beta == 1.0) {
-        for (local_int_t i = 0; i<n; i++) wv[i] = alpha * xv[i] + yv[i];
-    } else  {
-        for (local_int_t i = 0; i<n; i++) wv[i] = alpha * xv[i] + beta * yv[i];
+        for (local_int_t i = 0; i < n; i++) wv[i] = xv[i] + beta * yv[i];
     }
-
+    else if (beta == 1.0) {
+        for (local_int_t i = 0; i < n; i++) wv[i] = alpha * xv[i] + yv[i];
+    }
+    else  {
+        for (local_int_t i = 0; i < n; i++) wv[i] = alpha * xv[i] + beta * yv[i];
+    }
+    //
     return 0;
 }
