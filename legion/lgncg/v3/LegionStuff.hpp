@@ -130,8 +130,8 @@ template<typename TYPE>
 struct DynColl {
     int tid;
     int64_t nArrivals = 0;
-    DynamicCollective dc;
     TYPE localBuffer;
+    DynamicCollective dc;
 
     /**
      *
@@ -140,7 +140,8 @@ struct DynColl {
         int tid,
         int64_t nArrivals
     ) : tid(tid)
-      , nArrivals(nArrivals) { }
+      , nArrivals(nArrivals)
+      , localBuffer(TYPE(0)) { }
 };
 
 ////////////////////////////////////////////////////////////////////////////////
