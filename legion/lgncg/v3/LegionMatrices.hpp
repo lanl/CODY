@@ -505,6 +505,8 @@ struct SparseMatrix : public PhysicalMultiBase {
     ////////////////////////////////////////////////////////////////////////////
     // Task-launch-specific structures.
     ////////////////////////////////////////////////////////////////////////////
+    // Coarse grid matrix.
+    SparseMatrix *Ac = nullptr;
     // Global to local mapping. NOTE: only valid after a call to
     // PopulateGlobalToLocalMap.
     std::map< global_int_t, local_int_t > globalToLocalMap;

@@ -88,38 +88,52 @@ genProblemTask(
     ////////////////////////////////////////////////////////////////////////////
     // Problem setup Phase /////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////
-    // Construct the geometry and linear system
     size_t rid = 0;
     //
     SparseMatrix A(regions, rid, ctx, runtime);
     rid += A.nRegionEntries();
-    Array<floatType> b     (regions[rid++], ctx, runtime);
-    Array<floatType> x     (regions[rid++], ctx, runtime);
-    Array<floatType> xexact(regions[rid++], ctx, runtime);
     //
-    Geometry *geom = A.geom->data();
     GenerateGeometry(
         size,
         rank,
         params.numThreads,
         nx, ny, nz,
         params.stencilSize,
-        geom
+        A.geom->data()
     );
-    //
     ierr = CheckAspectRatio(
         0.125,
-        geom->npx,
-        geom->npy,
-        geom->npz,
+        A.geom->data()->npx,
+        A.geom->data()->npy,
+        A.geom->data()->npz,
         "process grid",
         rank == 0
     );
     if (ierr) exit(ierr);
     //
-    GenerateProblem(A, &b, &x, &xexact, ctx, runtime);
+    SparseMatrix *curLevelMatrix = &A;
+    for (int level = 1; level < NUM_MG_LEVELS; ++level) {
+        curLevelMatrix->Ac = new SparseMatrix(regions, rid, ctx, runtime);
+        rid += curLevelMatrix->Ac->nRegionEntries();
+        curLevelMatrix = curLevelMatrix->Ac;
+    }
     //
+    Array<floatType> b     (regions[rid++], ctx, runtime);
+    Array<floatType> x     (regions[rid++], ctx, runtime);
+    Array<floatType> xexact(regions[rid++], ctx, runtime);
+    //
+    GenerateProblem(A, &b, &x, &xexact, ctx, runtime);
     GetNeighborInfo(A);
+    //
+    curLevelMatrix = &A;
+    for (int level = 1; level < NUM_MG_LEVELS; ++level) {
+        GenerateCoarseProblem(
+            *curLevelMatrix,
+            ctx,
+            runtime
+        );
+        curLevelMatrix = curLevelMatrix->Ac;
+    }
 }
 
 /**
@@ -175,11 +189,12 @@ createLogicalStructures(
     cout << "*** Creating Logical MG Structures..." << endl;
     LogicalSparseMatrix *curLevelMatrix = &A;
     for (int level = 1; level < NUM_MG_LEVELS; ++level) {
-        GenerateCoarseProblem(
+        GenerateCoarseProblemTopLevel(
             *curLevelMatrix,
             ctx,
             runtime
         );
+        curLevelMatrix = curLevelMatrix->Ac;
     }
     const double initEnd = mytimer();
     const double initTime = initEnd - initStart;
@@ -271,7 +286,13 @@ mainTask(
                 GEN_PROB_TID,
                 TaskArgument(&params, sizeof(params))
             );
-            A.intent(     RW_E, shard, launcher, ctx, runtime);
+            // Add all matrix levels.
+            LogicalSparseMatrix *curLevelMatrix = &A;
+            for (int level = 0; level < NUM_MG_LEVELS; ++level) {
+                curLevelMatrix->intent(RW_E, shard, launcher, ctx, runtime);
+                curLevelMatrix = curLevelMatrix->Ac;
+            }
+            //
             b.intent(     RW_E, shard, launcher, ctx, runtime);
             x.intent(     RW_E, shard, launcher, ctx, runtime);
             xexact.intent(RW_E, shard, launcher, ctx, runtime);
