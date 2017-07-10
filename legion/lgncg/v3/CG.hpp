@@ -139,24 +139,25 @@ CG(
     // p is of length ncols, copy x to p for sparse MV operation
     CopyVector(x, p, ctx, lrt);
     //
-    TICK(); ComputeSPMV(A, p, Ap, ctx, lrt);  TOCK(t3); // Ap = A*p
-
-    // r = b - Ax (x stored in p)
-    TICK(); ComputeWAXPBY(nrow, 1.0, b, -1.0, Ap, r); TOCK(t2);
-
+    TICK(); // Ap = A*p
+    ComputeSPMV(A, p, Ap, ctx, lrt);  TOCK(t3); // Ap = A*p
+    TOCK(t3);
+    //
+    TICK(); // r = b - Ax (x stored in p)
+    ComputeWAXPBY(nrow, 1.0, b, -1.0, Ap, r);
+    TOCK(t2);
+    //
     TICK();
     ComputeDotProduct(nrow, r, r, normr, t4, dcFT, ctx, lrt);
     TOCK(t1);
-
+    //
     normr = sqrt(normr);
-
+    //
     if (rank == 0) std::cout << "Initial Residual = "<< normr << std::endl;
-
     // Record initial residual for convergence testing
     normr0 = normr;
 
-  // Start iterations
-
+    // Start iterations
     for (int k = 1; k <= max_iter && normr / normr0 > tolerance; k++ ) {
         TICK();
         if (doPreconditioning) {
@@ -183,13 +184,13 @@ CG(
             TICK(); // rtz = r'*z
             ComputeDotProduct(nrow, r, z, rtz, t4, dcFT, ctx, lrt);
             TOCK(t1);
+            //
             beta = rtz / oldrtz;
             //
             TICK(); // p = beta*p + z
             ComputeWAXPBY(nrow, 1.0, z, beta, p, p);
             TOCK(t2);
         }
-
         TICK(); // Ap = A*p
         ComputeSPMV(A, p, Ap, ctx, lrt);
         TOCK(t3);
