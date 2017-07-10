@@ -228,7 +228,7 @@ CG(
         //
         if (rank == 0 && ( k % print_freq == 0 || k == maxIter)) {
             cout << "Iteration = "<< k << "   Scaled Residual = "
-                << normr / normr0 << std::endl;
+                 << normr / normr0 << std::endl;
         }
         niters = k;
   }

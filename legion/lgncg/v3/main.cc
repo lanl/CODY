@@ -122,7 +122,8 @@ genProblemTask(
     Array<floatType> x     (regions[rid++], ctx, runtime);
     Array<floatType> xexact(regions[rid++], ctx, runtime);
     //
-    GenerateProblem(A, &b, &x, &xexact, 0, ctx, runtime);
+    const int levelZero = 0;
+    GenerateProblem(A, &b, &x, &xexact, levelZero, ctx, runtime);
     GetNeighborInfo(A);
     //
     curLevelMatrix = &A;
@@ -313,7 +314,13 @@ mainTask(
     // Now that we have all the setup information stored in LogicalRegions,
     // perform the top-level setup required for inter-task synchronization using
     // PhaseBarriers.
-    SetupHaloTopLevel(A, initGeom, ctx, runtime);
+    {
+        LogicalSparseMatrix *curLevelMatrix = &A;
+        for (int level = 0; level < NUM_MG_LEVELS; ++level) {
+            SetupHaloTopLevel(*curLevelMatrix, level, ctx, runtime);
+            curLevelMatrix = curLevelMatrix->Ac;
+        }
+    }
 
     ////////////////////////////////////////////////////////////////////////////
     // Launch the tasks to begin the solve.

@@ -56,6 +56,7 @@
 #include "LegionMatrices.hpp"
 #include "ReduceSum.hpp"
 
+#include <iomanip>
 #include <map>
 #include <sstream>
 #include <cassert>
@@ -177,7 +178,8 @@ GenerateProblem(
         const size_t pMemInB = sparseMatMemInB + vectorsMemInB;
         const double pMemInMB = pMemInB / 1024.0 / 1024.0;
         cout << "--> Approximate Generate Problem Memory Footprint"
-                " (Level " << level << ")=" << pMemInMB << " MB" << endl;
+                " (Level " << level << ")="
+             << pMemInMB << " MB" << endl;
     }
     char *nonzerosInRow = A.nonzerosInRow->data();
     assert(nonzerosInRow);

@@ -118,7 +118,7 @@ GenerateCoarseProblem(
     Context ctx,
     HighLevelRuntime *lrt
 ) {
-    const Geometry *AfGeom = Af.geom->data();
+    const Geometry *const AfGeom = Af.geom->data();
     assert(AfGeom);
     // Make local copies of geometry information.  Use global_int_t since the
     // RHS products in the calculations below may result in global range values.

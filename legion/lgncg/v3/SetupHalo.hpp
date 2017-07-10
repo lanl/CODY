@@ -306,15 +306,16 @@ SetupHalo(
 inline void
 SetupHaloTopLevel(
     LogicalSparseMatrix &A,
-    const Geometry &geom,
+    int level,
     LegionRuntime::HighLevel::Context ctx,
     LegionRuntime::HighLevel::Runtime *lrt
 ) {
     using namespace std;
     //
-    cout << "*** Setting Up Structures for SPMD Exchanges..." << endl;
+    cout << "*** Setting Up Structures for SPMD Exchanges (Level "
+         << level << ")" << endl;
     const double startTime = mytimer();
-    const int nShards = geom.size;
+    const int nShards = A.geom->size;
     // Extract required info from logical structures.
     cout << "--> Memory for SparseMatrixScalars="
          << (sizeof(SparseMatrixScalars) * nShards) / 1024.0 / 1024.0
@@ -325,7 +326,7 @@ SetupHaloTopLevel(
     SparseMatrixScalars *smScalars = aSparseMatrixScalars.data();
     assert(smScalars);
     //
-    const int maxNumNeighbors = geom.stencilSize - 1;
+    const int maxNumNeighbors = A.geom->stencilSize - 1;
     cout << "--> Memory for Neighbors="
          << (sizeof(int) * nShards * maxNumNeighbors) / 1024.0 / 1024.0
          << " MB" << endl;
@@ -334,7 +335,7 @@ SetupHaloTopLevel(
         A.neighbors.mapRegion(RO_E, ctx, lrt), ctx, lrt
     );
     // For convenience we'll interpret this as a 2D array.
-    Array2D<int> neighbors(geom.size, maxNumNeighbors, aNeighbors.data());
+    Array2D<int> neighbors(nShards, maxNumNeighbors, aNeighbors.data());
     //
     cout << "--> Memory for Synchronizers="
          << (sizeof(Synchronizers) * nShards) / 1024.0 / 1024.0
@@ -352,7 +353,7 @@ SetupHaloTopLevel(
         A.sendLength.mapRegion(RO_E, ctx, lrt), ctx, lrt
     );
     Array2D<local_int_t> ASendLengths(
-        geom.size, maxNumNeighbors, aSendLengths.data()
+        nShards, maxNumNeighbors, aSendLengths.data()
     );
     // Iterate over all shards and populate table that maps task IDs to their
     // index into the neighbor list.
@@ -372,7 +373,7 @@ SetupHaloTopLevel(
         // Get total number of neighbors this shard has
         const SparseMatrixScalars &myScalars = smScalars[shard];
         const int nNeighbors = myScalars.numberOfSendNeighbors;
-#if 1 // Debug
+#if 0 // Debug
         cout << "Rank " << shard << " Has "
              << nNeighbors << " Pull Neighbors: " << endl;
         for (int n = 0; n < nNeighbors; ++n) {
