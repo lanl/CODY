@@ -29,8 +29,9 @@
 
 #pragma once
 
-#include "legion.h"
 #include "Types.hpp"
+
+#include "legion.h"
 
 using namespace LegionRuntime::HighLevel;
 
