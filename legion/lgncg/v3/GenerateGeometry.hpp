@@ -52,29 +52,30 @@ GenerateGeometry(
     int stencilSize,
     Geometry *geom
 ) {
+    using namespace std;
+
     int npx, npy, npz;
     //
     ComputeOptimalShapeXYZ(size, npx, npy, npz);
     // Now compute this process's indices in the 3D cube
-    int ipz = rank/(npx*npy);
-    int ipy = (rank-ipz*npx*npy)/npx;
-    int ipx = rank%npx;
-#ifdef HPCG_DEBUG
-    if (rank==0) {
-        HPCG_fout << "size = "<< size << endl
-                  << "nx  = " << nx << endl
-                  << "ny  = " << ny << endl
-                  << "nz  = " << nz << endl
-                  << "npx = " << npx << endl
-                  << "npy = " << npy << endl
-                  << "npz = " << npz << endl;
+    int ipz = rank / (npx * npy);
+    int ipy = (rank - ipz * npx * npy) / npx;
+    int ipx = rank % npx;
+#if 0
+    cout << "size = "<< size << endl
+         << "nx  = " << nx << endl
+         << "ny  = " << ny << endl
+         << "nz  = " << nz << endl
+         << "npx = " << npx << endl
+         << "npy = " << npy << endl
+         << "npz = " << npz << endl;
     }
-    HPCG_fout << "For rank = " << rank << endl
-              << "ipx = " << ipx << endl
-              << "ipy = " << ipy << endl
-              << "ipz = " << ipz << endl;
+    cout << "For rank = " << rank << endl
+         << "ipx = " << ipx << endl
+         << "ipy = " << ipy << endl
+         << "ipz = " << ipz << endl;
     //     
-    assert(size==npx*npy*npz);
+    assert(size == npx * npy * npz);
 #endif
     geom->size = size;
     geom->rank = rank;
@@ -89,5 +90,4 @@ GenerateGeometry(
     geom->ipx = ipx;
     geom->ipy = ipy;
     geom->ipz = ipz;
-    return;
 }

@@ -41,17 +41,14 @@
 //@HEADER
 
 /*!
- @file Geometry.hpp
+    @file Geometry.hpp
 
- HPCG data structure for problem geometry
+    HPCG data structure for problem geometry
  */
 
-#ifndef GEOMETRY_HPP
-#define GEOMETRY_HPP
+#pragma once
 
 #include "Types.hpp"
-
-#include <ostream>
 
 /*!
   This is a data structure to contain all processor geometry information
@@ -84,7 +81,7 @@ typedef struct Geometry_STRUCT Geometry;
 */
 inline int
 ComputeRankOfMatrixRow(
-    const Geometry & geom,
+    const Geometry &geom,
     global_int_t index
 ) {
     global_int_t gnx = geom.nx*geom.npx;
@@ -97,6 +94,7 @@ ComputeRankOfMatrixRow(
     global_int_t ipy = iy/geom.ny;
     global_int_t ipx = ix/geom.nx;
     int rank = ipx+ipy*geom.npx+ipz*geom.npy*geom.npx;
+    //
     return rank;
 }
 
@@ -113,9 +111,3 @@ getGlobalXYZ(
 
     return res;
 }
-
-////////////////////////////////////////////////////////////////////////////////
-std::ostream &
-operator<<(std::ostream &os, const Geometry &geom);
-
-#endif // GEOMETRY_HPP

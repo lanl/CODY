@@ -40,21 +40,22 @@
 // ***************************************************
 //@HEADER
 
+#include "IOOps.hpp"
+#include "LegionStuff.hpp"
+#include "LegionArrays.hpp"
+#include "LegionMatrices.hpp"
+#include "LegionCGData.hpp"
+
 #include "hpcg.hpp"
 #include "mytimer.hpp"
 #include "Geometry.hpp"
 #include "CheckAspectRatio.hpp"
 #include "GenerateGeometry.hpp"
 #include "GenerateProblem.hpp"
-#include "VectorOps.hpp"
+#include "GenerateCoarseProblem.hpp"
 #include "SetupHalo.hpp"
+#include "VectorOps.hpp"
 #include "CG.hpp"
-
-#include "IOOps.hpp"
-#include "LegionStuff.hpp"
-#include "LegionArrays.hpp"
-#include "LegionMatrices.hpp"
-#include "LegionCGData.hpp"
 
 #include <iostream>
 #include <cstdlib>
@@ -152,7 +153,8 @@ createLogicalStructures(
     LogicalArray<floatType> &y,
     LogicalArray<floatType> &xexact,
     const Geometry          &geom,
-    Context ctx, HighLevelRuntime *runtime
+    Context ctx,
+    HighLevelRuntime *runtime
 ) {
     cout << "*** Creating Logical Structures..." << endl;
     const double initStart = mytimer();
@@ -162,12 +164,23 @@ createLogicalStructures(
     //
     A.allocate("A", geom, ctx, runtime);
     A.partition(geom.size, ctx, runtime);
+    A.geom = new Geometry(geom);
     x.allocate("x", globalXYZ, ctx, runtime);
     x.partition(geom.size, ctx, runtime);
     y.allocate("y", globalXYZ, ctx, runtime);
     y.partition(geom.size, ctx, runtime);
     xexact.allocate("xexact", globalXYZ, ctx, runtime);
     xexact.partition(geom.size, ctx, runtime);
+    //
+    cout << "*** Creating Logical MG Structures..." << endl;
+    LogicalSparseMatrix *curLevelMatrix = &A;
+    for (int level = 1; level < NUM_MG_LEVELS; ++level) {
+        GenerateCoarseProblem(
+            *curLevelMatrix,
+            ctx,
+            runtime
+        );
+    }
     const double initEnd = mytimer();
     const double initTime = initEnd - initStart;
     cout << "--> Time=" << initTime << "s" << endl;
@@ -219,6 +232,7 @@ mainTask(
     // in this context.
     const SPMDMeta meta = {.rank = 0, .nRanks = int(nShards)};
     HPCG_Params params;
+    //
     HPCG_Init(params, meta);
     //
     Geometry initGeom;

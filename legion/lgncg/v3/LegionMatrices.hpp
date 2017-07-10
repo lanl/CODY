@@ -139,6 +139,13 @@ struct LogicalSparseMatrix : public LogicalMultiBase {
     std::vector< std::vector< LogicalArray<floatType> *> > srcSharedRegions;
     // Similar structure the pullers will use to setup RegionRequirements.
     std::vector< std::vector< LogicalArray<floatType> *> > dstSharedRegions;
+    ////////////////////////////////////////////////////////////////////////////
+    // Task-local (i.e., only valid in task where instance was created).
+    ////////////////////////////////////////////////////////////////////////////
+    // Coarse grid matrix.
+    LogicalSparseMatrix *Ac = nullptr;
+    // Geometry for top-level setup.
+    Geometry *geom = nullptr;
 
 protected:
     // Number of shards used for SparseMatrix decomposition.
@@ -169,6 +176,7 @@ protected:
     }
 
 public:
+
     /**
      *
      */
@@ -176,6 +184,15 @@ public:
         // -1 signifies that regions have not yet been allocated.
         mSize = -1;
         mPopulateRegionList();
+    }
+
+    /**
+     *
+     */
+    virtual
+    ~LogicalSparseMatrix(void) {
+        if (Ac)   delete Ac;
+        if (geom) delete geom;
     }
 
     /**

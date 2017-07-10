@@ -41,18 +41,19 @@
 //@HEADER
 
 /*!
- @file hpcg.hpp
+    @file hpcg.hpp
 
- HPCG data structures and functions
+    HPCG data structures and functions
  */
 
 #pragma once
 
 #include "LegionStuff.hpp"
 
-#define HPCG_STENCIL 27
+#define HPCG_STENCIL  27
+#define NUM_MG_LEVELS 4
 
-struct HPCG_Params_STRUCT {
+struct HPCG_Params {
     int commSize ; //!< Total number of shards.
     int numThreads; //!< This process' number of threads.
     int nx; //!< Number of x-direction grid points for each local subdomain.
@@ -62,10 +63,6 @@ struct HPCG_Params_STRUCT {
     int runningTime;
     int stencilSize; //!< Size of the stencil
 };
-/*!
-  HPCG_Params is a shorthand for HPCG_Params_STRUCT
- */
-typedef HPCG_Params_STRUCT HPCG_Params;
 
 extern int HPCG_Init(HPCG_Params &params, const SPMDMeta &spmdMeta);
 extern int HPCG_Finalize(void);
