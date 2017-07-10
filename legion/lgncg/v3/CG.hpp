@@ -41,9 +41,9 @@
 //@HEADER
 
 /*!
- @file CG.hpp
+    @file CG.hpp
 
- HPCG routine
+    HPCG routine
  */
 
 #include <fstream>
@@ -66,36 +66,48 @@
 #include "ComputeMG_ref.hpp"
 #endif
 
-// Use TICK and TOCK to time a code section in MATLAB-like fashion
-#define TICK()  t0 = mytimer() //!< record current time in 't0'
-#define TOCK(t) t += mytimer() - t0 //!< store time difference in 't' using time in 't0'
+// Use TICK and TOCK to time a code section in MATLAB-like fashion.
+//!< record current time in 't0'
+#define TICK()  t0 = mytimer()
+//!< store time difference in 't' using time in 't0'
+#define TOCK(t) t += mytimer() - t0
 
 /*!
-  Reference routine to compute an approximate solution to Ax = b
+    Reference routine to compute an approximate solution to Ax = b
 
-  @param[inout] A    The known system matrix
-  @param[inout] data The data structure with all necessary CG vectors
-                     preallocated
-  @param[in]    b    The known right hand side vector
-  @param[inout] x    On entry: the initial guess; on exit: the new approximate
-                     solution
-  @param[in]    max_iter  The maximum number of iterations to perform, even if
-                tolerance is not met.
-  @param[in]    tolerance The stopping criterion to assert convergence: if norm
-                of residual is <= to tolerance.
-  @param[out]   niters    The number of iterations actually performed.
-  @param[out]   normr     The 2-norm of the residual vector after the last
-                          iteration.
-  @param[out]   normr0    The 2-norm of the residual vector before the first
-                          iteration.
-  @param[out]   times     The 7-element vector of the timing information
-                          accumulated during all of the iterations.
-  @param[in]    doPreconditioning The flag to indicate whether the
-                preconditioner should be invoked at each iteration.
+    @param[inout] A    The known system matrix.
 
-  @return Returns zero on success and a non-zero value otherwise.
+    @param[inout] data The data structure with all necessary CG vectors
+                  preallocated.
 
-  @see CG()
+    @param[in]    b    The known right hand side vector.
+
+    @param[inout] x    On entry: the initial guess; on exit: the new approximate
+                       solution.
+
+    @param[in]    max_iter  The maximum number of iterations to perform, even if
+                  tolerance is not met.
+
+    @param[in]    tolerance The stopping criterion to assert convergence: if norm
+                  of residual is <= to tolerance.
+
+    @param[out]   niters    The number of iterations actually performed.
+
+    @param[out]   normr     The 2-norm of the residual vector after the last
+                            iteration.
+
+    @param[out]   normr0    The 2-norm of the residual vector before the first
+                            iteration.
+
+    @param[out]   times     The 7-element vector of the timing information
+                            accumulated during all of the iterations.
+
+    @param[in]    doPreconditioning The flag to indicate whether the
+                  preconditioner should be invoked at each iteration.
+
+    @return Returns zero on success and a non-zero value otherwise.
+
+    @see CG()
 */
 inline int
 CG(
