@@ -85,7 +85,7 @@
     @param[inout] x    On entry: the initial guess; on exit: the new approximate
                        solution.
 
-    @param[in]    max_iter  The maximum number of iterations to perform, even if
+    @param[in]    maxIter  The maximum number of iterations to perform, even if
                   tolerance is not met.
 
     @param[in]    tolerance The stopping criterion to assert convergence: if norm
@@ -115,7 +115,7 @@ CG(
     CGData &data,
     const Array<floatType> &b,
     Array<floatType> &x,
-    const int max_iter,
+    const int maxIter,
     const double tolerance,
     int &niters,
     double &normr,
@@ -170,7 +170,7 @@ CG(
     normr0 = normr;
 
     // Start iterations
-    for (int k = 1; k <= max_iter && normr / normr0 > tolerance; k++ ) {
+    for (int k = 1; k <= maxIter && normr / normr0 > tolerance; k++ ) {
         TICK();
         if (doPreconditioning) {
 #if 0
@@ -184,9 +184,11 @@ CG(
         TOCK(t5); // Preconditioner apply time
 
         if (k == 1) {
-            TICK(); CopyVector(z, p, ctx, lrt); TOCK(t2); // Copy Mr to p
-            // rtz = r'*z
-            TICK();
+            TICK(); // Copy Mr to p
+            CopyVector(z, p, ctx, lrt);
+            TOCK(t2);
+            //
+            TICK(); // rtz = r'*z
             ComputeDotProduct(nrow, r, z, rtz, t4, dcFT, ctx, lrt);
             TOCK(t1);
         }
@@ -224,7 +226,7 @@ CG(
         TOCK(t1);
         normr = sqrt(normr);
         //
-        if (rank == 0 && ( k % print_freq == 0 || k == max_iter)) {
+        if (rank == 0 && ( k % print_freq == 0 || k == maxIter)) {
             cout << "Iteration = "<< k << "   Scaled Residual = "
                 << normr / normr0 << std::endl;
         }
