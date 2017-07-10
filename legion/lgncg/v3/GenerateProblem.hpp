@@ -274,6 +274,20 @@ GenerateProblem(
     // Will be updated later to include external values in GetNeighborInfo.
     Asclrs->localNumberOfColumns  = localNumberOfRows;
     Asclrs->localNumberOfNonzeros = localNumberOfNonzeros;
+#if 0 // Debug
+    {
+        global_int_t expected = 0;
+        global_int_t lnnz = 0, tnnz = 0;
+        //
+        for (int i = 0; i < 10; ++i) {
+            tnnz += getTotalNumberOfNonZeros(A, lnnz, ctx, runtime);
+            lnnz++;
+            expected += (i * Ageom->size);
+        }
+        //
+        std::cout << "Expected=" << expected << " Actual=" << tnnz << std::endl;
+    }
+#endif
     //
     Asclrs->totalNumberOfNonzeros = getTotalNumberOfNonZeros(
         A,
