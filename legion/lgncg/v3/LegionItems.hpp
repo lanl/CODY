@@ -97,6 +97,16 @@ public:
     /**
      *
      */
+    virtual void
+    partition(
+        size_t nParts,
+        Legion::Context ctx,
+        Legion::HighLevelRuntime *lrt
+    ) { /* Nothing to do. */ }
+
+    /**
+     *
+     */
     void
     setParentLogicalRegion(
         const LogicalRegion &parent

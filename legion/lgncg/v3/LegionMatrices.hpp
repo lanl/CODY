@@ -394,23 +394,9 @@ public:
         LegionRuntime::HighLevel::Context ctx,
         LegionRuntime::HighLevel::HighLevelRuntime *lrt
     ) {
-        // TODO use mLogicalItems to iterate over items.
-        geoms.partition(           nParts, ctx, lrt);
-        sclrs.partition(           nParts, ctx, lrt);
-        nonzerosInRow.partition(   nParts, ctx, lrt);
-        mtxIndG.partition(         nParts, ctx, lrt);
-        mtxIndL.partition(         nParts, ctx, lrt);
-        matrixValues.partition(    nParts, ctx, lrt);
-        matrixDiagonal.partition(  nParts, ctx, lrt);
-        localToGlobalMap.partition(nParts, ctx, lrt);
-        dcAllRedSumGI.partition(   nParts, ctx, lrt);
-        dcAllRedSumFT.partition(   nParts, ctx, lrt);
-        neighbors.partition(       nParts, ctx, lrt);
-        sendLength.partition(      nParts, ctx, lrt);
-        recvLength.partition(      nParts, ctx, lrt);
-        synchronizers.partition(   nParts, ctx, lrt);
-        pullBEs.partition(         nParts, ctx, lrt);
-        //
+        for (auto *i : mLogicalItems) {
+            i->partition(nParts, ctx, lrt);
+        }
         // For the DynamicCollectives we need partition info before population.
         const auto nArrivals = nParts;
         DynColl<global_int_t> dynColGI(INT_REDUCE_SUM_TID, nArrivals);
