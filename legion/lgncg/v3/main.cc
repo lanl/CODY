@@ -62,15 +62,13 @@
 
 using namespace std;
 
-LegionRuntime::Logger::Category Logger("LGNCG");
-
 /**
  * Generate Problem Task ///////////////////////////////////////////////////////
  */
 void
 genProblemTask(
     const Task *task,
-    const std::vector<PhysicalRegion> &regions,
+    const vector<PhysicalRegion> &regions,
     Context ctx, HighLevelRuntime *runtime
 ) {
     const int taskID = getTaskID(task);
@@ -204,7 +202,7 @@ destroyLogicalStructures(
 void
 mainTask(
     const Task *,
-    const std::vector<PhysicalRegion> &,
+    const vector<PhysicalRegion> &,
     Context ctx, HighLevelRuntime *runtime
 ) {
     // Ask the mapper how many shards we can have.
@@ -329,7 +327,7 @@ mainTask(
 void
 startSolveTask(
     const Task *task,
-    const std::vector<PhysicalRegion> &regions,
+    const vector<PhysicalRegion> &regions,
     Context ctx,
     HighLevelRuntime *lrt
 ) {
@@ -386,11 +384,11 @@ startSolveTask(
     // Set tolerance to zero to make all runs do maxIters iterations
     double tolerance    = 0.0;
 
-    std::vector<double> optTimes(9, 0.0);
+    vector<double> optTimes(9, 0.0);
     // Compute the residual reduction and residual count for the user ordering
     // and optimized kernels.
     for (int i = 0; i < numberOfCalls; ++i) {
-        ZeroVector(x, ctx, lrt); // Start x at all zeros. // TODO uncomment.
+        ZeroVector(x, ctx, lrt); // Start x at all zeros.
         double lastCummulativeTime = optTimes[0];
         int ierr = CG(A,
                       data,

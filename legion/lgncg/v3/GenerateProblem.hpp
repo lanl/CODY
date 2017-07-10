@@ -69,23 +69,29 @@ getTotalNumberOfNonZeros(
     LegionRuntime::HighLevel::Context ctx,
     LegionRuntime::HighLevel::Runtime *runtime
 ) {
-    DynamicCollective &dcAllreduceSum = A.dcAllRedSumGI->data()->dc;
+    Item< DynColl<global_int_t> > *dcars = A.dcAllRedSumGI;
     //
-    TaskLauncher tlLocalNZ(LOCAL_NONZEROS_TID, TaskArgument(NULL, 0));
+    TaskLauncher tlLocalNZ(
+        LOCAL_NONZEROS_TID,
+        TaskArgument(NULL, 0)
+    );
+    //
     tlLocalNZ.add_region_requirement(
         RegionRequirement(
-            A.dcAllRedSumGI->logicalRegion,
+            dcars->logicalRegion,
             RO_E,
-            A.dcAllRedSumGI->logicalRegion
+            dcars->logicalRegion
         )
-    ).add_field(A.dcAllRedSumGI->getFieldID());
+    ).add_field(dcars->getFieldID());
     //
     Future future = runtime->execute_task(ctx, tlLocalNZ);
     //
-    runtime->defer_dynamic_collective_arrival(ctx, dcAllreduceSum, future);
-    dcAllreduceSum = runtime->advance_dynamic_collective(ctx, dcAllreduceSum);
+    auto &dyncol = dcars->data()->dc;
+    runtime->defer_dynamic_collective_arrival(ctx, dyncol, future);
     //
-    Future fSum = runtime->get_dynamic_collective_result(ctx, dcAllreduceSum);
+    dyncol = runtime->advance_dynamic_collective(ctx, dyncol);
+    //
+    Future fSum = runtime->get_dynamic_collective_result(ctx, dyncol);
 
     return fSum.get<global_int_t>();
 }
