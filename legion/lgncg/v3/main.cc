@@ -122,13 +122,14 @@ genProblemTask(
     Array<floatType> x     (regions[rid++], ctx, runtime);
     Array<floatType> xexact(regions[rid++], ctx, runtime);
     //
-    GenerateProblem(A, &b, &x, &xexact, ctx, runtime);
+    GenerateProblem(A, &b, &x, &xexact, 0, ctx, runtime);
     GetNeighborInfo(A);
     //
     curLevelMatrix = &A;
     for (int level = 1; level < NUM_MG_LEVELS; ++level) {
         GenerateCoarseProblem(
             *curLevelMatrix,
+            level,
             ctx,
             runtime
         );

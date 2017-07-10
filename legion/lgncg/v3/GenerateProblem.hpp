@@ -118,6 +118,7 @@ GenerateProblem(
     Array<floatType> *b,
     Array<floatType> *x,
     Array<floatType> *xexact,
+    int level,
     LegionRuntime::HighLevel::Context ctx,
     LegionRuntime::HighLevel::Runtime *runtime
 ) {
@@ -175,8 +176,8 @@ GenerateProblem(
         //
         const size_t pMemInB = sparseMatMemInB + vectorsMemInB;
         const double pMemInMB = pMemInB / 1024.0 / 1024.0;
-        cout << "--> Approximate Generate Problem Memory Footprint="
-             << pMemInMB << " MB" << endl;
+        cout << "--> Approximate Generate Problem Memory Footprint"
+                " (Level " << level << ")=" << pMemInMB << " MB" << endl;
     }
     char *nonzerosInRow = A.nonzerosInRow->data();
     assert(nonzerosInRow);

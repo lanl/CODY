@@ -114,6 +114,7 @@ GenerateCoarseProblemTopLevel(
 inline void
 GenerateCoarseProblem(
     const SparseMatrix &Af,
+    int level,
     Context ctx,
     HighLevelRuntime *lrt
 ) {
@@ -150,6 +151,6 @@ GenerateCoarseProblem(
         Af.Ac->geom->data()
     );
     //
-    GenerateProblem(*Af.Ac, NULL, NULL, NULL, ctx, lrt);
+    GenerateProblem(*Af.Ac, NULL, NULL, NULL, level, ctx, lrt);
     GetNeighborInfo(*Af.Ac);
 }
