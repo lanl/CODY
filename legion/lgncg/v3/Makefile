@@ -33,7 +33,7 @@ GEN_SRC		?= \
 main.cc init.cc mytimer.cc \
 ReadHpcgDat.cc CheckAspectRatio.cc \
 MixedBaseCounter.cc ComputeOptimalShapeXYZ.cc \
-ReduceSum.cc
+ReduceSum.cc LegionMGData.cc
 
 GEN_GPU_SRC	?= 					# .cu files
 

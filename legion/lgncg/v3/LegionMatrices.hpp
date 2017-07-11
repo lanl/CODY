@@ -43,6 +43,7 @@
 #include "LegionStuff.hpp"
 #include "LegionItems.hpp"
 #include "LegionArrays.hpp"
+#include "LegionMGData.hpp"
 
 #include "hpcg.hpp"
 #include "Geometry.hpp"
@@ -574,7 +575,7 @@ struct SparseMatrix : public PhysicalMultiBase {
         if (elementsToSend) delete[] elementsToSend;
         for (auto *i : pullBuffers) delete i;
         if (Ac) delete Ac;
-        // TODO delete mgData
+        if (mgData) delete mgData;
     }
 
 protected:

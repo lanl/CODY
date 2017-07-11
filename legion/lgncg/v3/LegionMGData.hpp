@@ -49,9 +49,10 @@
 #pragma once
 
 #include "LegionArrays.hpp"
-#include "LegionMatrices.hpp"
 
 #include <cassert>
+
+class SparseMatrix;
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -102,36 +103,16 @@ public:
         LegionRuntime::HighLevel::HighLevelRuntime *lrt
     ) { /* Nothing to do. */ }
 
+    /**
+     *
+     */
     void
     allocate(
         const std::string &name,
         SparseMatrix &A,
         LegionRuntime::HighLevel::Context ctx,
         LegionRuntime::HighLevel::HighLevelRuntime *lrt
-    ) {
-        #define aalloca(sName, size, ctx, rtp)                                 \
-        do {                                                                   \
-            sName.allocate(name + "-" #sName, size, ctx, rtp);                 \
-        } while(0)
-
-        assert(A.Ac);
-
-        auto *Afsclrs = A.sclrs->data();
-        auto *Acsclrs = A.Ac->sclrs->data();
-        //
-        const local_int_t nrowf = Afsclrs->localNumberOfRows;
-        const local_int_t ncolf = Afsclrs->localNumberOfColumns;
-        //
-        const local_int_t nrowc = Acsclrs->localNumberOfRows;
-        const local_int_t ncolc = Acsclrs->localNumberOfColumns;
-        //
-        aalloca(f2cOperator,  nrowf, ctx, lrt);
-        aalloca(rc,           nrowc, ctx, lrt);
-        aalloca(xc,           ncolc, ctx, lrt);
-        aalloca(Axf,          ncolf, ctx, lrt);
-
-        #undef aalloca
-    }
+    );
 
     /**
      *

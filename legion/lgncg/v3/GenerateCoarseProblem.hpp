@@ -118,7 +118,7 @@ GenerateCoarseProblemTopLevel(
 */
 inline void
 GenerateCoarseProblem(
-    const SparseMatrix &Af,
+    SparseMatrix &Af,
     int level,
     Context ctx,
     HighLevelRuntime *lrt
@@ -159,3 +159,50 @@ GenerateCoarseProblem(
     GenerateProblem(*Af.Ac, NULL, NULL, NULL, level, ctx, lrt);
     GetNeighborInfo(*Af.Ac);
 }
+
+/**
+ *
+ */
+#if 0
+inline void
+f2cOperatorPopulate(
+    SparseMatrix &Af
+    Context ctx,
+    HighLevelRuntime *lrt
+) {
+    const Geometry *const AfGeom = Af.geom->data();
+    assert(AfGeom);
+    // Make local copies of geometry information.  Use global_int_t since the
+    // RHS products in the calculations below may result in global range values.
+    global_int_t nxf = AfGeom->nx;
+    global_int_t nyf = AfGeom->ny;
+    global_int_t nzf = AfGeom->nz;
+    // Need fine grid dimensions to be divisible by 2
+    assert(nxf % 2 == 0);
+    assert(nyf % 2 == 0);
+    assert(nzf % 2 == 0);
+    //Coarse nx, ny, nz
+    local_int_t nxc, nyc, nzc;
+    nxc = nxf / 2;
+    nyc = nyf / 2;
+    nzc = nzf / 2;
+    // This is the size of our subblock
+    local_int_t localNumberOfRows = nxc * nyc * nzc;
+    // If this assert fails, it most likely means that the local_int_t is set to
+    // int and should be set to long long
+    assert(localNumberOfRows > 0);
+    //
+    for (local_int_t izc = 0; izc < nzc; ++izc) {
+        local_int_t izf = 2 * izc;
+        for (local_int_t iyc = 0; iyc < nyc; ++iyc) {
+            local_int_t iyf = 2 * iyc;
+            for (local_int_t ixc = 0; ixc < nxc; ++ixc) {
+                local_int_t ixf = 2 * ixc;
+                local_int_t cCoarseRow = izc * nxc * nyc + iyc * nxc + ixc;
+                local_int_t cFineRow = izf * nxf * nyf + iyf * nxf + ixf;
+                f2cOperator[cCoarseRow] = currentFineRow;
+            } // end iy loop
+        } // end even iz if statement
+    } // end iz loop
+}
+#endif
