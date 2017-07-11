@@ -48,7 +48,6 @@
 
 #include "LegionMGData.hpp"
 
-#include "LegionArrays.hpp"
 #include "LegionMatrices.hpp"
 
 #include <cassert>

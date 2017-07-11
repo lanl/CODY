@@ -385,8 +385,7 @@ allocateMGData(
     string levels = to_string(level);
     string matrixName = level == 0 ? "A" : "A-L" + levels;
     lMGData.allocate(matrixName, A, ctx, lrt);
-    // Partition?
-    // Stack allocation ok?
+    //
     std::vector<PhysicalRegion> mgRegions;
     mgRegions.push_back(lMGData.f2cOperator.mapRegion(RW_E, ctx, lrt));
     mgRegions.push_back(         lMGData.rc.mapRegion(RW_E, ctx, lrt));
@@ -448,6 +447,7 @@ startSolveTask(
     curLevelMatrix = &A;
     for (int level = 1; level < NUM_MG_LEVELS; ++level) {
         allocateMGData(*curLevelMatrix, level - 1, ctx, lrt);
+        f2cOperatorPopulate(*curLevelMatrix, ctx, lrt);
         curLevelMatrix = curLevelMatrix->Ac;
     }
     // Sanity

@@ -163,12 +163,11 @@ GenerateCoarseProblem(
 /**
  *
  */
-#if 0
 inline void
 f2cOperatorPopulate(
-    SparseMatrix &Af
-    Context ctx,
-    HighLevelRuntime *lrt
+    SparseMatrix &Af,
+    Context,
+    HighLevelRuntime *
 ) {
     const Geometry *const AfGeom = Af.geom->data();
     assert(AfGeom);
@@ -192,6 +191,8 @@ f2cOperatorPopulate(
     // int and should be set to long long
     assert(localNumberOfRows > 0);
     //
+    local_int_t *f2cOperator = Af.mgData->f2cOperator->data();
+    assert(f2cOperator);
     for (local_int_t izc = 0; izc < nzc; ++izc) {
         local_int_t izf = 2 * izc;
         for (local_int_t iyc = 0; iyc < nyc; ++iyc) {
@@ -200,9 +201,8 @@ f2cOperatorPopulate(
                 local_int_t ixf = 2 * ixc;
                 local_int_t cCoarseRow = izc * nxc * nyc + iyc * nxc + ixc;
                 local_int_t cFineRow = izf * nxf * nyf + iyf * nxf + ixf;
-                f2cOperator[cCoarseRow] = currentFineRow;
+                f2cOperator[cCoarseRow] = cFineRow;
             } // end iy loop
         } // end even iz if statement
     } // end iz loop
 }
-#endif
