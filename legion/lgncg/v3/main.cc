@@ -45,6 +45,7 @@
 #include "LegionArrays.hpp"
 #include "LegionMatrices.hpp"
 #include "LegionCGData.hpp"
+#include "LegionMGData.hpp"
 
 #include "hpcg.hpp"
 #include "mytimer.hpp"
@@ -373,6 +374,32 @@ mainTask(
 /**
  *
  */
+inline void
+allocateMGData(
+    SparseMatrix &A,
+    int level,
+    Context ctx,
+    HighLevelRuntime *lrt
+) {
+    LogicalMGData lMGData;
+    string levels = to_string(level);
+    string matrixName = level == 0 ? "A" : "A-L" + levels;
+    lMGData.allocate(matrixName, A, ctx, lrt);
+    // Partition?
+    // Stack allocation ok?
+    std::vector<PhysicalRegion> mgRegions;
+    mgRegions.push_back(lMGData.f2cOperator.mapRegion(RW_E, ctx, lrt));
+    mgRegions.push_back(         lMGData.rc.mapRegion(RW_E, ctx, lrt));
+    mgRegions.push_back(         lMGData.xc.mapRegion(RW_E, ctx, lrt));
+    mgRegions.push_back(        lMGData.Axf.mapRegion(RW_E, ctx, lrt));
+    //
+    const int mgDataBaseRID = 0;
+    A.mgData = new MGData(mgRegions, mgDataBaseRID, ctx, lrt);
+}
+
+/**
+ *
+ */
 void
 startSolveTask(
     const Task *task,
@@ -398,7 +425,10 @@ startSolveTask(
     Array<floatType> b     (regions[rid++], ctx, lrt);
     Array<floatType> x     (regions[rid++], ctx, lrt);
     Array<floatType> xexact(regions[rid++], ctx, lrt);
+    ////////////////////////////////////////////////////////////////////////////
     // Private data for this task.
+    ////////////////////////////////////////////////////////////////////////////
+    // CGData
     LogicalCGData lCGData;
     lCGData.allocate("cgdata", A, ctx, lrt);
     lCGData.partition(A, ctx, lrt);
@@ -414,14 +444,22 @@ startSolveTask(
     //
     const int cgDataBaseRID = 0;
     CGData data(cgRegions, cgDataBaseRID, ctx, lrt);
-
+    // MGData
+    curLevelMatrix = &A;
+    for (int level = 1; level < NUM_MG_LEVELS; ++level) {
+        allocateMGData(*curLevelMatrix, level - 1, ctx, lrt);
+        curLevelMatrix = curLevelMatrix->Ac;
+    }
     // Sanity
     assert(getTaskID(task) == A.geom->data()->rank);
-
     ////////////////////////////////////////////////////////////////////////////
-    // Setup halo information before we begin.
+    // Setup halo information for all levels before we begin.
     ////////////////////////////////////////////////////////////////////////////
-    SetupHalo(A, ctx, lrt);
+    curLevelMatrix = &A;
+    for (int level = 0; level < NUM_MG_LEVELS; ++level) {
+        SetupHalo(*curLevelMatrix, ctx, lrt);
+        curLevelMatrix = curLevelMatrix->Ac;
+    }
 
     const int refMaxIters  = 50;
     const int optMaxIters  = 10 * refMaxIters;

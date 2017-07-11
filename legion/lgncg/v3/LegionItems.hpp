@@ -184,7 +184,11 @@ public:
     deallocate(
         LegionRuntime::HighLevel::Context ctx,
         LegionRuntime::HighLevel::HighLevelRuntime *lrt
-    ) = 0;
+    ) {
+        for (auto *i : mLogicalItems) {
+            i->deallocate(ctx, lrt);
+        }
+    }
 
     /**
      *

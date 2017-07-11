@@ -143,19 +143,6 @@ public:
         r.partition( numParts, ctx, lrt);
         Ap.partition(numParts, ctx, lrt);
     }
-
-    /**
-     * Cleans up and returns all allocated resources.
-     */
-    void
-    deallocate(
-        LegionRuntime::HighLevel::Context ctx,
-        LegionRuntime::HighLevel::HighLevelRuntime *lrt
-    ) {
-        for (auto *i : mLogicalItems) {
-            i->deallocate(ctx, lrt);
-        }
-    }
 };
 
 ////////////////////////////////////////////////////////////////////////////////

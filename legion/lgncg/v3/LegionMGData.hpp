@@ -75,7 +75,12 @@ protected:
      */
     void
     mPopulateRegionList(void) {
-        mLogicalItems = {&f2cOperator, &rc, &xc, &Axf};
+        mLogicalItems = {
+            &f2cOperator,
+            &rc,
+            &xc,
+            &Axf
+        };
     }
 
 public:
@@ -109,16 +114,34 @@ public:
             sName.allocate(name + "-" #sName, size, ctx, rtp);                 \
         } while(0)
 
-        const local_int_t nrow = A.sclrs->data()->localNumberOfRows;
-        const local_int_t ncol = A.sclrs->data()->localNumberOfColumns;
+        assert(A.Ac);
+
+        auto *Afsclrs = A.sclrs->data();
+        auto *Acsclrs = A.Ac->sclrs->data();
         //
-        aalloca(f2cOperator,  nrow, ctx, lrt);
-        aalloca(rc,           ncol, ctx, lrt);
-        aalloca(xc,           ncol, ctx, lrt);
-        aalloca(Axf,          nrow, ctx, lrt);
+        const local_int_t nrowf = Afsclrs->localNumberOfRows;
+        const local_int_t ncolf = Afsclrs->localNumberOfColumns;
+        //
+        const local_int_t nrowc = Acsclrs->localNumberOfRows;
+        const local_int_t ncolc = Acsclrs->localNumberOfColumns;
+        //
+        aalloca(f2cOperator,  nrowf, ctx, lrt);
+        aalloca(rc,           nrowc, ctx, lrt);
+        aalloca(xc,           ncolc, ctx, lrt);
+        aalloca(Axf,          ncolf, ctx, lrt);
 
         #undef aalloca
     }
+
+    /**
+     *
+     */
+    void
+    partition(
+        int64_t nParts,
+        LegionRuntime::HighLevel::Context ctx,
+        LegionRuntime::HighLevel::HighLevelRuntime *lrt
+    ) { /* Nothing to do. */ }
 };
 
 
@@ -126,7 +149,7 @@ public:
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
-class MGData : public PhysicalMultiBase {
+struct MGData : public PhysicalMultiBase {
     // Call ComputeSYMGS this many times prior to coarsening.
     int numberOfPresmootherSteps;
     // Call ComputeSYMGS this many times after coarsening.
