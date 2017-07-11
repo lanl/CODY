@@ -573,6 +573,8 @@ struct SparseMatrix : public PhysicalMultiBase {
         // Task-local allocation of non-region memory.
         if (elementsToSend) delete[] elementsToSend;
         for (auto *i : pullBuffers) delete i;
+        if (Ac) delete Ac;
+        // TODO delete mgData
     }
 
 protected:
