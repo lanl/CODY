@@ -41,9 +41,9 @@
 //@HEADER
 
 /*!
- @file GenerateProblem.hpp
+    @file GenerateProblem.hpp
 
- HPCG routine
+    HPCG routine
  */
 
 #pragma once
@@ -56,9 +56,6 @@
 #include "LegionMatrices.hpp"
 #include "ReduceSum.hpp"
 
-#include <iomanip>
-#include <map>
-#include <sstream>
 #include <cassert>
 
 /**

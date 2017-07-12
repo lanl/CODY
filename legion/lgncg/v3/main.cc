@@ -319,6 +319,7 @@ mainTask(
     {
         LogicalSparseMatrix *curLevelMatrix = &A;
         for (int level = 0; level < NUM_MG_LEVELS; ++level) {
+            // TODO Needed at all levels?
             SetupHaloTopLevel(*curLevelMatrix, level, ctx, runtime);
             curLevelMatrix = curLevelMatrix->Ac;
         }
@@ -496,7 +497,7 @@ startSolveTask(
                       normr,
                       normr0,
                       &optTimes[0],
-                      false, // TODO FIXME
+                      true,
                       ctx,
                       lrt
                    );

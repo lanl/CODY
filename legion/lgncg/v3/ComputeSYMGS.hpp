@@ -87,11 +87,12 @@ ComputeSYMGS(
     Array2D<local_int_t> mtxIndL(
         nrow, nnpr, A.mtxIndL->data()
     );
+    const char *const nonzerosInRow = A.nonzerosInRow->data();
     //
     for (local_int_t i = 0; i < nrow; i++) {
-        const floatType *const currentValues = A.matrixValues(i);
-        const local_int_t *const currentColIndices = A.mtxIndL(i);
-        const int currentNumberOfNonzeros = A.nonzerosInRow[i];
+        const floatType *const currentValues = matrixValues(i);
+        const local_int_t *const currentColIndices = mtxIndL(i);
+        const int currentNumberOfNonzeros = nonzerosInRow[i];
         const floatType currentDiagonal = matrixDiagonal[i];
         double sum = rv[i]; // RHS value
         //
@@ -106,9 +107,9 @@ ComputeSYMGS(
     }
     // Now the back sweep.
     for (local_int_t i = nrow - 1; i >= 0; i--) {
-        const floatType *const currentValues = A.matrixValues(i);
-        const local_int_t *const currentColIndices = A.mtxIndL(i);
-        const int currentNumberOfNonzeros = A.nonzerosInRow[i];
+        const floatType *const currentValues = matrixValues(i);
+        const local_int_t *const currentColIndices = mtxIndL(i);
+        const int currentNumberOfNonzeros = nonzerosInRow[i];
         const floatType currentDiagonal = matrixDiagonal[i];
         double sum = rv[i]; // RHS value
         //
