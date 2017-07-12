@@ -123,6 +123,16 @@ public:
         LegionRuntime::HighLevel::Context ctx,
         LegionRuntime::HighLevel::HighLevelRuntime *lrt
     ) { /* Nothing to do. */ }
+
+    /**
+     *
+     */
+    void
+    partition(
+        SparseMatrix &A,
+        Context ctx,
+        HighLevelRuntime *lrt
+    );
 };
 
 

@@ -386,6 +386,7 @@ allocateMGData(
     string levels = to_string(level);
     string matrixName = level == 0 ? "A" : "A-L" + levels;
     lMGData.allocate(matrixName, A, ctx, lrt);
+    lMGData.partition(A, ctx, lrt);
     //
     std::vector<PhysicalRegion> mgRegions;
     mgRegions.push_back(lMGData.f2cOperator.mapRegion(RW_E, ctx, lrt));

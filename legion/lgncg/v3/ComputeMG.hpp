@@ -60,7 +60,6 @@
 #include <iostream>
 
 /*!
-
     @param[in] A the known system matrix.
 
     @param[in] r the input vector.

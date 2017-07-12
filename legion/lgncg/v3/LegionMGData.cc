@@ -57,7 +57,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-    void
+void
 LogicalMGData::allocate(
     const std::string &name,
     SparseMatrix &A,
@@ -86,4 +86,56 @@ LogicalMGData::allocate(
     aalloca(Axf,          ncolf, ctx, lrt);
 
     #undef aalloca
+}
+
+
+/**
+ *
+ */
+void
+LogicalMGData::partition(
+    SparseMatrix &A,
+    Context ctx,
+    HighLevelRuntime *lrt
+) {
+    assert(A.Ac);
+    //
+    auto *Asclrsf = A.sclrs->data();
+    auto *Asclrsc = A.Ac->sclrs->data();
+    //
+    const local_int_t nrowf = Asclrsf->localNumberOfRows;
+    const local_int_t ncolf = Asclrsf->localNumberOfColumns;
+    const local_int_t nrowc = Asclrsc->localNumberOfRows;
+    const local_int_t ncolc = Asclrsc->localNumberOfColumns;
+    // First nrow items are 'local data'. After is remote data.
+    std::vector<local_int_t> partLensf, partLensc;
+    // First partition for local data.
+    local_int_t totLenf = nrowf, totLenc = nrowc;
+    partLensf.push_back(nrowf);
+    partLensc.push_back(nrowc);
+    // The rest are based on receive lengths.
+    const int nNeighbors = A.sclrs->data()->numberOfRecvNeighbors;
+    assert(nNeighbors == Asclrsc->numberOfSendNeighbors);
+    //
+    const local_int_t *const recvLengthf = A.recvLength->data();
+    const local_int_t *const recvLengthc = A.Ac->recvLength->data();
+    //
+    for (int n = 0; n < nNeighbors; ++n) {
+        const int recvlf = recvLengthf[n];
+        const int recvlc = recvLengthc[n];
+        //
+        partLensf.push_back(recvlf);
+        partLensc.push_back(recvlc);
+        //
+        totLenf += recvlf;
+        totLenc += recvlc;
+    }
+    assert(totLenf == ncolf);
+    assert(totLenc == ncolc);
+    //
+    f2cOperator.partition(1, ctx, lrt);
+    rc.partition(1, ctx, lrt);
+    //
+    xc.partition(partLensc, ctx, lrt);
+    Axf.partition(partLensf, ctx, lrt);
 }
