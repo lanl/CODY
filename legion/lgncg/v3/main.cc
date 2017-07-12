@@ -50,13 +50,14 @@
 #include "hpcg.hpp"
 #include "mytimer.hpp"
 #include "Geometry.hpp"
+#include "VectorOps.hpp"
 #include "CheckAspectRatio.hpp"
 #include "GenerateGeometry.hpp"
 #include "GenerateProblem.hpp"
 #include "GenerateCoarseProblem.hpp"
 #include "SetupHalo.hpp"
-#include "VectorOps.hpp"
 #include "CG.hpp"
+#include "ComputeResidual.hpp"
 
 #include <iostream>
 #include <cstdlib>
@@ -333,9 +334,11 @@ mainTask(
     // Launch the tasks to begin the solve.
     ////////////////////////////////////////////////////////////////////////////
     {
+        cout << endl;
         cout << "*****************************************************" << endl;
         cout << "*** Starting Benchmark..." << endl;
         cout << "*****************************************************" << endl;
+        cout << endl;
         const double start = mytimer();
         //
         MustEpochLauncher mel;
@@ -507,16 +510,18 @@ startSolveTask(
     ////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////
     // Used to check return codes on function calls.
+    const bool doMG = true;
     int ierr = 0;
     int numberOfCalls = 10;
     //QuickPath means we do on one call of each block of repetitive code.
     if (quickPath) numberOfCalls = 1;
+    //
+    const auto *const Asclrs = A.sclrs->data();
 
     ////////////////////////////////////////////////////////////////////////////
     // Reference SpMV+MG Timing Phase                                         //
     ////////////////////////////////////////////////////////////////////////////
     {
-        const auto *const Asclrs = A.sclrs->data();
         local_int_t nrow = Asclrs->localNumberOfRows;
         local_int_t ncol = Asclrs->localNumberOfColumns;
         // TODO add routine to calc partitioning from matrix.
@@ -578,6 +583,9 @@ startSolveTask(
     ////////////////////////////////////////////////////////////////////////////
     // Reference CG Timing Phase                                              //
     ////////////////////////////////////////////////////////////////////////////
+    if (rank == 0) {
+        cout << "Starting Reference CG Timing Phase" << endl;
+    }
     double t1 = mytimer();
     // Assume all is well: no failures.
     int global_failure = 0;
@@ -591,11 +599,11 @@ startSolveTask(
     numberOfCalls = 1;
     // Compute the residual reduction for the natural ordering and reference
     // kernels.
-    std::vector< double > ref_times(9,0.0);
+    std::vector<double> ref_times(9,0.0);
     // Set tolerance to zero to make all runs do maxIters iterations.
     double tolerance = 0.0;
     int err_count = 0;
-    for (int i=0; i < numberOfCalls; ++i) {
+    for (int i = 0; i < numberOfCalls; ++i) {
         ZeroVector(x, ctx, lrt);
         ierr = CG(A,
                   data,
@@ -607,7 +615,7 @@ startSolveTask(
                   normr,
                   normr0,
                   &ref_times[0],
-                  true,
+                  doMG,
                   ctx,
                   lrt
                );
@@ -618,6 +626,7 @@ startSolveTask(
     if (rank == 0 && err_count) {
         cerr << err_count << " error(s) in call(s) to reference CG." << endl;
     }
+    //
     double refTolerance = normr / normr0;
     // Call user-tunable set up function (Nothing to do here...).
     double t7 = mytimer();
@@ -628,6 +637,158 @@ startSolveTask(
         cout << "Total problem setup time in main (sec) = "
              << mytimer() - t1 << endl;
     }
+
+    ////////////////////////////////////////////////////////////////////////////
+    // Validation Testing Phase                                               //
+    ////////////////////////////////////////////////////////////////////////////
+    // TODO
+
+    ////////////////////////////////////////////////////////////////////////////
+    // Optimized CG Setup Phase                                               //
+    ////////////////////////////////////////////////////////////////////////////
+    if (rank == 0) {
+        cout << "Starting Optimized CG Setup Phase" << endl;
+    }
+    //
+    niters                 = 0;
+    normr                  = 0.0;
+    normr0                 = 0.0;
+    err_count              = 0;
+    int tolerance_failures = 0;
+
+    int optMaxIters = 10 * refMaxIters;
+    int optNiters = refMaxIters;
+    double opt_worst_time = 0.0;
+
+    std::vector<double> opt_times(9,0.0);
+
+    // Compute the residual reduction and residual count for the user ordering
+    // and optimized kernels.
+    for (int i = 0; i < numberOfCalls; ++i) {
+        // Start x at all zeros.
+        ZeroVector(x, ctx, lrt);
+        double last_cummulative_time = opt_times[0];
+        ierr = CG(A,
+                  data,
+                  b,
+                  x,
+                  optMaxIters,
+                  refTolerance,
+                  niters,
+                  normr,
+                  normr0,
+                  &opt_times[0],
+                  doMG,
+                  ctx,
+                  lrt
+               );
+        // Count the number of errors in CG.
+        if (ierr) ++err_count;
+        // The number of failures to reduce residual.
+        if (normr / normr0 > refTolerance) ++tolerance_failures;
+        // Pick the largest number of iterations to guarantee convergence.
+        if (niters > optNiters) optNiters = niters;
+        //
+        double current_time = opt_times[0] - last_cummulative_time;
+        if (current_time > opt_worst_time) opt_worst_time = current_time;
+    }
+    if (rank == 0 && err_count) {
+        cerr << err_count << " error(s) in call(s) to optimized CG." << endl;
+    }
+    if (tolerance_failures) {
+        global_failure = 1;
+        if (rank == 0) {
+            cerr << "Failed to reduce the residual "
+                 << tolerance_failures << " times." << endl;
+        }
+    }
+
+    ////////////////////////////////////////////////////////////////////////////
+    // Optimized CG Timing Phase                                              //
+    ////////////////////////////////////////////////////////////////////////////
+
+    // Here we finally run the benchmark phase The variable total_runtime is the
+    // target benchmark execution time in seconds.
+
+    double total_runtime = params.runningTime;
+    // Run at least once, account for rounding.
+    int numberOfCgSets = int(total_runtime / opt_worst_time) + 1;
+    //
+    if (rank == 0) {
+        cout << "Projected running time: " << total_runtime << " seconds" << endl;
+        cout << "Number of CG sets: " << numberOfCgSets << endl;
+    }
+
+    /* This is the timed run for a specified amount of time. */
+    optMaxIters = optNiters;
+    // Force optMaxIters iterations
+    double optTolerance = 0.0;
+#if 0 // TODO
+    TestNormsData testnorms_data;
+    testnorms_data.samples = numberOfCgSets;
+    testnorms_data.values = new double[numberOfCgSets];
+#endif
+
+    for (int i = 0; i < numberOfCgSets; ++i) {
+        // Zero out x.
+        ZeroVector(x, ctx, lrt);
+        ierr = CG(A,
+                  data,
+                  b,
+                  x,
+                  optMaxIters,
+                  optTolerance,
+                  niters,
+                  normr,
+                  normr0,
+                  &times[0],
+                  doMG,
+                  ctx,
+                  lrt
+               );
+        if (ierr) {
+            cerr << "Error in call to CG: " << ierr << ".\n" << endl;
+        }
+        if (rank==0) {
+            cout << "Call [" << i << "] Scaled Residual ["
+                 << normr / normr0 << "]" << endl;
+        }
+#if 0 // TODO
+        // Record scaled residual from this run.
+        testnorms_data.values[i] = normr/normr0;
+#endif
+    }
+
+    // Compute difference between known exact solution and computed solution All
+    // processors are needed here.
+    floatType residual = 0;
+    ierr = ComputeResidual(
+        Asclrs->localNumberOfRows,
+        x,
+        xexact,
+        residual,
+        ctx,
+        lrt
+    );
+    if (ierr) {
+        cerr << "Error in call to compute_residual: " << ierr << ".\n" << endl;
+    }
+    if (rank == 0) {
+        cout << "Difference between computed and exact  = "
+             << residual << ".\n" << endl;
+    }
+#if 0 // TODO
+    // Test Norm Results
+    ierr = TestNorms(testnorms_data);
+#endif
+
+    ////////////////////////////////////////////////////////////////////////////
+    // Report Results                                                         //
+    ////////////////////////////////////////////////////////////////////////////
+#if 0
+    // Report results to YAML file
+    ReportResults(A, numberOfMgLevels, numberOfCgSets, refMaxIters, optMaxIters, &times[0], testcg_data, testsymmetry_data, testnorms_data, global_failure, quickPath);
+#endif
 
     ////////////////////////////////////////////////////////////////////////////
     // Cleanup task-local strucutres allocated for solve.

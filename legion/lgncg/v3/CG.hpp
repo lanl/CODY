@@ -129,7 +129,8 @@ CG(
     // Start timing right away.
     double t_begin = mytimer();
     //
-    const int print_freq = 50;
+    //const int print_freq = 50;
+    const int print_freq = 10; // TODO RM
     const int rank = A.geom->data()->rank;
     const local_int_t nrow = A.sclrs->data()->localNumberOfRows;
     //
