@@ -46,6 +46,11 @@
     HPCG routine
  */
 
+#include "LegionStuff.hpp"
+#include "LegionArrays.hpp"
+#include "LegionMatrices.hpp"
+#include "VectorOps.hpp"
+
 #include <cassert>
 #include <iostream>
 
@@ -64,18 +69,29 @@
 */
 inline int
 ComputeMG(
-    const SparseMatrix & A,
-    const Vector & r,
-    Vector & x
+    SparseMatrix &A,
+    Array<floatType> &r,
+    Array<floatType> &x,
+    Context ctx,
+    Runtime *lrt
 ) {
-    assert(x.localLength==A.localNumberOfColumns); // Make sure x contain space for halo values
+    const auto *const Asclrs = A.sclrs->data();
+    assert(Asclrs);
+    // Make sure x contain space for halo values.
+    assert(x.length() == size_t(Asclrs->localNumberOfColumns));
 
-    ZeroVector(x); // initialize x to zero
+    // Initialize x to zero.
+    ZeroVector(x, ctx, lrt);
 
     int ierr = 0;
-    if (A.mgData!=0) { // Go to next coarse level if defined
-      int numberOfPresmootherSteps = A.mgData->numberOfPresmootherSteps;
-      for (int i=0; i< numberOfPresmootherSteps; ++i) ierr += ComputeSYMGS_ref(A, r, x);
+    // Go to next coarse level if defined
+    if (A.mgData != NULL) {
+      const int numberOfPresmootherSteps = A.mgData->numberOfPresmootherSteps;
+      for (int i = 0; i < numberOfPresmootherSteps; ++i) {
+       //   ierr += ComputeSYMGS_ref(A, r, x);
+      }
+    }
+#if 0
       if (ierr!=0) return ierr;
       ierr = ComputeSPMV_ref(A, x, *A.mgData->Axf); if (ierr!=0) return ierr;
       // Perform restriction operation using simple injection
@@ -90,6 +106,7 @@ ComputeMG(
       ierr = ComputeSYMGS_ref(A, r, x);
       if (ierr!=0) return ierr;
     }
+#endif
     return 0;
 }
 

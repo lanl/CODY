@@ -127,7 +127,7 @@ ExchangeHalo(
             EXCLUSIVE,
             srclr
         );
-        srcrr.add_field(0);
+        srcrr.add_field(0); // TODO FIXME
 
         RegionRequirement dstrr(
             dstArray->logicalRegion,

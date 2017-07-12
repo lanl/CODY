@@ -61,10 +61,7 @@
 #include "ComputeSPMV.hpp"
 #include "ComputeWAXPBY.hpp"
 #include "ComputeDotProduct.hpp"
-
-#if 0
-#include "ComputeMG_ref.hpp"
-#endif
+#include "ComputeMG.hpp"
 
 // Use TICK and TOCK to time a code section in MATLAB-like fashion.
 //!< record current time in 't0'
@@ -173,9 +170,8 @@ CG(
     for (int k = 1; k <= maxIter && normr / normr0 > tolerance; k++ ) {
         TICK();
         if (doPreconditioning) {
-#if 0
-            ComputeMG_ref(A, r, z); // Apply preconditioner
-#endif
+            // Apply preconditioner
+            ComputeMG(A, r, z, ctx, lrt);
         }
         else {
             // copy r to z (no preconditioning)
