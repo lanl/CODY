@@ -48,10 +48,6 @@
 
 #pragma once
 
-#include <fstream>
-#include <cmath>
-#include <unistd.h>
-
 #include "hpcg.hpp"
 #include "mytimer.hpp"
 
@@ -64,6 +60,10 @@
 #include "ComputeWAXPBY.hpp"
 #include "ComputeDotProduct.hpp"
 #include "ComputeMG.hpp"
+
+#include <fstream>
+#include <cmath>
+#include <unistd.h>
 
 // Use TICK and TOCK to time a code section in MATLAB-like fashion.
 //!< record current time in 't0'
@@ -110,29 +110,30 @@
 */
 inline int
 CG(
-    SparseMatrix &A,
-    CGData &data,
+    SparseMatrix           &A,
+    CGData                 &data,
     const Array<floatType> &b,
-    Array<floatType> &x,
-    const int maxIter,
-    const double tolerance,
-    int &niters,
-    double &normr,
-    double &normr0,
-    double *times,
-    bool doPreconditioning,
-    LegionRuntime::HighLevel::Context ctx,
-    LegionRuntime::HighLevel::Runtime *lrt
+    Array<floatType>       &x,
+    const int              maxIter,
+    const floatType        tolerance,
+    int                    &niters,
+    floatType              &normr,
+    floatType              &normr0,
+    double                 *times,
+    bool                   doPreconditioning,
+    Context                ctx,
+    Runtime                *lrt
 ) {
     using namespace std;
 
-    double t_begin = mytimer();  // Start timing right away
+    // Start timing right away.
+    double t_begin = mytimer();
     //
     const int print_freq = 50;
     const int rank = A.geom->data()->rank;
     const local_int_t nrow = A.sclrs->data()->localNumberOfRows;
     //
-    double rtz = 0.0, oldrtz = 0.0, alpha = 0.0, beta = 0.0, pAp = 0.0;
+    floatType rtz = 0.0, oldrtz = 0.0, alpha = 0.0, beta = 0.0, pAp = 0.0;
     double t0 = 0.0, t1 = 0.0, t2 = 0.0, t3 = 0.0, t4 = 0.0, t5 = 0.0, t6 = 0.0;
 
     normr = 0.0;

@@ -333,7 +333,9 @@ mainTask(
     // Launch the tasks to begin the solve.
     ////////////////////////////////////////////////////////////////////////////
     {
-        cout << "*** Starting Solve..." << endl;
+        cout << "*****************************************************" << endl;
+        cout << "*** Starting Benchmark..." << endl;
+        cout << "*****************************************************" << endl;
         const double start = mytimer();
         //
         MustEpochLauncher mel;
@@ -433,7 +435,15 @@ startSolveTask(
     Context ctx,
     HighLevelRuntime *lrt
 ) {
+    // Use this array for collecting timing information.
+    std::vector< double > times(10,0.0);
+    //
     const HPCG_Params params = *(HPCG_Params *)task->args;
+    // Check if QuickPath option is enabled.  If the running time is set to
+    // zero, we minimize all paths through the program.
+    const bool quickPath = (params.runningTime == 0);
+    //
+    double setup_time = mytimer();
     //
     size_t rid = 0;
     const ItemFlags aif = IFLAG_W_GHOSTS;
@@ -478,72 +488,150 @@ startSolveTask(
         curLevelMatrix = curLevelMatrix->Ac;
     }
     // Sanity
-    assert(getTaskID(task) == A.geom->data()->rank);
-    ////////////////////////////////////////////////////////////////////////////
+    const int rank = A.geom->data()->rank;
+    assert(getTaskID(task) == rank);
     // Setup halo information for all levels before we begin.
-    ////////////////////////////////////////////////////////////////////////////
     curLevelMatrix = &A;
     for (int level = 0; level < NUM_MG_LEVELS; ++level) {
         SetupHalo(*curLevelMatrix, ctx, lrt);
         curLevelMatrix = curLevelMatrix->Ac;
     }
+    // Capture total time of setup.
+    setup_time = mytimer() - setup_time;
+    // Save it for reporting.
+    times[9] = setup_time;
 
     ////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////
     // Start of benchmark.
     ////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////
-
-    const int refMaxIters  = 50;
-    const int optMaxIters  = 10 * refMaxIters;
-    //
-    // int numberOfCalls = 10; FIXME
-    int numberOfCalls = 2;
-    // Check if QuickPath option is enabled.  If the running time is set to
-    // zero, we minimize all paths through the program.
-    bool quickPath = (params.runningTime == 0);
-    //QuickPath means we do on one call of each block of repetitive code
+    // Used to check return codes on function calls.
+    int ierr = 0;
+    int numberOfCalls = 10;
+    //QuickPath means we do on one call of each block of repetitive code.
     if (quickPath) numberOfCalls = 1;
-    //
-    int niters          = 0;
-    double normr        = 0.0;
-    double normr0       = 0.0;
-    int errCount        = 0;
-    double optWorstTime = 0.0;
-    // Set tolerance to zero to make all runs do maxIters iterations
-    double tolerance    = 0.0;
 
-    const bool doMG = true;
-    vector<double> optTimes(9, 0.0);
-    //
-    for (int i = 0; i < numberOfCalls; ++i) {
-        ZeroVector(x, ctx, lrt); // Start x at all zeros.
-        double lastCummulativeTime = optTimes[0];
-        int ierr = CG(A,
-                      data,
-                      b,
-                      x,
-                      optMaxIters,
-                      tolerance,
-                      niters,
-                      normr,
-                      normr0,
-                      &optTimes[0],
-                      doMG,
-                      ctx,
-                      lrt
-                   );
-        if (ierr) ++errCount; // count the number of errors in CG
-#if 0
-        // the number of failures to reduce residual
-        if (normr / normr0 > refTolerance) ++toleranceFailures;
-        // pick the largest number of iterations to guarantee convergence
-        if (niters > optNiters) optNiters = niters;
-#endif
-        double current_time = optTimes[0] - lastCummulativeTime;
-        if (current_time > optWorstTime) optWorstTime = current_time;
+    ////////////////////////////////////////////////////////////////////////////
+    // Reference SpMV+MG Timing Phase                                         //
+    ////////////////////////////////////////////////////////////////////////////
+    {
+        const auto *const Asclrs = A.sclrs->data();
+        local_int_t nrow = Asclrs->localNumberOfRows;
+        local_int_t ncol = Asclrs->localNumberOfColumns;
+        // TODO add routine to calc partitioning from matrix.
+        // First nrow items are 'local data'. After is remote data.
+        std::vector<local_int_t> partLens;
+        // First partition for local data.
+        local_int_t totLen = nrow;
+        partLens.push_back(nrow);
+        // The rest are based on receive lengths.
+        const int nNeighbors = Asclrs->numberOfRecvNeighbors;
+        const local_int_t *const recvLength = A.recvLength->data();
+        //
+        for (int n = 0; n < nNeighbors; ++n) {
+            const int recvl = recvLength[n];
+            partLens.push_back(recvl);
+            totLen += recvl;
+        }
+        assert(totLen == ncol);
+
+        LogicalArray<floatType> x_overlapl, b_computedl;
+        x_overlapl.allocate("x_overlap" , ncol, ctx, lrt);
+        b_computedl.allocate("b_computed", nrow, ctx, lrt);
+        //
+        x_overlapl.partition(partLens, ctx, lrt);
+        //
+        Array<floatType> x_overlap(
+            x_overlapl.mapRegion(RW_E, ctx, lrt),
+            ctx, lrt
+        );
+        Array<floatType> b_computed(
+            b_computedl.mapRegion(RW_E, ctx, lrt),
+            ctx, lrt
+        );
+
+        FillRandomVector(x_overlap, ctx, lrt);
+
+        double t_begin = mytimer();
+        for (int i = 0; i < numberOfCalls; ++i) {
+            // b_computed = A*x_overlap
+            ierr = ComputeSPMV(A, x_overlap, b_computed, ctx, lrt);
+            if (ierr) cerr << "Error in call to SpMV: "
+                           << ierr << ".\n" << endl;
+            // b_computed = Minv*y_overlap
+            ierr = ComputeMG(A, b_computed, x_overlap, ctx, lrt);
+            if (ierr) cerr << "Error in call to MG: "
+                           << ierr << ".\n" << endl;
+        }
+        // Total time divided by number of calls.
+        times[8] = (mytimer() - t_begin)/((double)numberOfCalls);
+        if (rank == 0) {
+            cout << "Total SpMV+MG timing phase execution time in main (sec) = "
+                 << mytimer() - t_begin << endl;
+        }
+        // No longer needed, so unmap.
+        x_overlapl.unmapRegion(ctx, lrt);
+        b_computedl.unmapRegion(ctx, lrt);
     }
+
+    ////////////////////////////////////////////////////////////////////////////
+    // Reference CG Timing Phase                                              //
+    ////////////////////////////////////////////////////////////////////////////
+    double t1 = mytimer();
+    // Assume all is well: no failures.
+    int global_failure = 0;
+
+    int niters          = 0;
+    int totalNiters_ref = 0;
+    floatType normr     = 0.0;
+    floatType normr0    = 0.0;
+    int refMaxIters     = 50;
+    // Only need to run the residual reduction analysis once
+    numberOfCalls = 1;
+    // Compute the residual reduction for the natural ordering and reference
+    // kernels.
+    std::vector< double > ref_times(9,0.0);
+    // Set tolerance to zero to make all runs do maxIters iterations.
+    double tolerance = 0.0;
+    int err_count = 0;
+    for (int i=0; i < numberOfCalls; ++i) {
+        ZeroVector(x, ctx, lrt);
+        ierr = CG(A,
+                  data,
+                  b,
+                  x,
+                  refMaxIters,
+                  tolerance,
+                  niters,
+                  normr,
+                  normr0,
+                  &ref_times[0],
+                  true,
+                  ctx,
+                  lrt
+               );
+        // Count the number of errors in CG.
+        if (ierr) ++err_count;
+        totalNiters_ref += niters;
+    }
+    if (rank == 0 && err_count) {
+        cerr << err_count << " error(s) in call(s) to reference CG." << endl;
+    }
+    double refTolerance = normr / normr0;
+    // Call user-tunable set up function (Nothing to do here...).
+    double t7 = mytimer();
+    //OptimizeProblem(A, data, b, x, xexact);
+    t7 = mytimer() - t7;
+    times[7] = t7;
+    if (rank == 0) {
+        cout << "Total problem setup time in main (sec) = "
+             << mytimer() - t1 << endl;
+    }
+
+    ////////////////////////////////////////////////////////////////////////////
     // Cleanup task-local strucutres allocated for solve.
+    ////////////////////////////////////////////////////////////////////////////
     destroySolveLocalStructures(A, data, ctx, lrt);
 }
 

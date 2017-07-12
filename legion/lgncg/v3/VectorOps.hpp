@@ -156,6 +156,19 @@ ColorVector(
     for (local_int_t i = 0; i < localLength; ++i) vv[i] = floatType(color);
 }
 
+inline void
+FillRandomVector(
+    Array<floatType> &v,
+    Context,
+    Runtime *
+) {
+    const local_int_t localLength = v.length();
+    double *vv = v.data();
+    for (int i = 0; i < localLength; ++i) {
+        vv[i] = rand() / (double)(RAND_MAX) + 1.0;
+    }
+}
+
 #if 0
 /*!
   Multiply (scale) a specific vector entry by a given value.
@@ -175,10 +188,4 @@ inline void ScaleVectorValue(Vector & v, local_int_t index, double value) {
 
   @param[in] v
  */
-inline void FillRandomVector(Vector & v) {
-  local_int_t localLength = v.localLength;
-  double * vv = v.values;
-  for (int i=0; i<localLength; ++i) vv[i] = rand() / (double)(RAND_MAX) + 1.0;
-  return;
-}
 #endif
