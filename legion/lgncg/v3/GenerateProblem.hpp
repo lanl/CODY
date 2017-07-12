@@ -55,6 +55,7 @@
 #include "LegionArrays.hpp"
 #include "LegionMatrices.hpp"
 #include "ReduceSum.hpp"
+#include "VectorOps.hpp"
 
 #include <cassert>
 
@@ -199,6 +200,8 @@ GenerateProblem(
     );
     //
     floatType *matrixDiagonal = A.matrixDiagonal->data();
+    // TODO needed?
+    ZeroVector(*A.matrixDiagonal, ctx, runtime);
     //
     global_int_t *localToGlobalMap = A.localToGlobalMap->data();
     //

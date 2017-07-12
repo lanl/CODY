@@ -41,9 +41,9 @@
 //@HEADER
 
 /*!
-    @file Vector.hpp
+    @file VectorOps.hpp
 
-    HPCG data structures for dense vectors
+    HPCG data structure operations for dense vectors.
  */
 
 #pragma once
@@ -61,7 +61,7 @@
     Fill the input vector with zero values.
 
     @param[inout] v - On entrance v is initialized, on exit all its values are
-    zero.
+                      zero.
  */
 inline void
 ZeroVector(
@@ -77,8 +77,8 @@ ZeroVector(
 /*!
     Copy input vector to output vector.
 
-    @param[in] v Input vector
-    @param[in] w Output vector
+    @param[in] v Input vector.
+    @param[in] w Output vector.
  */
 inline void
 CopyVector(
@@ -156,6 +156,11 @@ ColorVector(
     for (local_int_t i = 0; i < localLength; ++i) vv[i] = floatType(color);
 }
 
+/*!
+    Fill the input vector with pseudo-random values.
+
+    @param[in] v
+ */
 inline void
 FillRandomVector(
     Array<floatType> &v,
@@ -169,23 +174,23 @@ FillRandomVector(
     }
 }
 
-#if 0
 /*!
-  Multiply (scale) a specific vector entry by a given value.
+    Multiply (scale) a specific vector entry by a given value.
 
-  @param[inout] v Vector to be modified
-  @param[in] index Local index of entry to scale
-  @param[in] value Value to scale by
+    @param[inout] v Vector to be modified.
+    @param[in] index Local index of entry to scale.
+    @param[in] value Value to scale by.
  */
-inline void ScaleVectorValue(Vector & v, local_int_t index, double value) {
-  assert(index>=0 && index < v.localLength);
-  double * vv = v.values;
-  vv[index] *= value;
-  return;
+inline void
+ScaleVectorValue(
+    Array<floatType> &v,
+    local_int_t index,
+    floatType value,
+    Context,
+    Runtime *
+) {
+    assert(index >= 0 && index < local_int_t(v.length()));
+    //
+    floatType *const vv = v.data();
+    vv[index] *= value;
 }
-/*!
-  Fill the input vector with pseudo-random values.
-
-  @param[in] v
- */
-#endif

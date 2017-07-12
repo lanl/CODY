@@ -56,8 +56,9 @@
 #include "GenerateProblem.hpp"
 #include "GenerateCoarseProblem.hpp"
 #include "SetupHalo.hpp"
-#include "CG.hpp"
 #include "ComputeResidual.hpp"
+#include "CG.hpp"
+#include "TestCG.hpp"
 
 #include <iostream>
 #include <cstdlib>
@@ -245,13 +246,18 @@ mainTask(
 ) {
     // Ask the mapper how many shards we can have.
     const size_t nShards = getNumProcs();
+    cout << endl;
+    cout << "*****************************************************" << endl;
+    cout << "*** Run Statistics..." << endl;
+    cout << "*****************************************************" << endl;
+    cout << endl;
     ////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////
     // At this point we need to know some run parameters so we can allocate and
     // partition the logical data structures. We'll use this info to calculate
     // global values, etc. NOTE: not all members will contain valid data after
     // generateInitGeometry returns (e.g., rank, ipx, ipy, ipz).
-    cout << "*** Number of Shards (~ NUMPE)=" << nShards << endl;;
+    cout << "*** Number of Shards=" << nShards << endl;
     //
     // We only care about passing nShards for this bit. rank doesn't make sense
     // in this context.
@@ -309,8 +315,6 @@ mainTask(
             //
             mel.add_single_task(DomainPoint::from_point<1>(shard), launcher);
         }
-        //
-        cout << "*** Waiting for Initialization Tasks" << endl;
         //
         FutureMap fm = runtime->execute_must_epoch(ctx, mel);
         fm.wait_all_results();
@@ -522,6 +526,9 @@ startSolveTask(
     // Reference SpMV+MG Timing Phase                                         //
     ////////////////////////////////////////////////////////////////////////////
     {
+        if (rank == 0) {
+            cout << "Starting Reference SpMV+MG Timing Phase " << endl;
+        }
         local_int_t nrow = Asclrs->localNumberOfRows;
         local_int_t ncol = Asclrs->localNumberOfColumns;
         // TODO add routine to calc partitioning from matrix.
@@ -584,7 +591,7 @@ startSolveTask(
     // Reference CG Timing Phase                                              //
     ////////////////////////////////////////////////////////////////////////////
     if (rank == 0) {
-        cout << "Starting Reference CG Timing Phase" << endl;
+        cout << endl << "Starting Reference CG Timing Phase" << endl;
     }
     double t1 = mytimer();
     // Assume all is well: no failures.
@@ -628,7 +635,7 @@ startSolveTask(
     }
     //
     double refTolerance = normr / normr0;
-    // Call user-tunable set up function (Nothing to do here...).
+    // Call user-tunable set up function (Nothing to do here).
     double t7 = mytimer();
     //OptimizeProblem(A, data, b, x, xexact);
     t7 = mytimer() - t7;
@@ -641,13 +648,20 @@ startSolveTask(
     ////////////////////////////////////////////////////////////////////////////
     // Validation Testing Phase                                               //
     ////////////////////////////////////////////////////////////////////////////
+    if (rank == 0) {
+        cout << endl << "Starting Validation Testing Phase" << endl;
+    }
     // TODO
+    t1 = mytimer();
+    TestCGData testCGData;
+    testCGData.count_pass = testCGData.count_fail = 0;
+    TestCG(A, data, b, x, testCGData, ctx, lrt);
 
     ////////////////////////////////////////////////////////////////////////////
     // Optimized CG Setup Phase                                               //
     ////////////////////////////////////////////////////////////////////////////
     if (rank == 0) {
-        cout << "Starting Optimized CG Setup Phase" << endl;
+        cout << endl << "Starting Optimized CG Setup Phase" << endl;
     }
     //
     niters                 = 0;
@@ -706,6 +720,9 @@ startSolveTask(
     ////////////////////////////////////////////////////////////////////////////
     // Optimized CG Timing Phase                                              //
     ////////////////////////////////////////////////////////////////////////////
+    if (rank == 0) {
+        cout << endl << "Starting Optimized CG Timing Phase" << endl;
+    }
 
     // Here we finally run the benchmark phase The variable total_runtime is the
     // target benchmark execution time in seconds.
@@ -786,8 +803,20 @@ startSolveTask(
     // Report Results                                                         //
     ////////////////////////////////////////////////////////////////////////////
 #if 0
-    // Report results to YAML file
-    ReportResults(A, numberOfMgLevels, numberOfCgSets, refMaxIters, optMaxIters, &times[0], testcg_data, testsymmetry_data, testnorms_data, global_failure, quickPath);
+    // Report results to YAML file.
+    ReportResults(
+        A,
+        numberOfMgLevels,
+        numberOfCgSets,
+        refMaxIters,
+        optMaxIters,
+        &times[0],
+        testCGData,
+        testsymmetry_data,
+        testnorms_data,
+        global_failure,
+        quickPath
+    );
 #endif
 
     ////////////////////////////////////////////////////////////////////////////

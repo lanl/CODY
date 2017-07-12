@@ -784,3 +784,55 @@ SetupGhostArrays(
         x.ghosts.push_back(dst);
     }
 }
+
+/*!
+    Copy values from matrix diagonal into user-provided vector.
+
+    @param[in] A the known system matrix.
+
+    @param[inout] diagonal  Vector of diagonal values (must be allocated before
+                            call to this function).
+ */
+inline void
+CopyMatrixDiagonal(
+    SparseMatrix &A,
+    Array<floatType> &diagonal,
+    Context ctx,
+    HighLevelRuntime *lrt
+) {
+    const floatType *const curDiagA = A.matrixDiagonal->data();
+    floatType *const dv = diagonal.data();
+    //
+    const local_int_t nrow = A.sclrs->data()->localNumberOfRows;
+    assert(nrow == local_int_t(diagonal.length()));
+    //
+    for (local_int_t i = 0; i < nrow; ++i) {
+        dv[i] = curDiagA[i];
+    }
+}
+
+/*!
+    Replace specified matrix diagonal value.
+
+    @param[inout] A The system matrix.
+
+    @param[in] diagonal  Vector of diagonal values that will replace existing
+                         matrix diagonal values.
+ */
+inline void
+ReplaceMatrixDiagonal(
+    SparseMatrix &A,
+    Array<floatType> &diagonal,
+    Context ctx,
+    HighLevelRuntime *lrt
+) {
+    floatType *const curDiagA = A.matrixDiagonal->data();
+    const floatType *const dv = diagonal.data();
+    //
+    const local_int_t nrow = A.sclrs->data()->localNumberOfRows;
+    assert(nrow == local_int_t(diagonal.length()));
+    //
+    for (local_int_t i = 0; i < nrow; ++i) {
+        curDiagA[i] = dv[i];
+    }
+}
