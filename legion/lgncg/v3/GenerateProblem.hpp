@@ -100,13 +100,17 @@ getTotalNumberOfNonZeros(
     Reference version of GenerateProblem to generate the sparse matrix, right
     hand side, initial guess, and exact solution.
 
-    @param[in]  A        The known system matrix
+    @param[in]  A        The known system matrix.
+
     @param[inout] b      The newly allocated and generated right hand side
-    vector (if b!=0 on entry)
+                         vector (if b != 0 on entry).
+
     @param[inout] x      The newly allocated solution vector with entries set to
-    0.0 (if x!=0 on entry)
+                         0.0 (if x != 0 on entry).
+
     @param[inout] xexact The newly allocated solution vector with entries set to
-    the exact solution (if the xexact!=0 non-zero on entry)
+                         the exact solution (if the xexact!=0 non-zero on
+                         entry).
 
     @see GenerateGeometry
 */
@@ -121,6 +125,7 @@ GenerateProblem(
     LegionRuntime::HighLevel::Runtime *runtime
 ) {
     using namespace std;
+    //
     const Geometry *const Ageom = A.geom->data();
     // Make local copies of geometry information.  Use global_int_t since the
     // RHS products in the calculations below may result in global range values.
@@ -215,17 +220,17 @@ GenerateProblem(
     //
     global_int_t localNumberOfNonzeros = 0;
     //
-    for (local_int_t iz=0; iz<nz; iz++) {
-        global_int_t giz = ipz*nz+iz;
-        for (local_int_t iy=0; iy<ny; iy++) {
-            global_int_t giy = ipy*ny+iy;
+    for (local_int_t iz = 0; iz < nz; iz++) {
+        global_int_t giz = ipz * nz + iz;
+        for (local_int_t iy = 0; iy < ny; iy++) {
+            global_int_t giy = ipy * ny + iy;
             for (local_int_t ix=0; ix<nx; ix++) {
                 global_int_t gix = ipx*nx+ix;
-                local_int_t currentLocalRow = iz*nx*ny+iy*nx+ix;
-                global_int_t currentGlobalRow = giz*gnx*gny+giy*gnx+gix;
+                local_int_t currentLocalRow = iz * nx * ny + iy * nx + ix;
+                global_int_t currentGlobalRow = giz * gnx * gny + giy * gnx + gix;
                 localToGlobalMap[currentLocalRow] = currentGlobalRow;
                 char numberOfNonzerosInRow = 0;
-                // Current index in current row
+                // Current index in current row.
                 global_int_t currentIndexG = 0;
                 local_int_t currentNonZeroElemIndex = 0;
                 for (int sz = -1; sz <= 1; sz++) {
@@ -256,7 +261,7 @@ GenerateProblem(
                 localNumberOfNonzeros += numberOfNonzerosInRow;
                 if (b != 0) {
                     bv[currentLocalRow] = 26.0
-                                        - ((double)(numberOfNonzerosInRow-1));
+                                        - ((double)(numberOfNonzerosInRow - 1));
                 }
                 if (x != 0) {
                     xv[currentLocalRow] = 0.0;
