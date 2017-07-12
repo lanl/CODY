@@ -187,6 +187,20 @@ struct CGData : public PhysicalMultiBase {
         mUnpack(regions, baseRID, IFLAG_NIL, ctx, runtime);
     }
 
+    /**
+     *
+     */
+    void
+    unmapRegions(
+        Legion::Context ctx,
+        Legion::HighLevelRuntime *lrt
+    ) {
+        lrt->unmap_region(ctx, r->physicalRegion);
+        lrt->unmap_region(ctx, z->physicalRegion);
+        lrt->unmap_region(ctx, p->physicalRegion);
+        lrt->unmap_region(ctx, Ap->physicalRegion);
+    }
+
 protected:
 
     /**

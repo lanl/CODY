@@ -375,16 +375,17 @@ mainTask(
 /**
  *
  */
-inline void
+static inline void
 allocateMGData(
     SparseMatrix &A,
     int level,
     Context ctx,
     HighLevelRuntime *lrt
 ) {
-    LogicalMGData lMGData;
     string levels = to_string(level);
     string matrixName = level == 0 ? "A" : "A-L" + levels;
+    //
+    LogicalMGData lMGData;
     lMGData.allocate(matrixName, A, ctx, lrt);
     lMGData.partition(A, ctx, lrt);
     //
@@ -396,6 +397,25 @@ allocateMGData(
     //
     const int mgDataBaseRID = 0;
     A.mgData = new MGData(mgRegions, mgDataBaseRID, ctx, lrt);
+}
+
+/**
+ *
+ */
+static void
+destroySolveLocalStructures(
+    SparseMatrix &A,
+    CGData &cgData,
+    Context ctx,
+    HighLevelRuntime *lrt
+) {
+    SparseMatrix *curLevelMatrix = &A;
+    for (int level = 1; level < NUM_MG_LEVELS; ++level) {
+        // These were mapped inline in startSolveTask, so explicitly unmap.
+        curLevelMatrix->mgData->unmapRegions(ctx, lrt);
+        curLevelMatrix = curLevelMatrix->Ac;
+    }
+    cgData.unmapRegions(ctx, lrt);
 }
 
 /**
@@ -482,9 +502,9 @@ startSolveTask(
     // Set tolerance to zero to make all runs do maxIters iterations
     double tolerance    = 0.0;
 
+    const bool doMG = true;
     vector<double> optTimes(9, 0.0);
-    // Compute the residual reduction and residual count for the user ordering
-    // and optimized kernels.
+    //
     for (int i = 0; i < numberOfCalls; ++i) {
         ZeroVector(x, ctx, lrt); // Start x at all zeros.
         double lastCummulativeTime = optTimes[0];
@@ -498,7 +518,7 @@ startSolveTask(
                       normr,
                       normr0,
                       &optTimes[0],
-                      true,
+                      doMG,
                       ctx,
                       lrt
                    );
@@ -513,10 +533,7 @@ startSolveTask(
         if (current_time > optWorstTime) optWorstTime = current_time;
     }
     //
-    lCGData.r.unmapRegion(ctx, lrt);
-    lCGData.z.unmapRegion(ctx, lrt);
-    lCGData.p.unmapRegion(ctx, lrt);
-    lCGData.Ap.unmapRegion(ctx, lrt);
+    destroySolveLocalStructures(A, data, ctx, lrt);
 }
 
 /**

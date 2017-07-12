@@ -179,6 +179,20 @@ struct MGData : public PhysicalMultiBase {
         delete Axf;
     }
 
+    /**
+     *
+     */
+    void
+    unmapRegions(
+        Legion::Context ctx,
+        Legion::HighLevelRuntime *lrt
+    ) {
+        lrt->unmap_region(ctx, f2cOperator->physicalRegion);
+        lrt->unmap_region(ctx, rc->physicalRegion);
+        lrt->unmap_region(ctx, xc->physicalRegion);
+        lrt->unmap_region(ctx, Axf->physicalRegion);
+    }
+
 protected:
 
     /**

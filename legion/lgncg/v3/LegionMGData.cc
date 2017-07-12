@@ -88,7 +88,6 @@ LogicalMGData::allocate(
     #undef aalloca
 }
 
-
 /**
  *
  */

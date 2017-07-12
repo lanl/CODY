@@ -428,6 +428,8 @@ protected:
 public:
     //
     LogicalRegion logicalRegion;
+    //
+    PhysicalRegion physicalRegion;
     // Field ID (only one, so it doesn't change).
     const Legion::FieldID fid = 0;
 
@@ -435,11 +437,12 @@ public:
      *
      */
     Item(
-        const PhysicalRegion &physicalRegion,
+        const PhysicalRegion &physicalReg,
         Context ctx,
         HighLevelRuntime *runtime
     ) {
-        // cache logical region
+        // Cache logical and physical regions.
+        physicalRegion = physicalReg;
         logicalRegion = physicalRegion.get_logical_region();
         //
         using GRA = RegionAccessor<AccessorType::Generic, TYPE>;
@@ -530,4 +533,13 @@ public:
      */
     size_t
     nRegionEntries(void) { return mNRegionEntries; }
+
+    /**
+     *
+     */
+    virtual void
+    unmapRegions(
+        Legion::Context ctx,
+        Legion::HighLevelRuntime *lrt
+    ) { /* Nothing to do. */ }
 };
