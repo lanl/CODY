@@ -41,7 +41,7 @@
 //@HEADER
 
 /*!
-    @file ComputeMG.hpp
+    @file ComputeProlongation.hpp
 
     HPCG routine
  */
@@ -51,72 +51,36 @@
 #include "LegionStuff.hpp"
 #include "LegionArrays.hpp"
 #include "LegionMatrices.hpp"
-#include "VectorOps.hpp"
-#include "ComputeSYMGS.hpp"
-#include "ComputeRestriction.hpp"
-#include "ComputeProlongation.hpp"
-
-#include <cassert>
-#include <iostream>
 
 /*!
+    Routine to compute the coarse residual vector.
 
-    @param[in] A the known system matrix.
+    @param[in]  Af - Fine grid sparse matrix object containing pointers to
+                current coarse grid correction and the f2c operator.
 
-    @param[in] r the input vector.
+    @param[inout] xf - Fine grid solution vector, update with coarse grid
+                  correction.
 
-    @param[inout] x On exit contains the result of the multigrid V-cycle with r
-    as the RHS, x is the approximation to Ax = r.
+    Note that the fine grid residual is never explicitly constructed.  We only
+    compute it for the fine grid points that will be injected into corresponding
+    coarse grid points.
 
-    @return returns 0 upon success and non-zero otherwise.
-
-    @see ComputeMG
+    @return Returns zero on success and a non-zero value otherwise.
 */
 inline int
-ComputeMG(
-    SparseMatrix &A,
-    Array<floatType> &r,
-    Array<floatType> &x,
-    Context ctx,
-    Runtime *lrt
+ComputeProlongation(
+    SparseMatrix &Af,
+    Array<floatType> &xf,
+    Context,
+    Runtime *
 ) {
-    const auto *const Asclrs = A.sclrs->data();
-    assert(Asclrs);
-    // Make sure x contain space for halo values.
-    assert(x.length() == size_t(Asclrs->localNumberOfColumns));
+    floatType *const xfv = xf.data();
+    const floatType *const xcv = Af.mgData->xc->data();
+    const local_int_t *const f2c = Af.mgData->f2cOperator->data();
+    const local_int_t nc = Af.mgData->rc->length();
 
-    // Initialize x to zero.
-    ZeroVector(x, ctx, lrt);
-
-    int ierr = 0;
-    // Go to next coarse level if defined
-    if (A.mgData != NULL) {
-        const int nPre = A.mgData->numberOfPresmootherSteps;
-        for (int i = 0; i < nPre; ++i) {
-            ierr += ComputeSYMGS(A, r, x, ctx, lrt);
-        }
-        if (ierr != 0) return ierr;
-        //
-        ierr = ComputeSPMV(A, x, *A.mgData->Axf, ctx, lrt);
-        if (ierr != 0) return ierr;
-        // Perform restriction operation using simple injection.
-        ierr = ComputeRestriction(A, r, ctx, lrt);
-        if (ierr != 0) return ierr;
-        //
-        ierr = ComputeMG(*A.Ac, *A.mgData->rc, *A.mgData->xc, ctx, lrt);
-        if (ierr != 0) return ierr;
-        //
-        ierr = ComputeProlongation(A, x, ctx, lrt);
-        if (ierr!=0) return ierr;
-        const int nPost = A.mgData->numberOfPostsmootherSteps;
-        for (int i = 0; i < nPost; ++i) {
-            ierr += ComputeSYMGS(A, r, x, ctx, lrt);
-        }
-        if (ierr!=0) return ierr;
-    }
-    else {
-        ierr = ComputeSYMGS(A, r, x, ctx, lrt);
-        if (ierr != 0) return ierr;
+    for (local_int_t i = 0; i < nc; ++i) {
+        xfv[f2c[i]] += xcv[i];
     }
     //
     return 0;

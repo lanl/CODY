@@ -46,6 +46,8 @@
     HPCG routine
  */
 
+#pragma once
+
 #include <fstream>
 #include <cmath>
 #include <unistd.h>
