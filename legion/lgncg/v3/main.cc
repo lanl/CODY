@@ -40,12 +40,12 @@
 // ***************************************************
 //@HEADER
 
-#include "IOOps.hpp"
 #include "LegionStuff.hpp"
 #include "LegionArrays.hpp"
 #include "LegionMatrices.hpp"
 #include "LegionCGData.hpp"
 #include "LegionMGData.hpp"
+#include "IOOps.hpp"
 
 #include "hpcg.hpp"
 #include "mytimer.hpp"
@@ -129,12 +129,7 @@ genProblemTask(
     //
     curLevelMatrix = &A;
     for (int level = 1; level < NUM_MG_LEVELS; ++level) {
-        GenerateCoarseProblem(
-            *curLevelMatrix,
-            level,
-            ctx,
-            runtime
-        );
+        GenerateCoarseProblem(*curLevelMatrix, level, ctx, runtime);
         curLevelMatrix = curLevelMatrix->Ac;
     }
 }
@@ -156,8 +151,14 @@ generateInitGeometry(
     ny = (local_int_t)params.ny;
     nz = (local_int_t)params.nz;
     // Generate geometry so we can get things like npx, npy, npz, etc.
-    GenerateGeometry(size, rank, params.numThreads,
-                     nx, ny, nz, params.stencilSize, &globalGeom);
+    GenerateGeometry(
+        size,
+        rank,
+        params.numThreads,
+        nx, ny, nz,
+        params.stencilSize,
+        &globalGeom
+    );
 }
 
 /**
@@ -192,14 +193,10 @@ createLogicalStructures(
     cout << "*** Creating Logical MG Structures..." << endl;
     LogicalSparseMatrix *curLevelMatrix = &A;
     for (int level = 1; level < NUM_MG_LEVELS; ++level) {
-        GenerateCoarseProblemTopLevel(
-            *curLevelMatrix,
-            level,
-            ctx,
-            runtime
-        );
+        GenerateCoarseProblemTopLevel(*curLevelMatrix, level, ctx, runtime);
         curLevelMatrix = curLevelMatrix->Ac;
     }
+    //
     const double initEnd = mytimer();
     const double initTime = initEnd - initStart;
     cout << "--> Time=" << initTime << "s" << endl;
@@ -214,14 +211,22 @@ destroyLogicalStructures(
     LogicalArray<floatType> &x,
     LogicalArray<floatType> &y,
     LogicalArray<floatType> &xexact,
-    Context ctx, HighLevelRuntime *runtime
+    Context ctx,
+    HighLevelRuntime *lrt
 ) {
     cout << "*** Destroying Logical Structures..." << endl;
     const double start = mytimer();
-    A.deallocate(ctx, runtime);
-    x.deallocate(ctx, runtime);
-    y.deallocate(ctx, runtime);
-    xexact.deallocate(ctx, runtime);
+    //
+    LogicalSparseMatrix *curLevelMatrix = &A;
+    for (int level = 0; level < NUM_MG_LEVELS; ++level) {
+        curLevelMatrix->deallocate(ctx, lrt);
+        curLevelMatrix = curLevelMatrix->Ac;
+    }
+    //
+    x.deallocate(ctx, lrt);
+    y.deallocate(ctx, lrt);
+    xexact.deallocate(ctx, lrt);
+    //
     const double end = mytimer();
     const double totalTime = end - start;
     cout << "--> Time=" << totalTime << "s" << endl;
@@ -319,7 +324,6 @@ mainTask(
     {
         LogicalSparseMatrix *curLevelMatrix = &A;
         for (int level = 0; level < NUM_MG_LEVELS; ++level) {
-            // TODO Needed at all levels?
             SetupHaloTopLevel(*curLevelMatrix, level, ctx, runtime);
             curLevelMatrix = curLevelMatrix->Ac;
         }
@@ -375,7 +379,7 @@ mainTask(
 /**
  *
  */
-static inline void
+static void
 allocateMGData(
     SparseMatrix &A,
     int level,
@@ -415,6 +419,7 @@ destroySolveLocalStructures(
         curLevelMatrix->mgData->unmapRegions(ctx, lrt);
         curLevelMatrix = curLevelMatrix->Ac;
     }
+    //
     cgData.unmapRegions(ctx, lrt);
 }
 
@@ -483,6 +488,12 @@ startSolveTask(
         curLevelMatrix = curLevelMatrix->Ac;
     }
 
+    ////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////
+    // Start of benchmark.
+    ////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////
+
     const int refMaxIters  = 50;
     const int optMaxIters  = 10 * refMaxIters;
     //
@@ -532,7 +543,7 @@ startSolveTask(
         double current_time = optTimes[0] - lastCummulativeTime;
         if (current_time > optWorstTime) optWorstTime = current_time;
     }
-    //
+    // Cleanup task-local strucutres allocated for solve.
     destroySolveLocalStructures(A, data, ctx, lrt);
 }
 
