@@ -104,6 +104,7 @@ LogicalMGData::partition(
     //
     const local_int_t nrowf = Asclrsf->localNumberOfRows;
     const local_int_t ncolf = Asclrsf->localNumberOfColumns;
+    //
     const local_int_t nrowc = Asclrsc->localNumberOfRows;
     const local_int_t ncolc = Asclrsc->localNumberOfColumns;
     // First nrow items are 'local data'. After is remote data.

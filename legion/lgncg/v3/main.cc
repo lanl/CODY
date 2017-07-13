@@ -335,7 +335,7 @@ mainTask(
     }
 
     ////////////////////////////////////////////////////////////////////////////
-    // Launch the tasks to begin the solve.
+    // Launch the tasks to begin the benchmark.
     ////////////////////////////////////////////////////////////////////////////
     {
         cout << endl;
@@ -349,7 +349,7 @@ mainTask(
         //
         for (int shard = 0; shard < initGeom.size; ++shard) {
             TaskLauncher launcher(
-                START_SOLVE_TID,
+                START_BENCHMARK_TID,
                 TaskArgument(&params, sizeof(params))
             );
             const ItemFlags aif = IFLAG_W_GHOSTS;
@@ -359,9 +359,9 @@ mainTask(
                 curLevelMatrix->intent(RW_E, aif, shard, launcher, ctx, runtime);
                 curLevelMatrix = curLevelMatrix->Ac;
             }
-            b.intent(     RW_E,         shard, launcher, ctx, runtime);
-            x.intent(     RW_E,         shard, launcher, ctx, runtime);
-            xexact.intent(RW_E,         shard, launcher, ctx, runtime);
+            b.intent(     RW_E, shard, launcher, ctx, runtime);
+            x.intent(     RW_E, shard, launcher, ctx, runtime);
+            xexact.intent(RW_E, shard, launcher, ctx, runtime);
             //
             mel.add_single_task(DomainPoint::from_point<1>(shard), launcher);
         }
@@ -369,8 +369,7 @@ mainTask(
         FutureMap fm = runtime->execute_must_epoch(ctx, mel);
         fm.wait_all_results();
         //
-        const double end = mytimer();
-        const double totalTime = end - start;
+        const double totalTime = mytimer() - start;
         cout << "--> Time=" << totalTime << "s" << endl;
     }
     //
@@ -395,9 +394,9 @@ allocateMGData(
     Context ctx,
     HighLevelRuntime *lrt
 ) {
-    string levels = to_string(level);
-    string matrixName = level == 0 ? "A" : "A-L" + levels;
-    //
+    const string levels = to_string(level);
+    const string matrixName = level == 0 ? "A" : "A-L" + levels;
+    // TODO deallocate.
     LogicalMGData lMGData;
     lMGData.allocate(matrixName, A, ctx, lrt);
     lMGData.partition(A, ctx, lrt);
@@ -424,7 +423,7 @@ destroySolveLocalStructures(
 ) {
     SparseMatrix *curLevelMatrix = &A;
     for (int level = 1; level < NUM_MG_LEVELS; ++level) {
-        // These were mapped inline in startSolveTask, so explicitly unmap.
+        // These were mapped inline in startBenchmarkTask, so explicitly unmap.
         curLevelMatrix->mgData->unmapRegions(ctx, lrt);
         curLevelMatrix = curLevelMatrix->Ac;
     }
@@ -436,7 +435,7 @@ destroySolveLocalStructures(
  *
  */
 void
-startSolveTask(
+startBenchmarkTask(
     const Task *task,
     const vector<PhysicalRegion> &regions,
     Context ctx,
@@ -823,6 +822,7 @@ startSolveTask(
     // Cleanup task-local strucutres allocated for solve.
     ////////////////////////////////////////////////////////////////////////////
     destroySolveLocalStructures(A, data, ctx, lrt);
+    lCGData.deallocate(ctx, lrt);
 }
 
 /**

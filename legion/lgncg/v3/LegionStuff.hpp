@@ -58,7 +58,7 @@ using namespace LegionRuntime::HighLevel;
 enum {
     MAIN_TID = 0,
     GEN_PROB_TID,
-    START_SOLVE_TID,
+    START_BENCHMARK_TID,
     REGION_TO_REGION_COPY_TID,
     LOCAL_NONZEROS_TID,
     LOCAL_PARTIAL_SUM_TID,
@@ -157,7 +157,7 @@ genProblemTask(
 );
 
 void
-startSolveTask(
+startBenchmarkTask(
     const Task *task,
     const std::vector<PhysicalRegion> &regions,
     Context ctx, HighLevelRuntime *runtime
@@ -206,14 +206,14 @@ registerTasks(void) {
         TaskConfigOptions(false /* leaf task */),
         "genProblemTask"
     );
-    HighLevelRuntime::register_legion_task<startSolveTask>(
-        START_SOLVE_TID /* task id */,
+    HighLevelRuntime::register_legion_task<startBenchmarkTask>(
+        START_BENCHMARK_TID /* task id */,
         Processor::LOC_PROC /* proc kind  */,
         true /* single */,
         true /* index */,
         AUTO_GENERATE_ID,
         TaskConfigOptions(false /* leaf task */),
-        "startSolveTask"
+        "startBenchmarkTask"
     );
     HighLevelRuntime::register_legion_task<regionToRegionCopyTask>(
         REGION_TO_REGION_COPY_TID /* task id */,
