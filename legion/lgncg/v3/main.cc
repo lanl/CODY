@@ -59,6 +59,7 @@
 #include "ComputeResidual.hpp"
 #include "CG.hpp"
 #include "TestCG.hpp"
+#include "TestSymmetry.hpp"
 #include "CheckProblem.hpp"
 
 #include <iostream>
@@ -74,7 +75,8 @@ void
 genProblemTask(
     const Task *task,
     const vector<PhysicalRegion> &regions,
-    Context ctx, HighLevelRuntime *runtime
+    Context ctx,
+    HighLevelRuntime *runtime
 ) {
     const int taskID = getTaskID(task);
     const HPCG_Params params = *(HPCG_Params *)task->args;
@@ -371,6 +373,11 @@ mainTask(
         fm.wait_all_results();
         //
         const double totalTime = mytimer() - start;
+        //
+        cout << "*****************************************************" << endl;
+        cout << "*** Benchmark Complete..." << endl;
+        cout << "*****************************************************" << endl;
+        //
         cout << "--> Time=" << totalTime << "s" << endl;
     }
     //
@@ -674,10 +681,19 @@ startBenchmarkTask(
     if (rank == 0) {
         cout << endl << "Starting Validation Testing Phase" << endl;
     }
+    //
     t1 = mytimer();
     TestCGData testCGData;
     testCGData.count_pass = testCGData.count_fail = 0;
     TestCG(A, data, b, x, testCGData, ctx, lrt);
+    //
+    TestSymmetryData testSymmetryData;
+    TestSymmetry(A, b, xexact, testSymmetryData, ctx, lrt);
+    //
+    if (rank == 0) {
+        cout << "Total validation (TestCG and TestSymmetry) execution "
+                "time in main (sec) = " << mytimer() - t1 << endl;
+    }
 
     ////////////////////////////////////////////////////////////////////////////
     // Optimized CG Setup Phase                                               //
@@ -771,19 +787,8 @@ startBenchmarkTask(
     for (int i = 0; i < numberOfCgSets; ++i) {
         // Zero out x.
         ZeroVector(x, ctx, lrt);
-        ierr = CG(A,
-                  data,
-                  b,
-                  x,
-                  optMaxIters,
-                  optTolerance,
-                  niters,
-                  normr,
-                  normr0,
-                  &times[0],
-                  doMG,
-                  ctx,
-                  lrt
+        ierr = CG(A, data, b, x, optMaxIters, optTolerance, niters,
+                  normr, normr0, &times[0], doMG, ctx, lrt
                );
         if (ierr) {
             cerr << "Error in call to CG: " << ierr << ".\n" << endl;

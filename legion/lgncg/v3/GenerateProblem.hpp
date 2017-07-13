@@ -165,7 +165,7 @@ GenerateProblem(
     //
     global_int_t *localToGlobalMap = A.localToGlobalMap->data();
     //
-    rcType *mid2rc = A.matdIdxToMatRowCol->data();
+    rcpType *mid2rc = A.matdIdxToMatRowCol->data();
     assert(mid2rc);
     //
     floatType *bv      = nullptr;

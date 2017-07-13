@@ -79,4 +79,4 @@ typedef long long global_int_t;
 // stop complaints from non-C++11 compliant compilers.
 //#define HPCG_NO_LONG_LONG
 
-using rcType = std::pair<local_int_t, local_int_t>;
+using rcpType = std::pair<local_int_t, local_int_t>;

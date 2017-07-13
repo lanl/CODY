@@ -133,7 +133,7 @@ struct LogicalSparseMatrix : public LogicalMultiBase {
     // Synchronization structures.
     LogicalArray<Synchronizers> synchronizers;
     // Matrix diagonal index to matrixValues(row, col) mapping.
-    LogicalArray<rcType> matdIdxToMatRowCol;
+    LogicalArray<rcpType> matdIdxToMatRowCol;
     ////////////////////////////////////////////////////////////////////////////
     // Vector index is for a given shard that is sharing pull region info.
     // Innermost vector is for neighboring regions that we are sharing.
@@ -509,7 +509,7 @@ struct SparseMatrix : public PhysicalMultiBase {
     //
     Item<Synchronizers> *synchronizers = nullptr;
     //
-    Array<rcType> *matdIdxToMatRowCol = nullptr;
+    Array<rcpType> *matdIdxToMatRowCol = nullptr;
     ////////////////////////////////////////////////////////////////////////////
     // Task-launch-specific structures.
     ////////////////////////////////////////////////////////////////////////////
@@ -657,7 +657,7 @@ protected:
         synchronizers = new Item<Synchronizers>(regions[cid++], ctx, rt);
         assert(synchronizers->data());
         //
-        matdIdxToMatRowCol = new Array<rcType>(regions[cid++], ctx, rt);
+        matdIdxToMatRowCol = new Array<rcpType>(regions[cid++], ctx, rt);
         assert(matdIdxToMatRowCol->data());
         //
         if (withGhosts(iFlags)) {
@@ -845,7 +845,7 @@ ReplaceMatrixDiagonal(
     floatType *const curDiagA = A.matrixDiagonal->data();
     assert(curDiagA);
     //
-    const rcType *const mid2rc = A.matdIdxToMatRowCol->data();
+    const rcpType *const mid2rc = A.matdIdxToMatRowCol->data();
     assert(mid2rc);
     //
     assert(A.matrixValues->data());

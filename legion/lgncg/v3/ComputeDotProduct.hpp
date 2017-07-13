@@ -61,8 +61,8 @@ static inline floatType
 allReduceSum(
     floatType localResult,
     Item< DynColl<floatType> > &dc,
-    LegionRuntime::HighLevel::Context ctx,
-    LegionRuntime::HighLevel::Runtime *runtime
+    Context ctx,
+    Runtime *runtime
 ) {
     TaskLauncher tl(LOCAL_PARTIAL_SUM_TID, TaskArgument(NULL, 0));
     //
