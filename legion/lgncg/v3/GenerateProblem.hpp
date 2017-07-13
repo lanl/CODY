@@ -54,48 +54,10 @@
 #include "LegionItems.hpp"
 #include "LegionArrays.hpp"
 #include "LegionMatrices.hpp"
-#include "ReduceSum.hpp"
+#include "ProblemCommon.hpp"
 #include "VectorOps.hpp"
 
 #include <cassert>
-
-/**
- * Tally total number of non-zeros in simulation.
- */
-static inline global_int_t
-getTotalNumberOfNonZeros(
-    SparseMatrix &A,
-    global_int_t localNumberOfNonzeros,
-    LegionRuntime::HighLevel::Context ctx,
-    LegionRuntime::HighLevel::Runtime *runtime
-) {
-    Item< DynColl<global_int_t> > *dcars = A.dcAllRedSumGI;
-    dcars->data()->localBuffer = localNumberOfNonzeros;
-    //
-    TaskLauncher tlLocalNZ(
-        LOCAL_NONZEROS_TID,
-        TaskArgument(NULL, 0)
-    );
-    //
-    tlLocalNZ.add_region_requirement(
-        RegionRequirement(
-            dcars->logicalRegion,
-            RO_E,
-            dcars->logicalRegion
-        )
-    ).add_field(dcars->getFieldID());
-    //
-    Future future = runtime->execute_task(ctx, tlLocalNZ);
-    //
-    auto &dyncol = dcars->data()->dc;
-    runtime->defer_dynamic_collective_arrival(ctx, dyncol, future);
-    //
-    dyncol = runtime->advance_dynamic_collective(ctx, dyncol);
-    //
-    Future fSum = runtime->get_dynamic_collective_result(ctx, dyncol);
-
-    return fSum.get<global_int_t>();
-}
 
 /*!
     Reference version of GenerateProblem to generate the sparse matrix, right
@@ -122,8 +84,8 @@ GenerateProblem(
     Array<floatType> *x,
     Array<floatType> *xexact,
     int level,
-    LegionRuntime::HighLevel::Context ctx,
-    LegionRuntime::HighLevel::Runtime *runtime
+    Context ctx,
+    Runtime *runtime
 ) {
     using namespace std;
     //
@@ -200,8 +162,6 @@ GenerateProblem(
     );
     //
     floatType *matrixDiagonal = A.matrixDiagonal->data();
-    // TODO needed?
-    ZeroVector(*A.matrixDiagonal, ctx, runtime);
     //
     global_int_t *localToGlobalMap = A.localToGlobalMap->data();
     //

@@ -59,6 +59,7 @@
 #include "ComputeResidual.hpp"
 #include "CG.hpp"
 #include "TestCG.hpp"
+#include "CheckProblem.hpp"
 
 #include <iostream>
 #include <cstdlib>
@@ -493,9 +494,6 @@ startBenchmarkTask(
         f2cOperatorPopulate(*curLevelMatrix, ctx, lrt);
         curLevelMatrix = curLevelMatrix->Ac;
     }
-    // Sanity
-    const int rank = A.geom->data()->rank;
-    assert(getTaskID(task) == rank);
     // Setup halo information for all levels before we begin.
     curLevelMatrix = &A;
     for (int level = 0; level < NUM_MG_LEVELS; ++level) {
@@ -503,6 +501,7 @@ startBenchmarkTask(
         curLevelMatrix = curLevelMatrix->Ac;
     }
     // Capture total time of setup.
+    // TODO include time from genProblemTask.
     setup_time = mytimer() - setup_time;
     // Save it for reporting.
     times[9] = setup_time;
@@ -512,6 +511,10 @@ startBenchmarkTask(
     // Start of benchmark.
     ////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////
+
+    const int rank = A.geom->data()->rank;
+    // Sanity
+    assert(getTaskID(task) == rank);
     // Used to check return codes on function calls.
     const bool doMG = true;
     int ierr = 0;
@@ -522,11 +525,39 @@ startBenchmarkTask(
     const auto *const Asclrs = A.sclrs->data();
 
     ////////////////////////////////////////////////////////////////////////////
+    // Problem Sanity Phase
+    ////////////////////////////////////////////////////////////////////////////
+    {
+        double t_sanity = mytimer();
+        if (rank == 0) {
+            cout << "Starting Problem Sanity Phase " << endl;
+        }
+        SparseMatrix *curLevelMatrix = &A;
+        Array<floatType> *curb = &b;
+        Array<floatType> *curx = &x;
+        Array<floatType> *curxexact = &xexact;
+        //
+        for (int level = 0; level< NUM_MG_LEVELS; ++level) {
+            CheckProblem(*curLevelMatrix, curb, curx, curxexact, ctx, lrt);
+            // Make the nextcoarse grid the next level.
+            curLevelMatrix = curLevelMatrix->Ac;
+            // No vectors after the top level.
+            curb = NULL;
+            curx = NULL;
+            curxexact = NULL;
+        }
+        if (rank == 0) {
+            cout << "Total sanity timing phase execution time in main (sec) = "
+                 << mytimer() - t_sanity << endl;
+        }
+    }
+
+    ////////////////////////////////////////////////////////////////////////////
     // Reference SpMV+MG Timing Phase                                         //
     ////////////////////////////////////////////////////////////////////////////
     {
         if (rank == 0) {
-            cout << "Starting Reference SpMV+MG Timing Phase " << endl;
+            cout << endl << "Starting Reference SpMV+MG Timing Phase " << endl;
         }
         local_int_t nrow = Asclrs->localNumberOfRows;
         local_int_t ncol = Asclrs->localNumberOfColumns;
