@@ -147,7 +147,7 @@ CheckProblem(
             for (local_int_t ix = 0; ix < nx; ix++) {
                 global_int_t gix = ipx * nx + ix;
                 local_int_t currentLocalRow = iz * nx * ny + iy * nx + ix;
-                global_int_t currentGlobalRow = giz * nx * gny + giy * gnx + gix;
+                global_int_t currentGlobalRow = giz * gnx * gny + giy * gnx + gix;
                 assert(AlocalToGlobalMap[currentLocalRow] == currentGlobalRow);
                 char numberOfNonzerosInRow = 0;
                 // Current index in current row.

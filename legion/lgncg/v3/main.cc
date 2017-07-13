@@ -612,8 +612,11 @@ startBenchmarkTask(
             cout << "Total SpMV+MG timing phase execution time in main (sec) = "
                  << mytimer() - t_begin << endl;
         }
-        // No longer needed, so unmap.
+        // No longer needed, so deallocate and unmap.
+        x_overlapl.deallocate(ctx, lrt);
         x_overlapl.unmapRegion(ctx, lrt);
+        //
+        b_computedl.deallocate(ctx, lrt);
         b_computedl.unmapRegion(ctx, lrt);
     }
 
