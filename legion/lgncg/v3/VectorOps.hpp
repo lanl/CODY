@@ -130,18 +130,16 @@ PrintVector(
 ) {
     using namespace std;
 
-    ofstream file;
-    file.open(fName);
+    FILE *file = fopen(fName.c_str(), "w+");
+    assert(file);
 
-    floatType *vd = v.data();
+    const floatType *const vd = v.data();
 
     for (decltype(v.length()) i = 0; i < v.length(); ++i) {
-        //if (0 == i % (brk / w)) file << endl;
-        file << vd[i] << " " << flush;
-        file << endl;
+        fprintf(file, "%.1e\n", vd[i]);
     }
 
-    file.close();
+    fclose(file);
 }
 
 inline void

@@ -38,14 +38,10 @@
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 struct LogicalCGData : public LogicalMultiBase {
-    //
-    LogicalArray<floatType> r;  //!< residual vector
-    //
-    LogicalArray<floatType> z;  //!< preconditioned residual vector
-    //
-    LogicalArray<floatType> p;  //!< direction vector
-    //
-    LogicalArray<floatType> Ap; //!< Krylov vector
+    LogicalArray<floatType> r;  //!< Residual vector.
+    LogicalArray<floatType> z;  //!< Preconditioned residual vector.
+    LogicalArray<floatType> p;  //!< Direction vector.
+    LogicalArray<floatType> Ap; //!< Krylov vector.
 
 protected:
 
@@ -138,10 +134,7 @@ public:
         //
         z.partition(partLens, ctx, lrt);
         p.partition(partLens, ctx, lrt);
-        //
-        const int numParts = 1;
-        r.partition( numParts, ctx, lrt);
-        Ap.partition(numParts, ctx, lrt);
+        // r and Ap don't need to be partitioned.
     }
 };
 

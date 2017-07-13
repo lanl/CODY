@@ -148,11 +148,12 @@ TestCG(
             ScaleVectorValue(b, i, 1.0e6, ctx, lrt);
         }
     }
+    //
     ReplaceMatrixDiagonal(A, exaggeratedDiagA, ctx, lrt);
-
+    //
     int niters = 0;
-    double normr = 0.0;
-    double normr0 = 0.0;
+    floatType normr = 0.0;
+    floatType normr0 = 0.0;
     int maxIters = 50;
     int numberOfCgCalls = 2;
     // Set tolerance to reasonable value for grossly scaled diagonal terms.

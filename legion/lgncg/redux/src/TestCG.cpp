@@ -34,6 +34,7 @@ using std::endl;
 
 #include "TestCG.hpp"
 #include "CG.hpp"
+#include <cstdio>
 
 /*!
   Test the correctness of the Preconditined CG implementation by using a system matrix with a dominant diagonal.
