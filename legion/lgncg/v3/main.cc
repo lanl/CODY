@@ -566,30 +566,15 @@ startBenchmarkTask(
         if (rank == 0) {
             cout << endl << "Starting Reference SpMV+MG Timing Phase " << endl;
         }
+        //
         local_int_t nrow = Asclrs->localNumberOfRows;
         local_int_t ncol = Asclrs->localNumberOfColumns;
-        // TODO add routine to calc partitioning from matrix.
-        // First nrow items are 'local data'. After is remote data.
-        std::vector<local_int_t> partLens;
-        // First partition for local data.
-        local_int_t totLen = nrow;
-        partLens.push_back(nrow);
-        // The rest are based on receive lengths.
-        const int nNeighbors = Asclrs->numberOfRecvNeighbors;
-        const local_int_t *const recvLength = A.recvLength->data();
         //
-        for (int n = 0; n < nNeighbors; ++n) {
-            const int recvl = recvLength[n];
-            partLens.push_back(recvl);
-            totLen += recvl;
-        }
-        assert(totLen == ncol);
-
         LogicalArray<floatType> x_overlapl, b_computedl;
         x_overlapl.allocate("x_overlap" , ncol, ctx, lrt);
         b_computedl.allocate("b_computed", nrow, ctx, lrt);
         //
-        x_overlapl.partition(partLens, ctx, lrt);
+        Partition(A, x_overlapl, ctx, lrt);
         //
         Array<floatType> x_overlap(
             x_overlapl.mapRegion(RW_E, ctx, lrt),

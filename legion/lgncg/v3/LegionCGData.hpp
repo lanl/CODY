@@ -114,26 +114,8 @@ public:
         LegionRuntime::HighLevel::Context ctx,
         LegionRuntime::HighLevel::HighLevelRuntime *lrt
     ) {
-        const local_int_t nrow = A.sclrs->data()->localNumberOfRows;
-        const local_int_t ncol = A.sclrs->data()->localNumberOfColumns;
-        // First nrow items are 'local data'. After is remote data.
-        std::vector<local_int_t> partLens;
-        // First partition for local data.
-        local_int_t totLen = nrow;
-        partLens.push_back(nrow);
-        // The rest are based on receive lengths.
-        const int nNeighbors = A.sclrs->data()->numberOfRecvNeighbors;
-        const local_int_t *const recvLength = A.recvLength->data();
-        //
-        for (int n = 0; n < nNeighbors; ++n) {
-            const int recvl = recvLength[n];
-            partLens.push_back(recvl);
-            totLen += recvl;
-        }
-        assert(totLen == ncol);
-        //
-        z.partition(partLens, ctx, lrt);
-        p.partition(partLens, ctx, lrt);
+        Partition(A, z, ctx, lrt);
+        Partition(A, p, ctx, lrt);
         // r and Ap don't need to be partitioned.
     }
 };

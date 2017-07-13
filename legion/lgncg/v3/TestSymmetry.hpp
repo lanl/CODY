@@ -118,6 +118,10 @@ TestSymmetry(
     y_ncoll.allocate("y_ncol", ncol, ctx, lrt);
     z_ncoll.allocate("z_ncol", ncol, ctx, lrt);
     //
+    Partition(A, x_ncoll, ctx, lrt);
+    Partition(A, y_ncoll, ctx, lrt);
+    Partition(A, z_ncoll, ctx, lrt);
+    //
     Array<floatType> x_ncol(
         x_ncoll.mapRegion(RW_E, ctx, lrt), ctx, lrt
     );
@@ -175,6 +179,7 @@ TestSymmetry(
              << testSymmetryData.depsym_spmv << endl;
     }
 
+#if 0
     ////////////////////////////////////////////////////////////////////////////
     // Test symmetry of symmetric Gauss-Seidel.
     ////////////////////////////////////////////////////////////////////////////
@@ -184,7 +189,6 @@ TestSymmetry(
     double xtMinvy = 0.0;
     ierr = ComputeDotProduct(nrow, x_ncol, z_ncol, xtMinvy, t4, A.isDotProductOptimized); // x'*Minv*y
     if (ierr) HPCG_fout << "Error in call to dot: " << ierr << ".\n" << endl;
-#if 0
     // Next, compute z'*Minv*x
     ierr = ComputeMG(A, x_ncol, z_ncol); // z_ncol = Minv*x_ncol
     if (ierr) HPCG_fout << "Error in call to MG: " << ierr << ".\n" << endl;
