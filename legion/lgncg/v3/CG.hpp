@@ -156,7 +156,7 @@ CG(
     TOCK(t3);
     //
     TICK(); // r = b - Ax (x stored in p)
-    ComputeWAXPBY(nrow, 1.0, b, -1.0, Ap, r);
+    ComputeWAXPBY(nrow, 1.0, b, -1.0, Ap, r, ctx, lrt);
     TOCK(t2);
     //
     TICK();
@@ -178,13 +178,13 @@ CG(
         }
         else {
             // copy r to z (no preconditioning)
-            ComputeWAXPBY(nrow, 1.0, r, 0.0, r, z);
+            CopyVector(r, z, ctx, lrt); // copy r to z (no preconditioning)
         }
         TOCK(t5); // Preconditioner apply time
 
         if (k == 1) {
             TICK(); // Copy Mr to p
-            CopyVector(z, p, ctx, lrt);
+            ComputeWAXPBY(nrow, 1.0, z, 0.0, z, p, ctx, lrt);
             TOCK(t2);
             //
             TICK(); // rtz = r'*z
@@ -201,7 +201,7 @@ CG(
             beta = rtz / oldrtz;
             //
             TICK(); // p = beta*p + z
-            ComputeWAXPBY(nrow, 1.0, z, beta, p, p);
+            ComputeWAXPBY(nrow, 1.0, z, beta, p, p, ctx, lrt);
             TOCK(t2);
         }
         TICK(); // Ap = A*p
@@ -215,9 +215,9 @@ CG(
         alpha = rtz / pAp;
         //
         TICK(); // x = x + alpha*p
-        ComputeWAXPBY(nrow, 1.0, x, alpha, p, x);
+        ComputeWAXPBY(nrow, 1.0, x, alpha, p, x, ctx, lrt);
         // r = r - alpha*Ap
-        ComputeWAXPBY(nrow, 1.0, r, -alpha, Ap, r);
+        ComputeWAXPBY(nrow, 1.0, r, -alpha, Ap, r, ctx, lrt);
         TOCK(t2);
         //
         TICK();

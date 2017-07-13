@@ -662,6 +662,7 @@ startBenchmarkTask(
     //OptimizeProblem(A, data, b, x, xexact);
     t7 = mytimer() - t7;
     times[7] = t7;
+    //
     if (rank == 0) {
         cout << "Total problem setup time in main (sec) = "
              << mytimer() - t1 << endl;

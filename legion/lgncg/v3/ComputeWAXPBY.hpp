@@ -77,7 +77,9 @@ ComputeWAXPBY(
     const Array<floatType> &x,
     const floatType beta,
     const Array<floatType> &y,
-    Array<floatType> &w
+    Array<floatType> &w,
+    Context,
+    Runtime *
 ) {
     // Test vector lengths
     assert(x.length() >= size_t(n));
@@ -85,7 +87,7 @@ ComputeWAXPBY(
 
     const floatType *const xv = x.data();
     const floatType *const yv = y.data();
-    double *const wv          = w.data();
+    floatType *const       wv = w.data();
 
     if (alpha == 1.0) {
         for (local_int_t i = 0; i < n; i++) wv[i] = xv[i] + beta * yv[i];
