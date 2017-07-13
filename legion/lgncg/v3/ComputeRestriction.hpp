@@ -46,6 +46,8 @@
     HPCG routine
  */
 
+#pragma once
+
 #include "LegionStuff.hpp"
 #include "LegionArrays.hpp"
 #include "LegionMatrices.hpp"

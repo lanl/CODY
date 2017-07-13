@@ -119,20 +119,23 @@ ComputeDotProduct(
     assert(x.length() >= size_t(n));
     assert(y.length() >= size_t(n));
     //
-    const floatType *const xv = x.data();
+    floatType local_result = 0.0;
+    //
+    floatType *xv = x.data();
     assert(xv);
     //
-    const floatType *const yv = y.data();
+    floatType *yv = y.data();
     assert(yv);
-
-    floatType localResult = 0.0;
-
-    for (local_int_t i = 0; i < n; i++) {
-        localResult += xv[i] * yv[i];
+    //
+    if (yv == xv) {
+        for (local_int_t i = 0; i < n; i++) local_result += xv[i] * xv[i];
+    }
+    else {
+        for (local_int_t i = 0; i < n; i++) local_result += xv[i] * yv[i];
     }
     // Collect all partial sums.
     floatType t0 = mytimer();
-    result = allReduceSum(localResult, dcAllreduceSum, ctx, runtime);
+    result = allReduceSum(local_result, dcAllreduceSum, ctx, runtime);
     timeAllreduce += mytimer() - t0;
     //
     return 0;
