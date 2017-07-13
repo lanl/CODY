@@ -639,25 +639,14 @@ startBenchmarkTask(
     numberOfCalls = 1;
     // Compute the residual reduction for the natural ordering and reference
     // kernels.
-    std::vector<double> ref_times(9,0.0);
+    std::vector<double> ref_times(9, 0.0);
     // Set tolerance to zero to make all runs do maxIters iterations.
     double tolerance = 0.0;
     int err_count = 0;
     for (int i = 0; i < numberOfCalls; ++i) {
         ZeroVector(x, ctx, lrt);
-        ierr = CG(A,
-                  data,
-                  b,
-                  x,
-                  refMaxIters,
-                  tolerance,
-                  niters,
-                  normr,
-                  normr0,
-                  &ref_times[0],
-                  doMG,
-                  ctx,
-                  lrt
+        ierr = CG(A, data, b, x, refMaxIters, tolerance, niters,
+                  normr, normr0, &ref_times[0], doMG, ctx, lrt
                );
         // Count the number of errors in CG.
         if (ierr) ++err_count;
@@ -684,7 +673,6 @@ startBenchmarkTask(
     if (rank == 0) {
         cout << endl << "Starting Validation Testing Phase" << endl;
     }
-    // TODO
     t1 = mytimer();
     TestCGData testCGData;
     testCGData.count_pass = testCGData.count_fail = 0;

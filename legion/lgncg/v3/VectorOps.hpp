@@ -91,7 +91,7 @@ CopyVector(
     assert(w.length() >= size_t(localLength));
 
     const floatType *const vv = v.data();
-    double *const wv = w.data();
+    floatType *const wv = w.data();
     //
     for (local_int_t i = 0; i < localLength; ++i) wv[i] = vv[i];
 }

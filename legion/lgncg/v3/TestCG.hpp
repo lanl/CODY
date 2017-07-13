@@ -120,25 +120,18 @@ TestCG(
     origBl.allocate(           "origB",            nrow, ctx, lrt);
     //
     Array<floatType> origDiagA(
-        origDiagAl.mapRegion(RW_E, ctx, lrt),
-        ctx,
-        lrt
+        origDiagAl.mapRegion(RW_E, ctx, lrt), ctx, lrt
     );
     Array<floatType> exaggeratedDiagA(
-        exaggeratedDiagAl.mapRegion(RW_E, ctx, lrt),
-        ctx,
-        lrt
+        exaggeratedDiagAl.mapRegion(RW_E, ctx, lrt), ctx, lrt
     );
     Array<floatType> origB(
-        origBl.mapRegion(RW_E, ctx, lrt),
-        ctx,
-        lrt
+        origBl.mapRegion(RW_E, ctx, lrt), ctx, lrt
     );
     //
     CopyMatrixDiagonal(A, origDiagA, ctx, lrt);
     CopyVector(origDiagA, exaggeratedDiagA, ctx, lrt);
     CopyVector(b, origB, ctx, lrt);
-
     // Modify the matrix diagonal to greatly exaggerate diagonal values.  CG
     // should converge in about 10 iterations for this problem, regardless of
     // problem size.
@@ -146,7 +139,7 @@ TestCG(
     for (local_int_t i = 0; i < nrow; ++i) {
         global_int_t globalRowID = AlocalToGlobalMap[i];
         if (globalRowID < 9) {
-            double scale = (globalRowID + 2) * 1.0e6;
+            floatType scale = (globalRowID + 2) * 1.0e6;
             ScaleVectorValue(exaggeratedDiagA, i, scale, ctx, lrt);
             ScaleVectorValue(b, i, scale, ctx, lrt);
         }
@@ -178,21 +171,11 @@ TestCG(
         if (k == 1) expected_niters = testcg_data.expected_niters_prec;
         for (int i = 0; i < numberOfCgCalls; ++i) {
             ZeroVector(x, ctx, lrt); // Zero out x
-            int ierr = CG(A,
-                          data,
-                          b,
-                          x,
-                          maxIters,
-                          tolerance,
-                          niters,
-                          normr,
-                          normr0,
-                          &times[0],
-                          k == 1,
-                          ctx,
-                          lrt
+            int ierr = CG(A, data, b, x, maxIters, tolerance, niters,
+                          normr, normr0, &times[0], k == 1, ctx, lrt
                        );
             if (ierr) cerr << "Error in call to CG: " << ierr << ".\n" << endl;
+            //
             if (niters <= expected_niters) {
                 ++testcg_data.count_pass;
             }
@@ -225,8 +208,10 @@ TestCG(
     // TODO make sure you do this elsewhere.
     origDiagAl.deallocate(ctx, lrt);
     origDiagAl.unmapRegion(ctx, lrt);
+    //
     exaggeratedDiagAl.deallocate(ctx, lrt);
     exaggeratedDiagAl.unmapRegion(ctx, lrt);
+    //
     origBl.deallocate(ctx, lrt);
     origBl.unmapRegion(ctx, lrt);
     //

@@ -178,9 +178,9 @@ CheckProblem(
                 } // end sz loop
                 assert(AnonzerosInRow[currentLocalRow] == numberOfNonzerosInRow);
                 localNumberOfNonzeros += numberOfNonzerosInRow;
-                if (b!=0)      assert(bv[currentLocalRow] == 26.0 - ((floatType)(numberOfNonzerosInRow-1)));
-                if (x!=0)      assert(xv[currentLocalRow] == 0.0);
-                if (xexact!=0) assert(xexactv[currentLocalRow] == 1.0);
+                if (b != 0)      assert(bv[currentLocalRow] == 26.0 - ((floatType)(numberOfNonzerosInRow-1)));
+                if (x != 0)      assert(xv[currentLocalRow] == 0.0);
+                if (xexact != 0) assert(xexactv[currentLocalRow] == 1.0);
             } // end ix loop
         } // end iy loop
     } // end iz loop
