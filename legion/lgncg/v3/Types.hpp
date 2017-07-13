@@ -30,6 +30,7 @@
 #pragma once
 
 #include <cstdint>
+#include <utility>
 
 #define LGNCG_UNUSED(x)                                                        \
 do {                                                                           \
@@ -77,3 +78,5 @@ typedef long long global_int_t;
 // This macro should be defined if the global_int_t is not long long in order to
 // stop complaints from non-C++11 compliant compilers.
 //#define HPCG_NO_LONG_LONG
+
+using rcType = std::pair<local_int_t, local_int_t>;

@@ -166,7 +166,7 @@ FillRandomVector(
     Runtime *
 ) {
     const local_int_t localLength = v.length();
-    double *vv = v.data();
+    double *const vv = v.data();
     for (int i = 0; i < localLength; ++i) {
         vv[i] = rand() / (double)(RAND_MAX) + 1.0;
     }

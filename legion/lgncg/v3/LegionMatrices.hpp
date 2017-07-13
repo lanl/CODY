@@ -121,7 +121,7 @@ struct LogicalSparseMatrix : public LogicalMultiBase {
     //
     LogicalArray<global_int_t> localToGlobalMap;
     // The SAME dynamic collective instance replicated because
-    // IndexLauncher will be unhappy with different launch domains :-(
+    // uniformity  makes things easier.
     LogicalArray< DynColl<global_int_t> > dcAllRedSumGI;
     LogicalArray< DynColl<floatType> > dcAllRedSumFT;
     // Neighboring processes.
@@ -132,6 +132,8 @@ struct LogicalSparseMatrix : public LogicalMultiBase {
     LogicalArray<local_int_t> recvLength;
     // Synchronization structures.
     LogicalArray<Synchronizers> synchronizers;
+    // Matrix diagonal index to matrixValues(row, col) mapping.
+    LogicalArray<rcType> matdIdxToMatRowCol;
     ////////////////////////////////////////////////////////////////////////////
     // Vector index is for a given shard that is sharing pull region info.
     // Innermost vector is for neighboring regions that we are sharing.
@@ -172,7 +174,8 @@ protected:
                          &neighbors,
                          &sendLength,
                          &recvLength,
-                         &synchronizers
+                         &synchronizers,
+                         &matdIdxToMatRowCol
         };
     }
 
@@ -393,6 +396,8 @@ public:
         aalloca(recvLength, mSize * maxNumNeighbors, ctx, lrt);
         //
         aalloca(synchronizers, mSize, ctx, lrt);
+        //
+        aalloca(matdIdxToMatRowCol, globalXYZ, ctx, lrt);
 
         #undef aalloca
     }
@@ -503,6 +508,8 @@ struct SparseMatrix : public PhysicalMultiBase {
     Array<local_int_t> *recvLength = nullptr;
     //
     Item<Synchronizers> *synchronizers = nullptr;
+    //
+    Array<rcType> *matdIdxToMatRowCol = nullptr;
     ////////////////////////////////////////////////////////////////////////////
     // Task-launch-specific structures.
     ////////////////////////////////////////////////////////////////////////////
@@ -569,6 +576,7 @@ struct SparseMatrix : public PhysicalMultiBase {
         delete sendLength;
         delete recvLength;
         delete synchronizers;
+        delete matdIdxToMatRowCol;
         // Task-local allocation of non-region memory.
         if (elementsToSend) delete[] elementsToSend;
         for (auto *i : pullBuffers) delete i;
@@ -648,6 +656,9 @@ protected:
         //
         synchronizers = new Item<Synchronizers>(regions[cid++], ctx, rt);
         assert(synchronizers->data());
+        //
+        matdIdxToMatRowCol = new Array<rcType>(regions[cid++], ctx, rt);
+        assert(matdIdxToMatRowCol->data());
         //
         if (withGhosts(iFlags)) {
             cid += mSetupGhostStructures(regions, cid, ctx, rt);
@@ -826,13 +837,31 @@ ReplaceMatrixDiagonal(
     Context ctx,
     HighLevelRuntime *lrt
 ) {
+    const local_int_t nrow = A.sclrs->data()->localNumberOfRows;
+    const int nnpr = A.geom->data()->stencilSize;
+    //
+    assert(nrow == local_int_t(diagonal.length()));
+    //
     floatType *const curDiagA = A.matrixDiagonal->data();
+    assert(curDiagA);
+    //
+    const rcType *const mid2rc = A.matdIdxToMatRowCol->data();
+    assert(mid2rc);
+    //
+    assert(A.matrixValues->data());
+    // Interpreted as 2D array
+    Array2D<floatType> matrixValues(
+        nrow, nnpr, A.matrixValues->data()
+    );
+    //
     const floatType *const dv = diagonal.data();
     //
-    const local_int_t nrow = A.sclrs->data()->localNumberOfRows;
-    assert(nrow == local_int_t(diagonal.length()));
     //
     for (local_int_t i = 0; i < nrow; ++i) {
         curDiagA[i] = dv[i];
+        //
+        const local_int_t mrow = mid2rc[i].first;
+        const local_int_t mcol = mid2rc[i].second;
+        matrixValues(mrow, mcol) = dv[i];
     }
 }

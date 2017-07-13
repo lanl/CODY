@@ -165,6 +165,9 @@ GenerateProblem(
     //
     global_int_t *localToGlobalMap = A.localToGlobalMap->data();
     //
+    rcType *mid2rc = A.matdIdxToMatRowCol->data();
+    assert(mid2rc);
+    //
     floatType *bv      = nullptr;
     floatType *xv      = nullptr;
     floatType *xexactv = nullptr;
@@ -187,8 +190,8 @@ GenerateProblem(
         global_int_t giz = ipz * nz + iz;
         for (local_int_t iy = 0; iy < ny; iy++) {
             global_int_t giy = ipy * ny + iy;
-            for (local_int_t ix=0; ix<nx; ix++) {
-                global_int_t gix = ipx*nx+ix;
+            for (local_int_t ix =0; ix < nx; ix++) {
+                global_int_t gix = ipx * nx + ix;
                 local_int_t currentLocalRow = iz * nx * ny + iy * nx + ix;
                 global_int_t currentGlobalRow = giz * gnx * gny + giy * gnx + gix;
                 localToGlobalMap[currentLocalRow] = currentGlobalRow;
@@ -208,6 +211,7 @@ GenerateProblem(
                                         if (curcol == currentGlobalRow) {
                                             matrixDiagonal[currentLocalRow] = 26.0;
                                             matrixValues(currentLocalRow, currentNonZeroElemIndex) = 26.0;
+                                            mid2rc[currentLocalRow] = make_pair(currentLocalRow, currentNonZeroElemIndex);
                                         } else {
                                             matrixValues(currentLocalRow, currentNonZeroElemIndex) = -1.0;
                                         }
