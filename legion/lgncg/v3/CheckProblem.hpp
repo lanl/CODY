@@ -118,7 +118,7 @@ CheckProblem(
     if (x != 0) xv = x->data();
     if (xexact != 0) xexactv = xexact->data();
 
-    floatType *AmatrixDiagonal = A.matrixDiagonal->data();
+    const floatType *const AmatrixDiagonal = A.matrixDiagonal->data();
     assert(AmatrixDiagonal);
     //
     const local_int_t numberOfNonzerosPerRow = Ageom->stencilSize;
@@ -132,10 +132,10 @@ CheckProblem(
     Array2D<global_int_t> mtxIndG(
         localNumberOfRows, numberOfNonzerosPerRow, A.mtxIndG->data()
     );
-    char *AnonzerosInRow = A.nonzerosInRow->data();
+    const char *const AnonzerosInRow = A.nonzerosInRow->data();
     assert(AnonzerosInRow);
     //
-    global_int_t *AlocalToGlobalMap = A.localToGlobalMap->data();
+    const global_int_t *const AlocalToGlobalMap = A.localToGlobalMap->data();
     assert(AlocalToGlobalMap);
     //
     local_int_t localNumberOfNonzeros = 0;
