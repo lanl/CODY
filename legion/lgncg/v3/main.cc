@@ -62,6 +62,7 @@
 #include "TestSymmetry.hpp"
 #include "TestNorms.hpp"
 #include "CheckProblem.hpp"
+#include "ReportResults.hpp"
 
 #include <iostream>
 #include <cstdlib>
@@ -450,6 +451,8 @@ startBenchmarkTask(
     Context ctx,
     HighLevelRuntime *lrt
 ) {
+    // Number of levels including first.
+    const int numberOfMgLevels = NUM_MG_LEVELS;
     // Use this array for collecting timing information.
     std::vector< double > times(10,0.0);
     //
@@ -467,7 +470,7 @@ startBenchmarkTask(
     rid += A.nRegionEntries();
     //
     SparseMatrix *curLevelMatrix = &A;
-    for (int level = 1; level < NUM_MG_LEVELS; ++level) {
+    for (int level = 1; level < numberOfMgLevels; ++level) {
         curLevelMatrix->Ac = new SparseMatrix(regions, rid, aif, ctx, lrt);
         rid += curLevelMatrix->Ac->nRegionEntries();
         curLevelMatrix = curLevelMatrix->Ac;
@@ -497,14 +500,14 @@ startBenchmarkTask(
     CGData data(cgRegions, cgDataBaseRID, ctx, lrt);
     // MGData
     curLevelMatrix = &A;
-    for (int level = 1; level < NUM_MG_LEVELS; ++level) {
+    for (int level = 1; level < numberOfMgLevels; ++level) {
         allocateMGData(*curLevelMatrix, level - 1, ctx, lrt);
         f2cOperatorPopulate(*curLevelMatrix, ctx, lrt);
         curLevelMatrix = curLevelMatrix->Ac;
     }
     // Setup halo information for all levels before we begin.
     curLevelMatrix = &A;
-    for (int level = 0; level < NUM_MG_LEVELS; ++level) {
+    for (int level = 0; level < numberOfMgLevels; ++level) {
         SetupHalo(*curLevelMatrix, ctx, lrt);
         curLevelMatrix = curLevelMatrix->Ac;
     }
@@ -545,7 +548,7 @@ startBenchmarkTask(
         Array<floatType> *curx = &x;
         Array<floatType> *curxexact = &xexact;
         //
-        for (int level = 0; level< NUM_MG_LEVELS; ++level) {
+        for (int level = 0; level< numberOfMgLevels; ++level) {
             CheckProblem(*curLevelMatrix, curb, curx, curxexact, ctx, lrt);
             // Make the nextcoarse grid the next level.
             curLevelMatrix = curLevelMatrix->Ac;
@@ -793,7 +796,6 @@ startBenchmarkTask(
     ////////////////////////////////////////////////////////////////////////////
     // Report Results                                                         //
     ////////////////////////////////////////////////////////////////////////////
-#if 0
     // Report results to YAML file.
     ReportResults(
         A,
@@ -803,12 +805,11 @@ startBenchmarkTask(
         optMaxIters,
         &times[0],
         testCGData,
-        testsymmetry_data,
+        testSymmetryData,
         testnormsData,
         global_failure,
         quickPath
     );
-#endif
 
     ////////////////////////////////////////////////////////////////////////////
     // Cleanup task-local strucutres allocated for solve.

@@ -46,14 +46,17 @@
     HPCG routine
  */
 
-#include <vector>
+#include "hpcg.hpp"
+#include "LegionMatrices.hpp"
 #include "YAML_Element.hpp"
 #include "YAML_Doc.hpp"
+#if 0
 #include "OptimizeProblem.hpp"
+#endif
 
 #include <fstream>
+#include <vector>
 
-#include "hpcg.hpp"
 
 /*!
     Creates a YAML file and writes the information about the HPCG run, its
@@ -90,7 +93,7 @@
 */
 inline void
 ReportResults(
-    const SparseMatrix &A,
+    SparseMatrix &A,
     int numberOfMgLevels,
     int numberOfCgSets,
     int refMaxIters,
@@ -102,6 +105,7 @@ ReportResults(
     int global_failure,
     bool quickPath
 ) {
+#if 0
     // Any official benchmark result much run at least this many seconds.
     double minOfficialTime = 1800;
 
@@ -457,4 +461,5 @@ ReportResults(
 #endif
     }
     return;
+#endif
 }
