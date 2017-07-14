@@ -64,5 +64,20 @@ struct HPCG_Params {
     int stencilSize; //!< Size of the stencil
 };
 
+/**
+ *
+ */
+inline void
+emit(const HPCG_Params &params) {
+    using namespace std;
+    //
+    cout << "runningTime: " << params.runningTime << endl;
+    cout << "commSize: "    << params.commSize << endl;
+    cout << "numThreads: "  << params.numThreads << endl;
+    cout << "nx: "          << params.nx << endl;
+    cout << "ny: "          << params.ny << endl;
+    cout << "nz: "          << params.nz << endl;
+}
+
 extern int HPCG_Init(HPCG_Params &params, const SPMDMeta &spmdMeta);
 extern int HPCG_Finalize(void);

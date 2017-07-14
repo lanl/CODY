@@ -60,12 +60,12 @@ GetNeighborInfo(
 ) {
     using namespace std;
     // Extract Matrix pieces
-    SparseMatrixScalars *Asclrs = A.sclrs->data();
-    Geometry *Ageom = A.geom->data();
+    SparseMatrixScalars *const Asclrs = A.sclrs->data();
+    const Geometry *const Ageom = A.geom->data();
     //
     const local_int_t numberOfNonzerosPerRow = Ageom->stencilSize;
     //
-    local_int_t localNumberOfRows = Asclrs->localNumberOfRows;
+    const local_int_t localNumberOfRows = Asclrs->localNumberOfRows;
     //
     char *nonzerosInRow = A.nonzerosInRow->data();
     // Interpreted as 2D array
@@ -87,7 +87,7 @@ GetNeighborInfo(
             int rankIdOfColumnEntry = ComputeRankOfMatrixRow(*(Ageom), curIndex);
             // If column index is not a row index, then it comes from another
             // processor
-            if (Ageom->rank!=rankIdOfColumnEntry) {
+            if (Ageom->rank != rankIdOfColumnEntry) {
                 receiveList[rankIdOfColumnEntry].insert(curIndex);
                 // Matrix symmetry means we know the neighbor process wants my
                 // value
@@ -98,8 +98,7 @@ GetNeighborInfo(
     // Count number of matrix entries to send and receive.
     local_int_t totalToBeSent = 0;
     for (map_iter curNeighbor = sendList.begin();
-         curNeighbor != sendList.end(); ++curNeighbor)
-    {
+         curNeighbor != sendList.end(); ++curNeighbor) {
         totalToBeSent += (curNeighbor->second).size();
     }
     // Build the arrays and lists needed by the ExchangeHalo function.
@@ -111,8 +110,7 @@ GetNeighborInfo(
     local_int_t receiveEntryCount = 0;
     for (map_iter curNeighbor = receiveList.begin();
          curNeighbor != receiveList.end();
-         ++curNeighbor, ++neighborCount)
-    {
+         ++curNeighbor, ++neighborCount) {
         // rank of current neighbor we are processing
         int neighborId = curNeighbor->first;
         // store rank ID of current neighbor
@@ -122,8 +120,7 @@ GetNeighborInfo(
         sendLength[neighborCount] = sendList[neighborId].size();
         for (set_iter i = receiveList[neighborId].begin();
              i != receiveList[neighborId].end();
-             ++i, ++receiveEntryCount)
-        {
+             ++i, ++receiveEntryCount) {
             // The remote columns are indexed at end of internals
             externalToLocalMap[*i] = localNumberOfRows + receiveEntryCount;
         }
@@ -133,7 +130,7 @@ GetNeighborInfo(
     Asclrs->numberOfExternalValues = externalToLocalMap.size();
     //
     Asclrs->localNumberOfColumns = Asclrs->localNumberOfRows
-                                 + Asclrs->numberOfExternalValues;
+                                   + Asclrs->numberOfExternalValues;
     //
     Asclrs->numberOfSendNeighbors = sendList.size();
     Asclrs->totalToBeSent = totalToBeSent;
@@ -163,7 +160,8 @@ SetupHalo(
     SparseMatrix &A,
     LegionRuntime::HighLevel::Context ctx,
     LegionRuntime::HighLevel::Runtime *lrt
-) {
+)
+{
     using namespace std;
     //
     PopulateGlobalToLocalMap(A, ctx, lrt);
@@ -199,7 +197,7 @@ SetupHalo(
             int rankIdOfColumnEntry = ComputeRankOfMatrixRow(*(Ageom), curIndex);
             // If column index is not a row index, then it comes from another
             // processor
-            if (Ageom->rank!=rankIdOfColumnEntry) {
+            if (Ageom->rank != rankIdOfColumnEntry) {
                 receiveList[rankIdOfColumnEntry].insert(curIndex);
                 // Matrix symmetry means we know the neighbor process wants my
                 // value
@@ -210,14 +208,12 @@ SetupHalo(
     // Count number of matrix entries to send and receive.
     local_int_t totalToBeSent = 0;
     for (map_iter curNeighbor = sendList.begin();
-         curNeighbor != sendList.end(); ++curNeighbor)
-    {
+         curNeighbor != sendList.end(); ++curNeighbor) {
         totalToBeSent += (curNeighbor->second).size();
     }
     local_int_t totalToBeReceived = 0;
     for (map_iter curNeighbor = receiveList.begin();
-         curNeighbor != receiveList.end(); ++curNeighbor)
-    {
+         curNeighbor != receiveList.end(); ++curNeighbor) {
         totalToBeReceived += (curNeighbor->second).size();
     }
     // Build the arrays and lists needed by the ExchangeHalo function.
@@ -230,8 +226,7 @@ SetupHalo(
     local_int_t sendEntryCount = 0;
     for (map_iter curNeighbor = receiveList.begin();
          curNeighbor != receiveList.end();
-         ++curNeighbor, ++neighborCount)
-    {
+         ++curNeighbor, ++neighborCount) {
         // rank of current neighbor we are processing
         int neighborId = curNeighbor->first;
         // store rank ID of current neighbor
@@ -241,22 +236,20 @@ SetupHalo(
         sendLength[neighborCount] = sendList[neighborId].size();
         for (set_iter i = receiveList[neighborId].begin();
              i != receiveList[neighborId].end();
-             ++i, ++receiveEntryCount)
-        {
+             ++i, ++receiveEntryCount) {
             // The remote columns are indexed at end of internals
             externalToLocalMap[*i] = localNumberOfRows + receiveEntryCount;
         }
         for (set_iter i = sendList[neighborId].begin();
              i != sendList[neighborId].end();
-             ++i, ++sendEntryCount)
-        {
+             ++i, ++sendEntryCount) {
             // Store local ids of entry to send.
             elementsToSend[sendEntryCount] = A.globalToLocalMap[*i];
         }
     }
     //
-    for (local_int_t i = 0; i< localNumberOfRows; i++) {
-        for (int j = 0; j<nonzerosInRow[i]; j++) {
+    for (local_int_t i = 0; i < localNumberOfRows; i++) {
+        for (int j = 0; j < nonzerosInRow[i]; j++) {
             global_int_t curIndex = mtxIndG(i, j);
             int rankIdOfColumnEntry = ComputeRankOfMatrixRow(*(Ageom), curIndex);
             // My column index, so convert to local index
@@ -410,7 +403,7 @@ SetupHaloTopLevel(
         cout << "--------> mine.done =" << mySync.mine.done << endl;
         for (int n = 0; n < nNeighbors; ++n) {
             cout << "--------> .ready=" << mySync.neighbors[n].ready << endl;
-            cout << "--------> .done =" << mySync.neighbors[n].done<< endl;
+            cout << "--------> .done =" << mySync.neighbors[n].done << endl;
         }
     }
 #endif

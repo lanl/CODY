@@ -50,6 +50,8 @@
 
 #include "Types.hpp"
 
+#include <iostream>
+
 /*!
   This is a data structure to contain all processor geometry information
 */
@@ -110,4 +112,25 @@ getGlobalXYZ(
                        global_int_t(geom.npz * geom.nz);
 
     return res;
+}
+
+/**
+ *
+ */
+inline void
+emit(const Geometry &geom) {
+    using namespace std;
+    cout << "Size: "       << geom.size << endl;
+    cout << "Rank: "       << geom.rank << endl;
+    cout << "numThreads: " << geom.numThreads << endl;
+    cout << "nx: "         << geom.nx << endl;
+    cout << "ny: "         << geom.ny << endl;
+    cout << "nz: "         << geom.nz << endl;
+    cout << "stencilSize: "<< geom.stencilSize<< endl;
+    cout << "npx: "        << geom.npx << endl;
+    cout << "npy: "        << geom.npy << endl;
+    cout << "npz: "        << geom.npz << endl;
+    cout << "ipx: "        << geom.ipx << endl;
+    cout << "ipy: "        << geom.ipy << endl;
+    cout << "ipz: "        << geom.ipz << endl;
 }

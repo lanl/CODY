@@ -2,7 +2,7 @@
 Still under development...
 
 ## Running
-legion-hpcg -ll:cpu [NUMPE]
+legion-hpcg -ll:cpu [NUMPE] -ll:csize [MEM_IN_B]
 
 ## Debugging with Legion Spy
 -level legion_spy=2 -logfile log_%.spy

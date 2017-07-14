@@ -45,7 +45,6 @@
 #include "LegionMatrices.hpp"
 #include "LegionCGData.hpp"
 #include "LegionMGData.hpp"
-#include "IOOps.hpp"
 
 #include "hpcg.hpp"
 #include "mytimer.hpp"
@@ -528,7 +527,6 @@ startBenchmarkTask(
     // Sanity
     assert(getTaskID(task) == rank);
     // Used to check return codes on function calls.
-    const bool doMG = true;
     int ierr = 0;
     int numberOfCalls = 10;
     //QuickPath means we do on one call of each block of repetitive code.
@@ -643,7 +641,7 @@ startBenchmarkTask(
     for (int i = 0; i < numberOfCalls; ++i) {
         ZeroVector(x, ctx, lrt);
         ierr = CG(A, data, b, x, refMaxIters, tolerance, niters,
-                  normr, normr0, &ref_times[0], doMG, ctx, lrt
+                  normr, normr0, &ref_times[0], true, ctx, lrt
                );
         // Count the number of errors in CG.
         if (ierr) ++err_count;
@@ -711,7 +709,7 @@ startBenchmarkTask(
         ZeroVector(x, ctx, lrt);
         double last_cummulative_time = opt_times[0];
         ierr = CG(A, data, b, x, optMaxIters, refTolerance, niters,
-                  normr, normr0, &opt_times[0], doMG, ctx, lrt
+                  normr, normr0, &opt_times[0], true, ctx, lrt
                );
         // Count the number of errors in CG.
         if (ierr) ++err_count;
@@ -765,7 +763,7 @@ startBenchmarkTask(
         // Zero out x.
         ZeroVector(x, ctx, lrt);
         ierr = CG(A, data, b, x, optMaxIters, optTolerance, niters,
-                  normr, normr0, &times[0], doMG, ctx, lrt
+                  normr, normr0, &times[0], true, ctx, lrt
                );
         if (ierr) {
             cerr << "Error in call to CG: " << ierr << ".\n" << endl;
