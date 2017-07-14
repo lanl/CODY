@@ -526,6 +526,11 @@ struct SparseMatrix : public PhysicalMultiBase {
     std::map<int, PhysicalRegion> nidToPullRegion;
     // Pull regions that I populate for consumption by other tasks.
     std::vector< Array<floatType> *> pullBuffers;
+    // No optimization here.
+    const bool isDotProductOptimized = false;
+    const bool isSpmvOptimized = false;
+    const bool isMgOptimized = false;
+    const bool isWaxpbyOptimized = false;
 
     /**
      *

@@ -58,6 +58,7 @@
 #include "SetupHalo.hpp"
 #include "ComputeResidual.hpp"
 #include "CG.hpp"
+#include "OptimizeProblem.hpp"
 #include "TestCG.hpp"
 #include "TestSymmetry.hpp"
 #include "TestNorms.hpp"
@@ -655,7 +656,7 @@ startBenchmarkTask(
     double refTolerance = normr / normr0;
     // Call user-tunable set up function (Nothing to do here).
     double t7 = mytimer();
-    //OptimizeProblem(A, data, b, x, xexact);
+    OptimizeProblem(A, data, b, x, xexact);
     t7 = mytimer() - t7;
     times[7] = t7;
     //
