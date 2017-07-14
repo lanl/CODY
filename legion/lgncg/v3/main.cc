@@ -60,6 +60,7 @@
 #include "CG.hpp"
 #include "TestCG.hpp"
 #include "TestSymmetry.hpp"
+#include "TestNorms.hpp"
 #include "CheckProblem.hpp"
 
 #include <iostream>
@@ -705,19 +706,8 @@ startBenchmarkTask(
         // Start x at all zeros.
         ZeroVector(x, ctx, lrt);
         double last_cummulative_time = opt_times[0];
-        ierr = CG(A,
-                  data,
-                  b,
-                  x,
-                  optMaxIters,
-                  refTolerance,
-                  niters,
-                  normr,
-                  normr0,
-                  &opt_times[0],
-                  doMG,
-                  ctx,
-                  lrt
+        ierr = CG(A, data, b, x, optMaxIters, refTolerance, niters,
+                  normr, normr0, &opt_times[0], doMG, ctx, lrt
                );
         // Count the number of errors in CG.
         if (ierr) ++err_count;
@@ -763,11 +753,9 @@ startBenchmarkTask(
     optMaxIters = optNiters;
     // Force optMaxIters iterations
     double optTolerance = 0.0;
-#if 0 // TODO
-    TestNormsData testnorms_data;
-    testnorms_data.samples = numberOfCgSets;
-    testnorms_data.values = new double[numberOfCgSets];
-#endif
+    TestNormsData testnormsData;
+    testnormsData.samples = numberOfCgSets;
+    testnormsData.values = new double[numberOfCgSets];
 
     for (int i = 0; i < numberOfCgSets; ++i) {
         // Zero out x.
@@ -784,7 +772,7 @@ startBenchmarkTask(
         }
 #if 0 // TODO
         // Record scaled residual from this run.
-        testnorms_data.values[i] = normr/normr0;
+        testnormsData.values[i] = normr/normr0;
 #endif
     }
 
@@ -793,11 +781,7 @@ startBenchmarkTask(
     floatType residual = 0;
     ierr = ComputeResidual(
         Asclrs->localNumberOfRows,
-        x,
-        xexact,
-        residual,
-        ctx,
-        lrt
+        x, xexact, residual, ctx, lrt
     );
     if (ierr) {
         cerr << "Error in call to compute_residual: " << ierr << ".\n" << endl;
@@ -808,7 +792,7 @@ startBenchmarkTask(
     }
 #if 0 // TODO
     // Test Norm Results
-    ierr = TestNorms(testnorms_data);
+    ierr = TestNorms(testnormsData);
 #endif
 
     ////////////////////////////////////////////////////////////////////////////
@@ -825,7 +809,7 @@ startBenchmarkTask(
         &times[0],
         testCGData,
         testsymmetry_data,
-        testnorms_data,
+        testnormsData,
         global_failure,
         quickPath
     );
