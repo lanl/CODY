@@ -38,7 +38,7 @@
 #include "LegionStuff.hpp"
 #include "LegionArrays.hpp"
 #include "LegionMatrices.hpp"
-#include "ReduceSum.hpp"
+#include "CollectiveOps.hpp"
 
 /**
  * Tally total number of non-zeros in simulation.

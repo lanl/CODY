@@ -27,7 +27,7 @@
  * LA-CC 10-123
  */
 
-#include "ReduceSum.hpp"
+#include "CollectiveOps.hpp"
 
 const floatType FloatReduceSumAccumulate::identity = 0.0;
 

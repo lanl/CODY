@@ -76,11 +76,6 @@ GenerateCoarseProblemTopLevel(
     nxc = nxf / 2;
     nyc = nyf / 2;
     nzc = nzf / 2;
-    // This is the size of our subblock
-    local_int_t localNumberOfRows = nxc * nyc * nzc;
-    // If this assert fails, it most likely means that the local_int_t is set to
-    // int and should be set to long long
-    assert(localNumberOfRows > 0);
     // Construct the geometry and linear system
     Geometry *geomc = new Geometry();
     GenerateGeometry(
@@ -139,11 +134,6 @@ GenerateCoarseProblem(
     nxc = nxf / 2;
     nyc = nyf / 2;
     nzc = nzf / 2;
-    // This is the size of our subblock
-    local_int_t localNumberOfRows = nxc * nyc * nzc;
-    // If this assert fails, it most likely means that the local_int_t is set to
-    // int and should be set to long long
-    assert(localNumberOfRows > 0);
     // Construct the geometry and linear system
     GenerateGeometry(
         AfGeom->size,
@@ -185,11 +175,6 @@ f2cOperatorPopulate(
     nxc = nxf / 2;
     nyc = nyf / 2;
     nzc = nzf / 2;
-    // This is the size of our subblock
-    local_int_t localNumberOfRows = nxc * nyc * nzc;
-    // If this assert fails, it most likely means that the local_int_t is set to
-    // int and should be set to long long
-    assert(localNumberOfRows > 0);
     //
     local_int_t *f2cOperator = Af.mgData->f2cOperator->data();
     assert(f2cOperator);

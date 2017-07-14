@@ -50,9 +50,6 @@
 
 #include <vector>
 #include <map>
-#include <cassert>
-#include <deque>
-#include <set>
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -215,12 +212,12 @@ public:
             sclrs.mapRegion(RO_E, ctx, lrt), ctx, lrt
         );
         SparseMatrixScalars *sclrsd = aSparseMatrixScalars.data();
-        assert(sclrsd);
+        myassert(sclrsd);
         //
         Array<int> aNeighbors(
             neighbors.mapRegion(RO_E, ctx, lrt), ctx, lrt
         );
-        assert(aNeighbors.data());
+        myassert(aNeighbors.data());
         // For convenience we'll interpret this as a 2D array.
         Array2D<int> neighborsd(
             mSize, maxNumNeighbors, aNeighbors.data()
@@ -229,7 +226,7 @@ public:
         Array<local_int_t> aSendLengths(
             sendLength.mapRegion(RO_E, ctx, lrt), ctx, lrt
         );
-        assert(aSendLengths.data());
+        myassert(aSendLengths.data());
         Array2D<local_int_t> sendLengthsd(
             mSize, maxNumNeighbors, aSendLengths.data()
         );
@@ -306,12 +303,12 @@ public:
                 sclrs.mapRegion(RO_E, ctx, lrt), ctx, lrt
             );
             SparseMatrixScalars *sclrsd = aSparseMatrixScalars.data();
-            assert(sclrsd);
+            myassert(sclrsd);
             //
             Array<int> aNeighbors(
                 neighbors.mapRegion(RO_E, ctx, lrt), ctx, lrt
             );
-            assert(aNeighbors.data());
+            myassert(aNeighbors.data());
             // For convenience we'll interpret this as a 2D array.
             Array2D<int> neighborsd(
                 mSize, maxNumNeighbors, aNeighbors.data()
@@ -457,7 +454,7 @@ private:
         );
         //
         DynColl<TYPE> *dcsd = dcs.data();
-        assert(dcsd);
+        myassert(dcsd);
         //
         dynCol.dc = lrt->create_dynamic_collective(
             ctx,
@@ -621,49 +618,49 @@ protected:
         size_t cid = baseRID;
         // Populate members from physical regions.
         geom = new Item<Geometry>(regions[cid++], ctx, rt);
-        assert(geom->data());
+        myassert(geom->data());
         //
         sclrs = new Item<SparseMatrixScalars>(regions[cid++], ctx, rt);
-        assert(sclrs->data());
+        myassert(sclrs->data());
         //
         nonzerosInRow = new Array<char>(regions[cid++], ctx, rt);
-        assert(nonzerosInRow->data());
+        myassert(nonzerosInRow->data());
         //
         mtxIndG = new Array<global_int_t>(regions[cid++], ctx, rt);
-        assert(mtxIndG->data());
+        myassert(mtxIndG->data());
         //
         mtxIndL = new Array<local_int_t>(regions[cid++], ctx, rt);
-        assert(mtxIndL->data());
+        myassert(mtxIndL->data());
         //
         matrixValues = new Array<floatType>(regions[cid++], ctx, rt);
-        assert(matrixValues->data());
+        myassert(matrixValues->data());
         //
         matrixDiagonal = new Array<floatType>(regions[cid++], ctx, rt);
-        assert(matrixDiagonal->data());
+        myassert(matrixDiagonal->data());
         //
         localToGlobalMap = new Array<global_int_t>(regions[cid++], ctx, rt);
-        assert(localToGlobalMap->data());
+        myassert(localToGlobalMap->data());
         //
         dcAllRedSumGI = new Item< DynColl<global_int_t> >(regions[cid++], ctx, rt);
-        assert(dcAllRedSumGI->data());
+        myassert(dcAllRedSumGI->data());
         //
         dcAllRedSumFT = new Item< DynColl<floatType> >(regions[cid++], ctx, rt);
-        assert(dcAllRedSumFT->data());
+        myassert(dcAllRedSumFT->data());
         //
         neighbors = new Array<int>(regions[cid++], ctx, rt);
-        assert(neighbors->data());
+        myassert(neighbors->data());
         //
         sendLength = new Array<local_int_t>(regions[cid++], ctx, rt);
-        assert(sendLength->data());
+        myassert(sendLength->data());
         //
         recvLength = new Array<local_int_t>(regions[cid++], ctx, rt);
-        assert(recvLength->data());
+        myassert(recvLength->data());
         //
         synchronizers = new Item<Synchronizers>(regions[cid++], ctx, rt);
-        assert(synchronizers->data());
+        myassert(synchronizers->data());
         //
         matdIdxToMatRowCol = new Array<rcpType>(regions[cid++], ctx, rt);
-        assert(matdIdxToMatRowCol->data());
+        myassert(matdIdxToMatRowCol->data());
         //
         if (withGhosts(iFlags)) {
             cid += mSetupGhostStructures(regions, cid, ctx, rt);
@@ -779,10 +776,10 @@ SetupGhostArrays(
 ) {
     // Make sure that we aren't doing this again for something that already has
     // the ghosts setup.
-    assert(!x.hasGhosts());
+    myassert(!x.hasGhosts());
     //
     const SparseMatrixScalars *const Asclrs = A.sclrs->data();
-    assert(Asclrs);
+    myassert(Asclrs);
     const int nNeighbors = Asclrs->numberOfSendNeighbors;
 
     for (int n = 0; n < nNeighbors; ++n) {
@@ -820,7 +817,7 @@ CopyMatrixDiagonal(
     floatType *const dv = diagonal.data();
     //
     const local_int_t nrow = A.sclrs->data()->localNumberOfRows;
-    assert(nrow == local_int_t(diagonal.length()));
+    myassert(nrow == local_int_t(diagonal.length()));
     //
     for (local_int_t i = 0; i < nrow; ++i) {
         dv[i] = curDiagA[i];
@@ -845,15 +842,15 @@ ReplaceMatrixDiagonal(
     const local_int_t nrow = A.sclrs->data()->localNumberOfRows;
     const int nnpr = A.geom->data()->stencilSize;
     //
-    assert(nrow == local_int_t(diagonal.length()));
+    myassert(nrow == local_int_t(diagonal.length()));
     //
     floatType *const curDiagA = A.matrixDiagonal->data();
-    assert(curDiagA);
+    myassert(curDiagA);
     //
     const rcpType *const mid2rc = A.matdIdxToMatRowCol->data();
-    assert(mid2rc);
+    myassert(mid2rc);
     //
-    assert(A.matrixValues->data());
+    myassert(A.matrixValues->data());
     // Interpreted as 2D array
     Array2D<floatType> matrixValues(
         nrow, nnpr, A.matrixValues->data()
@@ -897,7 +894,7 @@ Partition(
         partLens.push_back(recvl);
         totLen += recvl;
     }
-    assert(totLen == ncol);
+    myassert(totLen == ncol);
     //
     x.partition(partLens, ctx, lrt);
 }

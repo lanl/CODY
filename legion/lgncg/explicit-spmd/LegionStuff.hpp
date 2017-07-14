@@ -31,9 +31,10 @@
 
 #pragma once
 
-#include "legion.h"
 #include "Types.hpp"
-#include "ReduceSum.hpp"
+#include "CollectiveOps.hpp"
+
+#include "legion.h"
 
 #include <vector>
 #include <map>
@@ -189,13 +190,12 @@ regionToRegionCopyTask(
 ////////////////////////////////////////////////////////////////////////////////
 // TODO: be explicit about leaf tasks in registration.
 inline void
-registerTasks(void) {
-    {
+registerTasks(void)
+{
     TaskVariantRegistrar tvr(MAIN_TID, "mainTask");
     tvr.add_constraint(ProcessorConstraint(Processor::LOC_PROC));
     Runtime::preregister_task_variant<mainTask>(tvr, "mainTask");
     Runtime::set_top_level_task_id(MAIN_TID);
-    }
     //
     HighLevelRuntime::register_legion_task<genProblemTask>(
         GEN_PROB_TID /* task id */,

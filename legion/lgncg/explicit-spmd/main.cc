@@ -66,7 +66,6 @@
 
 #include <iostream>
 #include <cstdlib>
-#include <iomanip>
 
 using namespace std;
 
@@ -525,7 +524,7 @@ startBenchmarkTask(
 
     const int rank = A.geom->data()->rank;
     // Sanity
-    assert(getTaskID(task) == rank);
+    myassert(getTaskID(task) == rank);
     // Used to check return codes on function calls.
     int ierr = 0;
     int numberOfCalls = 10;

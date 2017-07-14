@@ -27,5 +27,5 @@ GEN_SRC		?= \
 main.cc init.cc mytimer.cc \
 ReadHpcgDat.cc CheckAspectRatio.cc \
 MixedBaseCounter.cc ComputeOptimalShapeXYZ.cc \
-ReduceSum.cc LegionMGData.cc \
+CollectiveOps.cc LegionMGData.cc \
 YAML_Doc.cc YAML_Element.cc

@@ -31,11 +31,18 @@
 
 #include <cstdint>
 #include <utility>
+#include <cassert>
 
 #define LGNCG_UNUSED(x)                                                        \
 do {                                                                           \
     (void)(x);                                                                 \
 } while (0)
+
+#ifdef NDEBUG
+#define myassert(x) LGNCG_UNUSED(x);
+#else
+#define myassert(x) assert(x);
+#endif
 
 /**
  * Flags that influence how Item structures are treated.

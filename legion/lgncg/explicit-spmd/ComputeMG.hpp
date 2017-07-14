@@ -56,7 +56,6 @@
 #include "ComputeRestriction.hpp"
 #include "ComputeProlongation.hpp"
 
-#include <cassert>
 #include <iostream>
 
 /*!
@@ -80,9 +79,9 @@ ComputeMG(
     Runtime *lrt
 ) {
     const auto *const Asclrs = A.sclrs->data();
-    assert(Asclrs);
+    myassert(Asclrs);
     // Make sure x contain space for halo values.
-    assert(x.length() == size_t(Asclrs->localNumberOfColumns));
+    myassert(x.length() == size_t(Asclrs->localNumberOfColumns));
 
     // Initialize x to zero.
     ZeroVector(x, ctx, lrt);
