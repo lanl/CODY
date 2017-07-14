@@ -127,7 +127,8 @@ ExchangeHalo(
             EXCLUSIVE,
             srclr
         );
-        srcrr.add_field(0); // TODO FIXME
+        // Only ever one field for all of our structures.
+        srcrr.add_field(0);
 
         RegionRequirement dstrr(
             dstArray->logicalRegion,
@@ -136,11 +137,10 @@ ExchangeHalo(
             dstArray->getParentLogicalRegion()
         );
         dstrr.add_field(dstArray->fid);
-        // task/neighbor mapping
-        std::pair<int, int> tArgs(A.geom->data()->rank, nid);
+        //
         TaskLauncher tl(
             REGION_TO_REGION_COPY_TID,
-            TaskArgument(&tArgs, sizeof(tArgs))
+            TaskArgument(NULL, 0)
         );
         tl.add_region_requirement(srcrr);
         tl.add_region_requirement(dstrr);
