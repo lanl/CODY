@@ -770,12 +770,9 @@ startBenchmarkTask(
             cout << "Call [" << i << "] Scaled Residual ["
                  << normr / normr0 << "]" << endl;
         }
-#if 0 // TODO
         // Record scaled residual from this run.
-        testnormsData.values[i] = normr/normr0;
-#endif
+        testnormsData.values[i] = normr / normr0;
     }
-
     // Compute difference between known exact solution and computed solution All
     // processors are needed here.
     floatType residual = 0;
@@ -790,10 +787,8 @@ startBenchmarkTask(
         cout << "Difference between computed and exact  = "
              << residual << ".\n" << endl;
     }
-#if 0 // TODO
-    // Test Norm Results
+    // Test Norm Results.
     ierr = TestNorms(testnormsData);
-#endif
 
     ////////////////////////////////////////////////////////////////////////////
     // Report Results                                                         //
