@@ -259,14 +259,12 @@ GenerateProblem(
         //
         std::cout << "Expected=" << expected << " Actual=" << tnnz << std::endl;
     }
-#endif
+#else
     //
     Asclrs->totalNumberOfNonzeros = allReduce(
-        localNumberOfNonzeros,
-        *A.dcAllRedSumGI,
-        ctx,
-        runtime
+        localNumberOfNonzeros, *A.dcAllRedSumGI, ctx, runtime
     );
+#endif
     // If this assert fails, it most likely means that the global_int_t is
     // set to int and should be set to long long This assert is usually the
     // first to fail as problem size increases beyond the 32-bit integer

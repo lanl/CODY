@@ -108,12 +108,14 @@ ReportResults(
 ) {
     const auto *const Asclrs = A.sclrs->data();
     const Geometry *Ageom = A.geom->data();
-    double minOfficialTime = 1800; // Any official benchmark result much run at least this many seconds
+    // Any official benchmark result much run at least this many seconds.
+    double minOfficialTime = 1800;
 
     double t4 = times[4];
     double t4min = 0.0;
     double t4max = 0.0;
     double t4avg = 0.0;
+    //
     t4min = allReduce(t4, *A.dcAllRedMinFT, ctx, lrt);
     t4max = allReduce(t4, *A.dcAllRedMaxFT, ctx, lrt);
     t4avg = allReduce(t4, *A.dcAllRedSumFT, ctx, lrt);

@@ -67,7 +67,7 @@ FloatReduceSumAccumulate::fold<false>(RHS &rhs1, RHS rhs2) {
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
-const floatType FloatReduceMaxAccumulate::identity = 0.0;
+const floatType FloatReduceMaxAccumulate::identity = 1.0;
 
 template<>
 void
@@ -96,13 +96,12 @@ FloatReduceMaxAccumulate::fold<false>(RHS &rhs1, RHS rhs2) {
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
-const floatType FloatReduceMinAccumulate::identity = 0.0;
+const floatType FloatReduceMinAccumulate::identity = 1.0;
 
 template<>
 void
 FloatReduceMinAccumulate::apply<true>(LHS &lhs, RHS rhs) {
-    // FIXME
-    lhs = rhs;
+    lhs = MIN(lhs, rhs);
 }
 
 template<>
@@ -208,9 +207,9 @@ allReduce(
     runtime->defer_dynamic_collective_arrival(ctx, dynCol, f);
     dynCol = runtime->advance_dynamic_collective(ctx, dynCol);
     //
-    Future fSum = runtime->get_dynamic_collective_result(ctx, dynCol);
+    Future fres = runtime->get_dynamic_collective_result(ctx, dynCol);
     //
-    return fSum.get<floatType>();
+    return fres.get<floatType>();
 }
 
 /**
@@ -242,7 +241,7 @@ allReduce(
     runtime->defer_dynamic_collective_arrival(ctx, dynCol, f);
     dynCol = runtime->advance_dynamic_collective(ctx, dynCol);
     //
-    Future fSum = runtime->get_dynamic_collective_result(ctx, dynCol);
+    Future fres = runtime->get_dynamic_collective_result(ctx, dynCol);
     //
-    return fSum.get<floatType>();
+    return fres.get<global_int_t>();
 }
