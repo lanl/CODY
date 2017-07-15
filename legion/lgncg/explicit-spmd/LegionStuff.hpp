@@ -64,6 +64,7 @@ enum {
     DYN_COLL_TASK_CONTRIB_GIT_TID,
     DYN_COLL_TASK_CONTRIB_FT_TID,
     FLOAT_REDUCE_SUM_TID,
+    FLOAT_REDUCE_MIN_TID,
     FLOAT_REDUCE_MAX_TID,
     INT_REDUCE_SUM_TID,
     TEST_TID
@@ -222,6 +223,9 @@ registerTasks(void)
     );
     HighLevelRuntime::register_reduction_op<FloatReduceSumAccumulate>(
         FLOAT_REDUCE_SUM_TID
+    );
+    HighLevelRuntime::register_reduction_op<FloatReduceMinAccumulate>(
+        FLOAT_REDUCE_MIN_TID
     );
     HighLevelRuntime::register_reduction_op<FloatReduceMaxAccumulate>(
         FLOAT_REDUCE_MAX_TID

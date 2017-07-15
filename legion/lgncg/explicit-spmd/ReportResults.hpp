@@ -102,22 +102,22 @@ ReportResults(
     const TestSymmetryData &testsymmetry_data,
     const TestNormsData &testnorms_data,
     int global_failure,
-    bool quickPath
+    bool quickPath,
+    Context ctx,
+    HighLevelRuntime *lrt
 ) {
     const auto *const Asclrs = A.sclrs->data();
     const Geometry *Ageom = A.geom->data();
     double minOfficialTime = 1800; // Any official benchmark result much run at least this many seconds
 
-#if 0 // TODO
     double t4 = times[4];
     double t4min = 0.0;
     double t4max = 0.0;
     double t4avg = 0.0;
-    MPI_Allreduce(&t4, &t4min, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
-    MPI_Allreduce(&t4, &t4max, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
-    MPI_Allreduce(&t4, &t4avg, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-    t4avg = t4avg / ((double) Ageom->size);
-#endif
+    t4min = allReduce(t4, *A.dcAllRedMinFT, ctx, lrt);
+    t4max = allReduce(t4, *A.dcAllRedMaxFT, ctx, lrt);
+    t4avg = allReduce(t4, *A.dcAllRedSumFT, ctx, lrt);
+    t4avg = t4avg / ((double)Ageom->size);
 
     // initialize YAML doc
 
@@ -248,13 +248,15 @@ ReportResults(
             fnbytes_Af += fnrow_Af * numberOfNonzerosPerRow * ((double) sizeof(double));   // matrixValues[1..nrows]
             fnbytes_Af += fnrow_Af * numberOfNonzerosPerRow * ((double) sizeof(global_int_t)); // mtxIndG[1..nrows]
 
-            // Model for SetupHalo_ref.cpp
-#if 0 // TODO
-            fnbytes_Af += ((double) sizeof(double) * Af->totalToBeSent); //sendBuffer
-            fnbytes_Af += ((double) sizeof(local_int_t) * Af->totalToBeSent); // elementsToSend
-            fnbytes_Af += ((double) sizeof(int) * Af->numberOfSendNeighbors); // neighbors
-            fnbytes_Af += ((double) sizeof(local_int_t) * Af->numberOfSendNeighbors); // receiveLength, sendLength
-#endif
+            // Model for SetupHalo.hpp.
+            //sendBuffer
+            fnbytes_Af += ((double) sizeof(double) * Af->sclrs->data()->totalToBeSent);
+            // elementsToSend
+            fnbytes_Af += ((double) sizeof(local_int_t) * Af->sclrs->data()->totalToBeSent);
+            // neighbors.
+            fnbytes_Af += ((double) sizeof(int) * Af->sclrs->data()->numberOfSendNeighbors);
+            // receiveLength, sendLength.
+            fnbytes_Af += ((double) sizeof(local_int_t) * Af->sclrs->data()->numberOfSendNeighbors);
             fnbytesPerLevel[i] = fnbytes_Af;
             fnbytes += fnbytes_Af; // Running sum
             Af = Af->Ac; // Go to next coarse level
@@ -417,7 +419,6 @@ ReportResults(
         doc.get("User Optimization Overheads")->add("Optimization phase time (sec)", (times[7]));
         doc.get("User Optimization Overheads")->add("Optimization phase time vs reference SpMV+MG time", times[7] / times[8]);
 
-#if 0 // TODO
         doc.add("DDOT Timing Variations", "");
         doc.get("DDOT Timing Variations")->add("Min DDOT MPI_Allreduce time", t4min);
         doc.get("DDOT Timing Variations")->add("Max DDOT MPI_Allreduce time", t4max);
@@ -425,7 +426,6 @@ ReportResults(
 
         //doc.get("Sparse Operations Overheads")->add("Halo exchange time (sec)", (times[6]));
         //doc.get("Sparse Operations Overheads")->add("Halo exchange as percentage of SpMV time", (times[6])/totalSparseMVTime*100.0);
-#endif
         doc.add("__________ Final Summary __________", "");
         bool isValidRun = (testcg_data.count_fail == 0) && (testsymmetry_data.count_fail == 0) && (testnorms_data.pass) && (!global_failure);
         if (isValidRun) {

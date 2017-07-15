@@ -120,6 +120,7 @@ struct LogicalSparseMatrix : public LogicalMultiBase {
     // Dynamic collective structures (1 per task).
     LogicalArray< DynColl<global_int_t> > dcAllRedSumGI;
     LogicalArray< DynColl<floatType> > dcAllRedSumFT;
+    LogicalArray< DynColl<floatType> > dcAllRedMinFT;
     LogicalArray< DynColl<floatType> > dcAllRedMaxFT;
     // Neighboring processes.
     LogicalArray<int> neighbors;
@@ -168,6 +169,7 @@ protected:
                          &localToGlobalMap,
                          &dcAllRedSumGI,
                          &dcAllRedSumFT,
+                         &dcAllRedMinFT,
                          &dcAllRedMaxFT,
                          &neighbors,
                          &sendLength,
@@ -385,6 +387,7 @@ public:
         //
         aalloca(dcAllRedSumGI, mSize, ctx, lrt);
         aalloca(dcAllRedSumFT, mSize, ctx, lrt);
+        aalloca(dcAllRedMinFT, mSize, ctx, lrt);
         aalloca(dcAllRedMaxFT, mSize, ctx, lrt);
         //
         const int maxNumNeighbors = geom.stencilSize - 1;
@@ -420,6 +423,9 @@ public:
         //
         DynColl<floatType> dynColSumFT(FLOAT_REDUCE_SUM_TID, nArrivals);
         mPopulateDynamicCollectives(dcAllRedSumFT, dynColSumFT, ctx, lrt);
+        //
+        DynColl<floatType> dynColMinFT(FLOAT_REDUCE_MIN_TID, nArrivals);
+        mPopulateDynamicCollectives(dcAllRedMinFT, dynColMinFT, ctx, lrt);
         //
         DynColl<floatType> dynColMaxFT(FLOAT_REDUCE_MAX_TID, nArrivals);
         mPopulateDynamicCollectives(dcAllRedMaxFT, dynColMaxFT, ctx, lrt);
@@ -502,6 +508,8 @@ struct SparseMatrix : public PhysicalMultiBase {
     //
     Item< DynColl<floatType> > *dcAllRedSumFT = nullptr;
     //
+    Item< DynColl<floatType> > *dcAllRedMinFT = nullptr;
+    //
     Item< DynColl<floatType> > *dcAllRedMaxFT = nullptr;
     //
     Array<int> *neighbors = nullptr;
@@ -580,6 +588,7 @@ struct SparseMatrix : public PhysicalMultiBase {
         delete localToGlobalMap;
         delete dcAllRedSumGI;
         delete dcAllRedSumFT;
+        delete dcAllRedMinFT;
         delete dcAllRedMaxFT;
         delete neighbors;
         delete sendLength;
@@ -653,6 +662,9 @@ protected:
         //
         dcAllRedSumFT = new Item< DynColl<floatType> >(regions[cid++], ctx, rt);
         myassert(dcAllRedSumFT->data());
+        //
+        dcAllRedMinFT = new Item< DynColl<floatType> >(regions[cid++], ctx, rt);
+        myassert(dcAllRedMinFT->data());
         //
         dcAllRedMaxFT = new Item< DynColl<floatType> >(regions[cid++], ctx, rt);
         myassert(dcAllRedMaxFT->data());
@@ -853,7 +865,7 @@ ReplaceMatrixDiagonal(
 }
 
 /**
- *
+ * Matrix-dependent partitioning of a LegionArray.
  */
 inline void
 Partition(

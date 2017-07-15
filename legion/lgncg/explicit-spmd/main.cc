@@ -806,7 +806,9 @@ startBenchmarkTask(
         testSymmetryData,
         testnormsData,
         global_failure,
-        quickPath
+        quickPath,
+        ctx,
+        lrt
     );
 
     ////////////////////////////////////////////////////////////////////////////
