@@ -44,6 +44,7 @@
 #include "LegionItems.hpp"
 #include "LegionArrays.hpp"
 #include "LegionMGData.hpp"
+#include "CollectiveOps.hpp"
 
 #include "hpcg.hpp"
 #include "Geometry.hpp"

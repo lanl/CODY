@@ -30,6 +30,7 @@
 #pragma once
 
 #include "Types.hpp"
+#include "LegionItems.hpp"
 
 #include "legion.h"
 
@@ -125,30 +126,52 @@ public:
     static void fold(RHS &rhs1, RHS rhs2);
 };
 
+/**
+ * The type of DynColl passed in changes the behavior of the all reduce.
+ */
 template <typename TYPE>
-class Item;
-
-/**
- * The type of DynColl passed in changes the behavior of the all reduce.
- */
-floatType
+TYPE
 allReduce(
     floatType localResult,
-    Item< DynColl<floatType> > &dc,
+    Item< DynColl<TYPE> > &dc,
     Context ctx,
     Runtime *runtime
-);
-
-/**
- * The type of DynColl passed in changes the behavior of the all reduce.
- */
-global_int_t
-allReduce(
-    floatType localResult,
-    Item< DynColl<global_int_t> > &dc,
-    Context ctx,
-    Runtime *runtime
-);
+) {
+    int tid = 0;
+    //
+    if (typeid(TYPE) == typeid(floatType)) {
+        tid = DYN_COLL_TASK_CONTRIB_FT_TID;
+    }
+    else if (typeid(TYPE) == typeid(global_int_t)) {
+        tid = DYN_COLL_TASK_CONTRIB_GIT_TID;
+    }
+    else {
+        assert(false);
+    }
+    //
+    TaskLauncher tl(tid, TaskArgument(NULL, 0));
+    //
+    tl.add_region_requirement(
+        RegionRequirement(
+            dc.logicalRegion,
+            RO_E,
+            dc.logicalRegion
+        )
+    ).add_field(dc.fid);
+    //
+    dc.data()->localBuffer = localResult;
+    //
+    Future f = runtime->execute_task(ctx, tl);
+    //
+    DynamicCollective &dynCol = dc.data()->dc;
+    //
+    runtime->defer_dynamic_collective_arrival(ctx, dynCol, f);
+    dynCol = runtime->advance_dynamic_collective(ctx, dynCol);
+    //
+    Future fres = runtime->get_dynamic_collective_result(ctx, dynCol);
+    //
+    return fres.get<TYPE>();
+}
 
 /**
  *
@@ -170,4 +193,3 @@ dynCollTaskContribFT(
     const std::vector<PhysicalRegion> &regions,
     Context ctx, HighLevelRuntime *runtime
 );
-

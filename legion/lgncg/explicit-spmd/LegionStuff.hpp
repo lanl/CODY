@@ -32,7 +32,6 @@
 #pragma once
 
 #include "Types.hpp"
-#include "CollectiveOps.hpp"
 
 #include "legion.h"
 
@@ -164,6 +163,10 @@ regionToRegionCopyTask(
     Context ctx, HighLevelRuntime *runtime
 );
 
+
+void
+registerCollectiveOpsTasks(void);
+
 ////////////////////////////////////////////////////////////////////////////////
 // Task Registration
 ////////////////////////////////////////////////////////////////////////////////
@@ -203,36 +206,8 @@ registerTasks(void)
         TaskConfigOptions(true /* leaf task */),
         "regionToRegionCopyTask"
     );
-    HighLevelRuntime::register_legion_task<global_int_t, dynCollTaskContribGIT>(
-        DYN_COLL_TASK_CONTRIB_GIT_TID /* task id */,
-        Processor::LOC_PROC /* proc kind  */,
-        true /* single */,
-        true /* index */,
-        AUTO_GENERATE_ID,
-        TaskConfigOptions(true /* leaf task */),
-        "dynCollTaskContribGIT"
-    );
-    HighLevelRuntime::register_legion_task<floatType, dynCollTaskContribFT>(
-        DYN_COLL_TASK_CONTRIB_FT_TID /* task id */,
-        Processor::LOC_PROC /* proc kind  */,
-        true /* single */,
-        true /* index */,
-        AUTO_GENERATE_ID,
-        TaskConfigOptions(true /* leaf task */),
-        "dynCollTaskContribFT"
-    );
-    HighLevelRuntime::register_reduction_op<FloatReduceSumAccumulate>(
-        FLOAT_REDUCE_SUM_TID
-    );
-    HighLevelRuntime::register_reduction_op<FloatReduceMinAccumulate>(
-        FLOAT_REDUCE_MIN_TID
-    );
-    HighLevelRuntime::register_reduction_op<FloatReduceMaxAccumulate>(
-        FLOAT_REDUCE_MAX_TID
-    );
-    HighLevelRuntime::register_reduction_op<IntReduceSumAccumulate>(
-        INT_REDUCE_SUM_TID
-    );
+    //
+    registerCollectiveOpsTasks();
 }
 
 ////////////////////////////////////////////////////////////////////////////////

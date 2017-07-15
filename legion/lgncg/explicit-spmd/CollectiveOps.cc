@@ -32,6 +32,9 @@
 #include "LegionStuff.hpp"
 #include "LegionItems.hpp"
 
+#include <typeinfo>
+#include <cassert>
+
 #define MAX(x, y) x > y ? x : y
 #define MIN(x, y) x < y ? x : y
 
@@ -179,69 +182,39 @@ dynCollTaskContribGIT(
 }
 
 /**
- * The type of DynColl passed in changes the behavior of the all reduce.
+ *
  */
-floatType
-allReduce(
-    floatType localResult,
-    Item< DynColl<floatType> > &dc,
-    Context ctx,
-    Runtime *runtime
-) {
-    TaskLauncher tl(DYN_COLL_TASK_CONTRIB_FT_TID, TaskArgument(NULL, 0));
-    //
-    tl.add_region_requirement(
-        RegionRequirement(
-            dc.logicalRegion,
-            RO_E,
-            dc.logicalRegion
-        )
-    ).add_field(dc.fid);
-    //
-    dc.data()->localBuffer = localResult;
-    //
-    Future f = runtime->execute_task(ctx, tl);
-    //
-    DynamicCollective &dynCol = dc.data()->dc;
-    //
-    runtime->defer_dynamic_collective_arrival(ctx, dynCol, f);
-    dynCol = runtime->advance_dynamic_collective(ctx, dynCol);
-    //
-    Future fres = runtime->get_dynamic_collective_result(ctx, dynCol);
-    //
-    return fres.get<floatType>();
-}
-
-/**
- * The type of DynColl passed in changes the behavior of the all reduce.
- */
-global_int_t
-allReduce(
-    floatType localResult,
-    Item< DynColl<global_int_t> > &dc,
-    Context ctx,
-    Runtime *runtime
-) {
-    TaskLauncher tl(DYN_COLL_TASK_CONTRIB_GIT_TID, TaskArgument(NULL, 0));
-    //
-    tl.add_region_requirement(
-        RegionRequirement(
-            dc.logicalRegion,
-            RO_E,
-            dc.logicalRegion
-        )
-    ).add_field(dc.fid);
-    //
-    dc.data()->localBuffer = localResult;
-    //
-    Future f = runtime->execute_task(ctx, tl);
-    //
-    DynamicCollective &dynCol = dc.data()->dc;
-    //
-    runtime->defer_dynamic_collective_arrival(ctx, dynCol, f);
-    dynCol = runtime->advance_dynamic_collective(ctx, dynCol);
-    //
-    Future fres = runtime->get_dynamic_collective_result(ctx, dynCol);
-    //
-    return fres.get<global_int_t>();
+void
+registerCollectiveOpsTasks(void)
+{
+    HighLevelRuntime::register_legion_task<global_int_t, dynCollTaskContribGIT>(
+        DYN_COLL_TASK_CONTRIB_GIT_TID /* task id */,
+        Processor::LOC_PROC /* proc kind  */,
+        true /* single */,
+        true /* index */,
+        AUTO_GENERATE_ID,
+        TaskConfigOptions(true /* leaf task */),
+        "dynCollTaskContribGIT"
+    );
+    HighLevelRuntime::register_legion_task<floatType, dynCollTaskContribFT>(
+        DYN_COLL_TASK_CONTRIB_FT_TID /* task id */,
+        Processor::LOC_PROC /* proc kind  */,
+        true /* single */,
+        true /* index */,
+        AUTO_GENERATE_ID,
+        TaskConfigOptions(true /* leaf task */),
+        "dynCollTaskContribFT"
+    );
+    HighLevelRuntime::register_reduction_op<FloatReduceSumAccumulate>(
+        FLOAT_REDUCE_SUM_TID
+    );
+    HighLevelRuntime::register_reduction_op<FloatReduceMinAccumulate>(
+        FLOAT_REDUCE_MIN_TID
+    );
+    HighLevelRuntime::register_reduction_op<FloatReduceMaxAccumulate>(
+        FLOAT_REDUCE_MAX_TID
+    );
+    HighLevelRuntime::register_reduction_op<IntReduceSumAccumulate>(
+        INT_REDUCE_SUM_TID
+    );
 }
