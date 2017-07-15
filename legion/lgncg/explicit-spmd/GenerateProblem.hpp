@@ -54,7 +54,7 @@
 #include "LegionItems.hpp"
 #include "LegionArrays.hpp"
 #include "LegionMatrices.hpp"
-#include "ProblemCommon.hpp"
+#include "CollectiveOps.hpp"
 #include "VectorOps.hpp"
 
 #include <cassert>
@@ -252,7 +252,7 @@ GenerateProblem(
         global_int_t lnnz = 0, tnnz = 0;
         //
         for (int i = 0; i < 10; ++i) {
-            tnnz += getTotalNumberOfNonZeros(A, lnnz, ctx, runtime);
+            tnnz += allReduce(lnnz, *A.dcAllRedSumGI, ctx, runtime);
             lnnz++;
             expected += (i * Ageom->size);
         }
@@ -261,9 +261,9 @@ GenerateProblem(
     }
 #endif
     //
-    Asclrs->totalNumberOfNonzeros = getTotalNumberOfNonZeros(
-        A,
+    Asclrs->totalNumberOfNonzeros = allReduce(
         localNumberOfNonzeros,
+        *A.dcAllRedSumGI,
         ctx,
         runtime
     );

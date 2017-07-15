@@ -61,7 +61,7 @@ enum {
     GEN_PROB_TID,
     START_BENCHMARK_TID,
     REGION_TO_REGION_COPY_TID,
-    LOCAL_NONZEROS_TID,
+    DYN_COLL_TASK_CONTRIB_GIT_TID,
     DYN_COLL_TASK_CONTRIB_FT_TID,
     FLOAT_REDUCE_SUM_TID,
     FLOAT_REDUCE_MAX_TID,
@@ -143,14 +143,14 @@ startBenchmarkTask(
 );
 
 global_int_t
-localNonzerosTask(
+dynCollTaskContribGIT(
     const Task *task,
     const std::vector<PhysicalRegion> &regions,
     Context ctx, HighLevelRuntime *runtime
 );
 
 floatType
-dynCollTaskContribution(
+dynCollTaskContribFT(
     const Task *task,
     const std::vector<PhysicalRegion> &regions,
     Context ctx, HighLevelRuntime *runtime
@@ -202,23 +202,23 @@ registerTasks(void)
         TaskConfigOptions(true /* leaf task */),
         "regionToRegionCopyTask"
     );
-    HighLevelRuntime::register_legion_task<global_int_t, localNonzerosTask>(
-        LOCAL_NONZEROS_TID /* task id */,
+    HighLevelRuntime::register_legion_task<global_int_t, dynCollTaskContribGIT>(
+        DYN_COLL_TASK_CONTRIB_GIT_TID /* task id */,
         Processor::LOC_PROC /* proc kind  */,
         true /* single */,
         true /* index */,
         AUTO_GENERATE_ID,
         TaskConfigOptions(true /* leaf task */),
-        "localNonzerosTask"
+        "dynCollTaskContribGIT"
     );
-    HighLevelRuntime::register_legion_task<floatType, dynCollTaskContribution>(
+    HighLevelRuntime::register_legion_task<floatType, dynCollTaskContribFT>(
         DYN_COLL_TASK_CONTRIB_FT_TID /* task id */,
         Processor::LOC_PROC /* proc kind  */,
         true /* single */,
         true /* index */,
         AUTO_GENERATE_ID,
         TaskConfigOptions(true /* leaf task */),
-        "dynCollTaskContribution"
+        "dynCollTaskContribFT"
     );
     HighLevelRuntime::register_reduction_op<FloatReduceSumAccumulate>(
         FLOAT_REDUCE_SUM_TID

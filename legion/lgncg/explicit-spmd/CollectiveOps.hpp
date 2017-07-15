@@ -122,3 +122,36 @@ allReduce(
     Context ctx,
     Runtime *runtime
 );
+
+/**
+ * The type of DynColl passed in changes the behavior of the all reduce.
+ */
+global_int_t
+allReduce(
+    floatType localResult,
+    Item< DynColl<global_int_t> > &dc,
+    Context ctx,
+    Runtime *runtime
+);
+
+/**
+ *
+ */
+global_int_t
+dynCollTaskContribGIT(
+    const Task *task,
+    const std::vector<PhysicalRegion> &regions,
+    Context ctx,
+    HighLevelRuntime *runtime
+);
+
+/**
+ *
+ */
+floatType
+dynCollTaskContribFT(
+    const Task *task,
+    const std::vector<PhysicalRegion> &regions,
+    Context ctx, HighLevelRuntime *runtime
+);
+

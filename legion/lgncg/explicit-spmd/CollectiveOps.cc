@@ -123,6 +123,33 @@ IntReduceSumAccumulate::fold<false>(RHS &rhs1, RHS rhs2) {
 }
 
 /**
+ *
+ */
+floatType
+dynCollTaskContribFT(
+    const Task *task,
+    const std::vector<PhysicalRegion> &regions,
+    Context ctx, HighLevelRuntime *runtime
+) {
+    Item< DynColl<floatType> > dc(regions[0], ctx, runtime);
+    return dc.data()->localBuffer;
+}
+
+/**
+ *
+ */
+global_int_t
+dynCollTaskContribGIT(
+    const Task *task,
+    const std::vector<PhysicalRegion> &regions,
+    Context ctx,
+    HighLevelRuntime *runtime
+) {
+    Item< DynColl<global_int_t> > dc(regions[0], ctx, runtime);
+    return dc.data()->localBuffer;
+}
+
+/**
  * The type of DynColl passed in changes the behavior of the all reduce.
  */
 floatType
@@ -133,6 +160,40 @@ allReduce(
     Runtime *runtime
 ) {
     TaskLauncher tl(DYN_COLL_TASK_CONTRIB_FT_TID, TaskArgument(NULL, 0));
+    //
+    tl.add_region_requirement(
+        RegionRequirement(
+            dc.logicalRegion,
+            RO_E,
+            dc.logicalRegion
+        )
+    ).add_field(dc.fid);
+    //
+    dc.data()->localBuffer = localResult;
+    //
+    Future f = runtime->execute_task(ctx, tl);
+    //
+    DynamicCollective &dynCol = dc.data()->dc;
+    //
+    runtime->defer_dynamic_collective_arrival(ctx, dynCol, f);
+    dynCol = runtime->advance_dynamic_collective(ctx, dynCol);
+    //
+    Future fSum = runtime->get_dynamic_collective_result(ctx, dynCol);
+    //
+    return fSum.get<floatType>();
+}
+
+/**
+ * The type of DynColl passed in changes the behavior of the all reduce.
+ */
+global_int_t
+allReduce(
+    floatType localResult,
+    Item< DynColl<global_int_t> > &dc,
+    Context ctx,
+    Runtime *runtime
+) {
+    TaskLauncher tl(DYN_COLL_TASK_CONTRIB_GIT_TID, TaskArgument(NULL, 0));
     //
     tl.add_region_requirement(
         RegionRequirement(

@@ -712,33 +712,6 @@ protected:
 /**
  *
  */
-inline global_int_t
-localNonzerosTask(
-    const Task *task,
-    const std::vector<PhysicalRegion> &regions,
-    Context ctx,
-    HighLevelRuntime *runtime
-) {
-    Item< DynColl<global_int_t> > dc(regions[0], ctx, runtime);
-    return dc.data()->localBuffer;
-}
-
-/**
- *
- */
-inline floatType
-dynCollTaskContribution(
-    const Task *task,
-    const std::vector<PhysicalRegion> &regions,
-    Context ctx, HighLevelRuntime *runtime
-) {
-    Item< DynColl<floatType> > dc(regions[0], ctx, runtime);
-    return dc.data()->localBuffer;
-}
-
-/**
- *
- */
 inline void
 PopulateGlobalToLocalMap(
     SparseMatrix &A,

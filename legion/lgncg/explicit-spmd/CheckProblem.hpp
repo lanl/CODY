@@ -51,7 +51,7 @@
 #include "LegionStuff.hpp"
 #include "LegionArrays.hpp"
 #include "LegionMatrices.hpp"
-#include "ProblemCommon.hpp"
+#include "CollectiveOps.hpp"
 
 #include <fstream>
 #include "hpcg.hpp"
@@ -183,9 +183,9 @@ CheckProblem(
         } // end iy loop
     } // end iz loop
     //
-    global_int_t totalNumberOfNonzeros = getTotalNumberOfNonZeros(
-        A,
+    global_int_t totalNumberOfNonzeros = allReduce(
         localNumberOfNonzeros,
+        *A.dcAllRedSumGI,
         ctx,
         runtime
     );
