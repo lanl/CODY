@@ -219,7 +219,10 @@ TestSymmetry(
         // b_computed = A*x_overlap.
         ierr = ComputeSPMV(A, x_ncol, z_ncol, ctx, lrt);
         if (ierr) cerr << "Error in call to SpMV: " << ierr << ".\n" << endl;
-        if ((ierr = ComputeResidual(nrow, b, z_ncol, residual, ctx, lrt))) {
+        if ((ierr = ComputeResidual(
+                        nrow, b, z_ncol, residual,
+                        *A.dcAllRedMaxFT, ctx, lrt
+                    ))) {
             cerr << "Error in call to compute_residual: "
                  << ierr << ".\n" << endl;
         }

@@ -42,6 +42,7 @@
 
 /**
  * Tally total number of non-zeros in simulation.
+ * TODO bring into coll ops.
  */
 static inline global_int_t
 getTotalNumberOfNonZeros(

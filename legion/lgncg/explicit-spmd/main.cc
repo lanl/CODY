@@ -779,7 +779,7 @@ startBenchmarkTask(
     floatType residual = 0;
     ierr = ComputeResidual(
         Asclrs->localNumberOfRows,
-        x, xexact, residual, ctx, lrt
+        x, xexact, residual, *A.dcAllRedMaxFT, ctx, lrt
     );
     if (ierr) {
         cerr << "Error in call to compute_residual: " << ierr << ".\n" << endl;

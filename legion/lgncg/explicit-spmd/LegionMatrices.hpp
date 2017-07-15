@@ -117,10 +117,10 @@ struct LogicalSparseMatrix : public LogicalMultiBase {
     LogicalArray<floatType> matrixDiagonal;
     //
     LogicalArray<global_int_t> localToGlobalMap;
-    // The SAME dynamic collective instance replicated because
-    // uniformity  makes things easier.
+    // Dynamic collective structures (1 per task).
     LogicalArray< DynColl<global_int_t> > dcAllRedSumGI;
     LogicalArray< DynColl<floatType> > dcAllRedSumFT;
+    LogicalArray< DynColl<floatType> > dcAllRedMaxFT;
     // Neighboring processes.
     LogicalArray<int> neighbors;
     // Number of items that will be sent on a per neighbor basis.
@@ -168,6 +168,7 @@ protected:
                          &localToGlobalMap,
                          &dcAllRedSumGI,
                          &dcAllRedSumFT,
+                         &dcAllRedMaxFT,
                          &neighbors,
                          &sendLength,
                          &recvLength,
@@ -205,7 +206,7 @@ public:
         HighLevelRuntime *lrt
     ) {
         using namespace std;
-        // FIXME ugly.
+        //
         const int maxNumNeighbors = HPCG_STENCIL - 1;
         //
         Array<SparseMatrixScalars> aSparseMatrixScalars(
@@ -296,7 +297,6 @@ public:
             if (!mSharedRegionsPopulated) {
                 mPopulateSharedRegions(ctx, lrt);
             }
-            // FIXME ugly.
             const int maxNumNeighbors = HPCG_STENCIL - 1;
             //
             Array<SparseMatrixScalars> aSparseMatrixScalars(
@@ -385,6 +385,7 @@ public:
         //
         aalloca(dcAllRedSumGI, mSize, ctx, lrt);
         aalloca(dcAllRedSumFT, mSize, ctx, lrt);
+        aalloca(dcAllRedMaxFT, mSize, ctx, lrt);
         //
         const int maxNumNeighbors = geom.stencilSize - 1;
         // Each task will have at most 26 neighbors.
@@ -413,12 +414,15 @@ public:
             i->partition(nParts, ctx, lrt);
         }
         // For the DynamicCollectives we need partition info before population.
-        const auto nArrivals = nParts;
+        const auto nArrivals = nParts; // Expecting an arrival from each task.
         DynColl<global_int_t> dynColGI(INT_REDUCE_SUM_TID, nArrivals);
         mPopulateDynamicCollectives(dcAllRedSumGI, dynColGI, ctx, lrt);
         //
-        DynColl<floatType> dynColFT(FLOAT_REDUCE_SUM_TID, nArrivals);
-        mPopulateDynamicCollectives(dcAllRedSumFT, dynColFT, ctx, lrt);
+        DynColl<floatType> dynColSumFT(FLOAT_REDUCE_SUM_TID, nArrivals);
+        mPopulateDynamicCollectives(dcAllRedSumFT, dynColSumFT, ctx, lrt);
+        //
+        DynColl<floatType> dynColMaxFT(FLOAT_REDUCE_MAX_TID, nArrivals);
+        mPopulateDynamicCollectives(dcAllRedMaxFT, dynColMaxFT, ctx, lrt);
         // Just pick a structure that has a representative launch domain.
         launchDomain = geoms.launchDomain;
     }
@@ -498,6 +502,8 @@ struct SparseMatrix : public PhysicalMultiBase {
     //
     Item< DynColl<floatType> > *dcAllRedSumFT = nullptr;
     //
+    Item< DynColl<floatType> > *dcAllRedMaxFT = nullptr;
+    //
     Array<int> *neighbors = nullptr;
     //
     Array<local_int_t> *sendLength = nullptr;
@@ -574,6 +580,7 @@ struct SparseMatrix : public PhysicalMultiBase {
         delete localToGlobalMap;
         delete dcAllRedSumGI;
         delete dcAllRedSumFT;
+        delete dcAllRedMaxFT;
         delete neighbors;
         delete sendLength;
         delete recvLength;
@@ -647,6 +654,9 @@ protected:
         dcAllRedSumFT = new Item< DynColl<floatType> >(regions[cid++], ctx, rt);
         myassert(dcAllRedSumFT->data());
         //
+        dcAllRedMaxFT = new Item< DynColl<floatType> >(regions[cid++], ctx, rt);
+        myassert(dcAllRedMaxFT->data());
+        //
         neighbors = new Array<int>(regions[cid++], ctx, rt);
         myassert(neighbors->data());
         //
@@ -706,7 +716,8 @@ inline global_int_t
 localNonzerosTask(
     const Task *task,
     const std::vector<PhysicalRegion> &regions,
-    Context ctx, HighLevelRuntime *runtime
+    Context ctx,
+    HighLevelRuntime *runtime
 ) {
     Item< DynColl<global_int_t> > dc(regions[0], ctx, runtime);
     return dc.data()->localBuffer;
@@ -716,7 +727,7 @@ localNonzerosTask(
  *
  */
 inline floatType
-localPartialSumTask(
+dynCollTaskContribution(
     const Task *task,
     const std::vector<PhysicalRegion> &regions,
     Context ctx, HighLevelRuntime *runtime

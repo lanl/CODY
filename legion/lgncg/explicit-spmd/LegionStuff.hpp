@@ -62,8 +62,9 @@ enum {
     START_BENCHMARK_TID,
     REGION_TO_REGION_COPY_TID,
     LOCAL_NONZEROS_TID,
-    LOCAL_PARTIAL_SUM_TID,
+    DYN_COLL_TASK_CONTRIB_FT_TID,
     FLOAT_REDUCE_SUM_TID,
+    FLOAT_REDUCE_MAX_TID,
     INT_REDUCE_SUM_TID,
     TEST_TID
 };
@@ -117,29 +118,6 @@ struct BaseExtent {
     { }
 };
 
-
-////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-template<typename TYPE>
-struct DynColl {
-    int tid;
-    int64_t nArrivals = 0;
-    TYPE localBuffer;
-    DynamicCollective dc;
-
-    /**
-     *
-     */
-    DynColl(
-        int tid,
-        int64_t nArrivals
-    ) : tid(tid)
-      , nArrivals(nArrivals)
-      , localBuffer(TYPE(0)) { }
-};
-
 ////////////////////////////////////////////////////////////////////////////////
 // Task forward declarations.
 ////////////////////////////////////////////////////////////////////////////////
@@ -172,7 +150,7 @@ localNonzerosTask(
 );
 
 floatType
-localPartialSumTask(
+dynCollTaskContribution(
     const Task *task,
     const std::vector<PhysicalRegion> &regions,
     Context ctx, HighLevelRuntime *runtime
@@ -233,17 +211,20 @@ registerTasks(void)
         TaskConfigOptions(true /* leaf task */),
         "localNonzerosTask"
     );
-    HighLevelRuntime::register_legion_task<floatType, localPartialSumTask>(
-        LOCAL_PARTIAL_SUM_TID /* task id */,
+    HighLevelRuntime::register_legion_task<floatType, dynCollTaskContribution>(
+        DYN_COLL_TASK_CONTRIB_FT_TID /* task id */,
         Processor::LOC_PROC /* proc kind  */,
         true /* single */,
         true /* index */,
         AUTO_GENERATE_ID,
         TaskConfigOptions(true /* leaf task */),
-        "localPartialSumTask"
+        "dynCollTaskContribution"
     );
     HighLevelRuntime::register_reduction_op<FloatReduceSumAccumulate>(
         FLOAT_REDUCE_SUM_TID
+    );
+    HighLevelRuntime::register_reduction_op<FloatReduceMaxAccumulate>(
+        FLOAT_REDUCE_MAX_TID
     );
     HighLevelRuntime::register_reduction_op<IntReduceSumAccumulate>(
         INT_REDUCE_SUM_TID

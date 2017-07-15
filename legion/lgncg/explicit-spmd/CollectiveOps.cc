@@ -29,6 +29,15 @@
 
 #include "CollectiveOps.hpp"
 
+#include "LegionStuff.hpp"
+#include "LegionItems.hpp"
+
+#define MAX(x, y) x > y ? x : y
+#define MIN(x, y) x < y ? x : y
+
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 const floatType FloatReduceSumAccumulate::identity = 0.0;
 
 template<>
@@ -52,6 +61,35 @@ FloatReduceSumAccumulate::fold<true>(RHS &rhs1, RHS rhs2) {
 template<>
 void
 FloatReduceSumAccumulate::fold<false>(RHS &rhs1, RHS rhs2) {
+    assert(false);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+const floatType FloatReduceMaxAccumulate::identity = 0.0;
+
+template<>
+void
+FloatReduceMaxAccumulate::apply<true>(LHS &lhs, RHS rhs) {
+    lhs = MAX(lhs, rhs);
+}
+
+template<>
+void
+FloatReduceMaxAccumulate::apply<false>(LHS &lhs, RHS rhs) {
+    assert(false);
+}
+
+template<>
+void
+FloatReduceMaxAccumulate::fold<true>(RHS &rhs1, RHS rhs2) {
+    rhs1 = MAX(rhs1, rhs2);
+}
+
+template<>
+void
+FloatReduceMaxAccumulate::fold<false>(RHS &rhs1, RHS rhs2) {
     assert(false);
 }
 
@@ -82,4 +120,38 @@ template<>
 void
 IntReduceSumAccumulate::fold<false>(RHS &rhs1, RHS rhs2) {
     assert(false);
+}
+
+/**
+ * The type of DynColl passed in changes the behavior of the all reduce.
+ */
+floatType
+allReduce(
+    floatType localResult,
+    Item< DynColl<floatType> > &dc,
+    Context ctx,
+    Runtime *runtime
+) {
+    TaskLauncher tl(DYN_COLL_TASK_CONTRIB_FT_TID, TaskArgument(NULL, 0));
+    //
+    tl.add_region_requirement(
+        RegionRequirement(
+            dc.logicalRegion,
+            RO_E,
+            dc.logicalRegion
+        )
+    ).add_field(dc.fid);
+    //
+    dc.data()->localBuffer = localResult;
+    //
+    Future f = runtime->execute_task(ctx, tl);
+    //
+    DynamicCollective &dynCol = dc.data()->dc;
+    //
+    runtime->defer_dynamic_collective_arrival(ctx, dynCol, f);
+    dynCol = runtime->advance_dynamic_collective(ctx, dynCol);
+    //
+    Future fSum = runtime->get_dynamic_collective_result(ctx, dynCol);
+    //
+    return fSum.get<floatType>();
 }

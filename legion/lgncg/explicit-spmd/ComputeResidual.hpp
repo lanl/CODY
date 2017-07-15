@@ -50,6 +50,7 @@
 
 #include "LegionStuff.hpp"
 #include "LegionArrays.hpp"
+#include "CollectiveOps.hpp"
 
 #include <fstream>
 #include "hpcg.hpp"
@@ -75,8 +76,9 @@ ComputeResidual(
     Array<floatType> &v1,
     Array<floatType> &v2,
     floatType &residual,
-    Context ctx,
-    Runtime *lrt
+    Item< DynColl<floatType> > &dcReduceMax,
+    LegionRuntime::HighLevel::Context ctx,
+    LegionRuntime::HighLevel::Runtime *lrt
 ) {
     using namespace std;
     //
@@ -87,18 +89,11 @@ ComputeResidual(
     for (local_int_t i = 0; i < n; i++) {
         double diff = std::fabs(v1v[i] - v2v[i]);
         if (diff > local_residual) local_residual = diff;
-#if 0 // Debug
-        cout << " Computed, exact, diff = " << v1v[i] << " " << v2v[i] << " " << diff << std::endl;
-#endif
     }
-#if 0 // TODO
-    // Use MPI's reduce function to collect all partial sums
-    double global_residual = 0;
-    MPI_Allreduce(&local_residual, &global_residual, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+    // Get max residual from all tasks.
+    floatType global_residual = 0;
+    global_residual = allReduce(local_residual, dcReduceMax, ctx, lrt);
     residual = global_residual;
-#else
-    residual = local_residual;
-#endif
-
+    //
     return 0;
 }

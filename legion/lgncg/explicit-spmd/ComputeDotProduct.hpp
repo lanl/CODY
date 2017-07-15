@@ -49,44 +49,11 @@
 #pragma once
 
 #include "LegionArrays.hpp"
+#include "CollectiveOps.hpp"
 
 #include "mytimer.hpp"
 
 #include <cassert>
-
-/**
- * Tally total number of non-zeros in simulation.
- */
-static inline floatType
-allReduceSum(
-    floatType localResult,
-    Item< DynColl<floatType> > &dc,
-    Context ctx,
-    Runtime *runtime
-) {
-    TaskLauncher tl(LOCAL_PARTIAL_SUM_TID, TaskArgument(NULL, 0));
-    //
-    tl.add_region_requirement(
-        RegionRequirement(
-            dc.logicalRegion,
-            RO_E,
-            dc.logicalRegion
-        )
-    ).add_field(dc.fid);
-    //
-    dc.data()->localBuffer = localResult;
-    //
-    Future f = runtime->execute_task(ctx, tl);
-    //
-    DynamicCollective &dynCol = dc.data()->dc;
-    //
-    runtime->defer_dynamic_collective_arrival(ctx, dynCol, f);
-    dynCol = runtime->advance_dynamic_collective(ctx, dynCol);
-    //
-    Future fSum = runtime->get_dynamic_collective_result(ctx, dynCol);
-    //
-    return fSum.get<floatType>();
-}
 
 /*!
     Routine to compute the dot product of two vectors where:
@@ -112,7 +79,7 @@ ComputeDotProduct(
     Array<floatType> &y,
     floatType &result,
     floatType &timeAllreduce,
-    Item< DynColl<floatType> > &dcAllreduceSum,
+    Item< DynColl<floatType> > &dcReduceSum,
     LegionRuntime::HighLevel::Context ctx,
     LegionRuntime::HighLevel::Runtime *runtime
 ) {
@@ -135,7 +102,7 @@ ComputeDotProduct(
     }
     // Collect all partial sums.
     floatType t0 = mytimer();
-    result = allReduceSum(local_result, dcAllreduceSum, ctx, runtime);
+    result = allReduce(local_result, dcReduceSum, ctx, runtime);
     timeAllreduce += mytimer() - t0;
     //
     return 0;
