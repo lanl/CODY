@@ -24,7 +24,7 @@ endif
 OUTFILE		?= legion-xhpcg
 # List all the application source files here
 GEN_SRC		?= \
-main.cc init.cc mytimer.cc \
+main.cc init.cc \
 ReadHpcgDat.cc CheckAspectRatio.cc \
 MixedBaseCounter.cc ComputeOptimalShapeXYZ.cc \
 CollectiveOps.cc LegionMGData.cc \
