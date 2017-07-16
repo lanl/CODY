@@ -855,7 +855,6 @@ ReplaceMatrixDiagonal(
     //
     const floatType *const dv = diagonal.data();
     //
-    //
     for (local_int_t i = 0; i < nrow; ++i) {
         curDiagA[i] = dv[i];
         //

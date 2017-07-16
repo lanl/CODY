@@ -33,6 +33,8 @@
 #include <utility>
 #include <cassert>
 
+#include "legion.h"
+
 #define LGNCG_UNUSED(x)                                                        \
 do {                                                                           \
     (void)(x);                                                                 \
@@ -60,6 +62,15 @@ withGhosts(ItemFlags flags)
 {
     return (flags & IFLAG_W_GHOSTS);
 }
+
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+struct PhaseBarriers {
+    //
+    LegionRuntime::HighLevel::PhaseBarrier ready;
+    //
+    LegionRuntime::HighLevel::PhaseBarrier done;
+};
 
 /**
  * Floating point type used for calculations.

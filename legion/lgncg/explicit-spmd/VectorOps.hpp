@@ -70,7 +70,7 @@ ZeroVector(
     Runtime *
 ) {
     const local_int_t localLength = v.length();
-    double *const vv = v.data();
+    floatType *const vv = v.data();
     for (local_int_t i = 0; i < localLength; ++i) vv[i] = 0.0;
 }
 
@@ -166,9 +166,9 @@ FillRandomVector(
     Runtime *
 ) {
     const local_int_t localLength = v.length();
-    double *const vv = v.data();
+    floatType *const vv = v.data();
     for (int i = 0; i < localLength; ++i) {
-        vv[i] = rand() / (double)(RAND_MAX) + 1.0;
+        vv[i] = rand() / (floatType)(RAND_MAX) + 1.0;
     }
 }
 

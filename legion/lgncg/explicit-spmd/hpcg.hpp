@@ -48,7 +48,7 @@
 
 #pragma once
 
-#include "LegionStuff.hpp"
+#include <iostream>
 
 #define HPCG_STENCIL  27
 #define NUM_MG_LEVELS 4
@@ -79,5 +79,20 @@ emit(const HPCG_Params &params) {
     cout << "nz: "          << params.nz << endl;
 }
 
-extern int HPCG_Init(HPCG_Params &params, const SPMDMeta &spmdMeta);
-extern int HPCG_Finalize(void);
+////////////////////////////////////////////////////////////////////////////////
+// SPMD metadata.
+////////////////////////////////////////////////////////////////////////////////
+struct SPMDMeta {
+    int rank;
+    // Number of participants in SPMD computation.
+    int nRanks;
+};
+
+/**
+ *
+ */
+int
+HPCG_Init(
+    HPCG_Params &params,
+    const SPMDMeta &spmdMeta
+);
