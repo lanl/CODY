@@ -88,10 +88,10 @@ ComputeDotProduct(
     //
     floatType local_result = 0.0;
     //
-    floatType *xv = x.data();
+    const floatType *const xv = x.data();
     assert(xv);
     //
-    floatType *yv = y.data();
+    const floatType *const yv = y.data();
     assert(yv);
     //
     if (yv == xv) {

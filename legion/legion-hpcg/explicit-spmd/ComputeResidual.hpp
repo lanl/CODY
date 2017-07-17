@@ -48,15 +48,12 @@
 
 #pragma once
 
-#include "LegionStuff.hpp"
 #include "LegionArrays.hpp"
 #include "CollectiveOps.hpp"
 
-#include <fstream>
 #include "hpcg.hpp"
 
 #include <cmath>
-#include <iostream>
 
 /*!
     Routine to compute the inf-norm difference between two vectors where:
@@ -77,23 +74,19 @@ ComputeResidual(
     Array<floatType> &v2,
     floatType &residual,
     Item< DynColl<floatType> > &dcReduceMax,
-    LegionRuntime::HighLevel::Context ctx,
-    LegionRuntime::HighLevel::Runtime *lrt
+    Context ctx,
+    Runtime *lrt
 ) {
-    using namespace std;
-    //
     const floatType *const v1v = v1.data();
     const floatType *const v2v = v2.data();
     floatType local_residual = 0.0;
 
     for (local_int_t i = 0; i < n; i++) {
-        double diff = std::fabs(v1v[i] - v2v[i]);
+        floatType diff = std::fabs(v1v[i] - v2v[i]);
         if (diff > local_residual) local_residual = diff;
     }
     // Get max residual from all tasks.
-    floatType global_residual = 0;
-    global_residual = allReduce(local_residual, dcReduceMax, ctx, lrt);
-    residual = global_residual;
+    residual = allReduce(local_residual, dcReduceMax, ctx, lrt);
     //
     return 0;
 }

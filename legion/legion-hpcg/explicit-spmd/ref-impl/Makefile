@@ -1,6 +1,6 @@
 # -*- Makefile -*-
 
-arch = Linux_Serial
+arch = Linux_MPI
 setup_file = setup/Make.$(arch)
 
 include $(setup_file)

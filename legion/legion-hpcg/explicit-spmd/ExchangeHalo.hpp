@@ -89,7 +89,7 @@ ExchangeHalo(
         SetupGhostArrays(A, x, ctx, lrt);
     }
 
-    floatType *const xv = x.data();
+    const floatType *const xv = x.data();
     assert(xv);
 
     myPBs.done.wait();
@@ -99,8 +99,7 @@ ExchangeHalo(
     assert(sendLengthsd);
     //
     for (int n = 0, txidx = 0; n < nNeighbors; ++n) {
-        Array<floatType> *pb = A.pullBuffers[n];
-        floatType *pbd = pb->data();
+        floatType *const pbd = A.pullBuffers[n]->data();
         assert(pbd);
         //
         for (int i = 0; i < sendLengthsd[n]; ++i) {
