@@ -32,7 +32,7 @@
 #include "LegionStuff.hpp"
 #include "LegionArrays.hpp"
 
-#include <string.h>
+#include <cstring>
 
 /**
  *
