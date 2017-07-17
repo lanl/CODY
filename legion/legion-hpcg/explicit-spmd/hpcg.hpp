@@ -62,6 +62,7 @@ struct HPCG_Params {
     //!< Number of seconds to run the timed portion of the benchmark.
     int runningTime;
     int stencilSize; //!< Size of the stencil
+    double phase1InitTime;
 };
 
 /**

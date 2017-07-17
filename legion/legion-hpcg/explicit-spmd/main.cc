@@ -295,9 +295,10 @@ mainTask(
         ctx,
         runtime
     );
+    // Time to initialize problem before start of benchmark (phase 1).
+    const double initStart = mytimer();
     {
         cout << "*** Launching Initialization Tasks..." << endl;;
-        const double initStart = mytimer();
         //
         MustEpochLauncher mel;
         //
@@ -323,9 +324,6 @@ mainTask(
         FutureMap fm = runtime->execute_must_epoch(ctx, mel);
         fm.wait_all_results();
         //
-        const double initEnd = mytimer();
-        double initTime = initEnd - initStart;
-        cout << "--> Time=" << initTime << "s" << endl;
     }
     // Now that we have all the setup information stored in LogicalRegions,
     // perform the top-level setup required for inter-task synchronization using
@@ -337,6 +335,9 @@ mainTask(
             curLevelMatrix = curLevelMatrix->Ac;
         }
     }
+    // Capture phase 1 initialization time to pass to benchmark tasks.
+    params.phase1InitTime = mytimer() - initStart;
+    cout << "--> Time=" << params.phase1InitTime << "s" << endl;
 
     ////////////////////////////////////////////////////////////////////////////
     // Launch the tasks to begin the benchmark.
@@ -511,8 +512,8 @@ startBenchmarkTask(
         curLevelMatrix = curLevelMatrix->Ac;
     }
     // Capture total time of setup.
-    // TODO include time from genProblemTask.
     setup_time = mytimer() - setup_time;
+    setup_time += params.phase1InitTime;
     // Save it for reporting.
     times[9] = setup_time;
 
