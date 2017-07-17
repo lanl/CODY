@@ -34,6 +34,8 @@
 
 #include "legion.h"
 
+#include <cfloat>
+
 using namespace LegionRuntime::HighLevel;
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -57,9 +59,25 @@ struct DynColl {
     DynColl(
         int tid,
         int64_t nArrivals
-    ) : tid(tid)
-      , nArrivals(nArrivals)
-      , localBuffer(TYPE(0)) { }
+    ) {
+        this->tid = tid;
+        this->nArrivals = nArrivals;
+        switch (tid) {
+            case FLOAT_REDUCE_SUM_TID:
+            case INT_REDUCE_SUM_TID:
+                localBuffer = TYPE(0);
+                break;
+            case FLOAT_REDUCE_MIN_TID:
+                localBuffer = TYPE(DBL_MAX);
+                break;
+            case FLOAT_REDUCE_MAX_TID:
+                localBuffer = TYPE(-DBL_MAX);
+                break;
+            default:
+                std::cerr << "Unknown DynColl TID..." << std::endl;
+                exit(1);
+        }
+    }
 };
 
 ////////////////////////////////////////////////////////////////////////////////

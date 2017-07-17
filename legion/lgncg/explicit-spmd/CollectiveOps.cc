@@ -33,7 +33,6 @@
 #include "LegionItems.hpp"
 
 #include <typeinfo>
-#include <cassert>
 
 #define MAX(x, y) x > y ? x : y
 #define MIN(x, y) x < y ? x : y
@@ -41,7 +40,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
-const floatType FloatReduceSumAccumulate::identity = 0.0;
+const floatType FloatReduceSumAccumulate::identity = 1.0;
 
 template<>
 void
@@ -52,19 +51,19 @@ FloatReduceSumAccumulate::apply<true>(LHS &lhs, RHS rhs) {
 template<>
 void
 FloatReduceSumAccumulate::apply<false>(LHS &lhs, RHS rhs) {
-    assert(false);
+    exit(1);
 }
 
 template<>
 void
 FloatReduceSumAccumulate::fold<true>(RHS &rhs1, RHS rhs2) {
-    rhs1 += rhs2;
+    exit(1);
 }
 
 template<>
 void
 FloatReduceSumAccumulate::fold<false>(RHS &rhs1, RHS rhs2) {
-    assert(false);
+    exit(1);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -81,19 +80,19 @@ FloatReduceMaxAccumulate::apply<true>(LHS &lhs, RHS rhs) {
 template<>
 void
 FloatReduceMaxAccumulate::apply<false>(LHS &lhs, RHS rhs) {
-    assert(false);
+    exit(1);
 }
 
 template<>
 void
 FloatReduceMaxAccumulate::fold<true>(RHS &rhs1, RHS rhs2) {
-    rhs1 = MAX(rhs1, rhs2);
+    exit(1);
 }
 
 template<>
 void
 FloatReduceMaxAccumulate::fold<false>(RHS &rhs1, RHS rhs2) {
-    assert(false);
+    exit(1);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -110,19 +109,19 @@ FloatReduceMinAccumulate::apply<true>(LHS &lhs, RHS rhs) {
 template<>
 void
 FloatReduceMinAccumulate::apply<false>(LHS &lhs, RHS rhs) {
-    assert(false);
+    exit(1);
 }
 
 template<>
 void
 FloatReduceMinAccumulate::fold<true>(RHS &rhs1, RHS rhs2) {
-    rhs1 = MIN(rhs1, rhs2);
+    exit(1);
 }
 
 template<>
 void
 FloatReduceMinAccumulate::fold<false>(RHS &rhs1, RHS rhs2) {
-    assert(false);
+    exit(1);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -139,7 +138,7 @@ IntReduceSumAccumulate::apply<true>(LHS &lhs, RHS rhs) {
 template<>
 void
 IntReduceSumAccumulate::apply<false>(LHS &lhs, RHS rhs) {
-    assert(false);
+    exit(1);
 }
 
 template<>
@@ -151,7 +150,7 @@ IntReduceSumAccumulate::fold<true>(RHS &rhs1, RHS rhs2) {
 template<>
 void
 IntReduceSumAccumulate::fold<false>(RHS &rhs1, RHS rhs2) {
-    assert(false);
+    exit(1);
 }
 
 /**
