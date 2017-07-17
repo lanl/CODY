@@ -31,7 +31,8 @@
 
 #include "LegionStuff.hpp"
 #include "LegionArrays.hpp"
-#include "VectorOps.hpp"
+
+#include <string.h>
 
 /**
  *
@@ -55,5 +56,6 @@ regionToRegionCopyTask(
     floatType *const dv = dst.data();
     assert(dv);
 
-    for (size_t i = 0; i < src.length(); ++i) dv[i] = sv[i];
+    const size_t cpySize = src.length() * sizeof(floatType);
+    (void)memmove(dv, sv, cpySize);
 }
