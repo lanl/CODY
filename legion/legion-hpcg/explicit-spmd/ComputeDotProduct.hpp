@@ -78,7 +78,7 @@ ComputeDotProduct(
     Array<floatType> &x,
     Array<floatType> &y,
     floatType &result,
-    floatType &timeAllreduce,
+    double &timeAllreduce,
     Item< DynColl<floatType> > &dcReduceSum,
     LegionRuntime::HighLevel::Context ctx,
     LegionRuntime::HighLevel::Runtime *runtime
@@ -101,7 +101,7 @@ ComputeDotProduct(
         for (local_int_t i = 0; i < n; i++) local_result += xv[i] * yv[i];
     }
     // Collect all partial sums.
-    floatType t0 = mytimer();
+    double t0 = mytimer();
     result = allReduce(local_result, dcReduceSum, ctx, runtime);
     timeAllreduce += mytimer() - t0;
     //
