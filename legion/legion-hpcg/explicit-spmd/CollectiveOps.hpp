@@ -59,23 +59,51 @@ struct DynColl {
     DynColl(
         int tid,
         int64_t nArrivals
+    ) : tid(tid)
+      , nArrivals(nArrivals)
+    {
+        mInitLocalBuffer(tid, localBuffer);
+    }
+
+private:
+
+    /**
+     *
+     */
+    void
+    mInitLocalBuffer(
+        int tid,
+        global_int_t &lb
     ) {
-        this->tid = tid;
-        this->nArrivals = nArrivals;
-        switch (tid) {
-            case FLOAT_REDUCE_SUM_TID:
+        switch(tid) {
             case INT_REDUCE_SUM_TID:
-                localBuffer = TYPE(0);
-                break;
-            case FLOAT_REDUCE_MIN_TID:
-                localBuffer = TYPE(DBL_MAX);
-                break;
-            case FLOAT_REDUCE_MAX_TID:
-                localBuffer = TYPE(-DBL_MAX);
+                lb = TYPE(0);
                 break;
             default:
-                std::cerr << "Unknown DynColl TID..." << std::endl;
-                exit(1);
+                assert(false);
+        }
+    }
+
+    /**
+     *
+     */
+    void
+    mInitLocalBuffer(
+        int tid,
+        floatType &lb
+    ) {
+        switch (tid) {
+            case FLOAT_REDUCE_SUM_TID:
+                lb = TYPE(0);
+                break;
+            case FLOAT_REDUCE_MIN_TID:
+                lb = TYPE(DBL_MAX);
+                break;
+            case FLOAT_REDUCE_MAX_TID:
+                lb = TYPE(-DBL_MAX);
+                break;
+            default:
+                assert(false);
         }
     }
 };
