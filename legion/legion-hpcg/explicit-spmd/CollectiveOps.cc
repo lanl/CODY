@@ -34,8 +34,8 @@
 
 #include <typeinfo>
 
-#define MAX(x, y) x > y ? x : y
-#define MIN(x, y) x < y ? x : y
+#define LGNCG_MAX(x, y) x > y ? x : y
+#define LGNCG_MIN(x, y) x < y ? x : y
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -74,7 +74,7 @@ const floatType FloatReduceMaxAccumulate::identity = 1.0;
 template<>
 void
 FloatReduceMaxAccumulate::apply<true>(LHS &lhs, RHS rhs) {
-    lhs = MAX(lhs, rhs);
+    lhs = LGNCG_MAX(lhs, rhs);
 }
 
 template<>
@@ -103,7 +103,7 @@ const floatType FloatReduceMinAccumulate::identity = 1.0;
 template<>
 void
 FloatReduceMinAccumulate::apply<true>(LHS &lhs, RHS rhs) {
-    lhs = MIN(lhs, rhs);
+    lhs = LGNCG_MIN(lhs, rhs);
 }
 
 template<>
