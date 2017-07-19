@@ -183,8 +183,8 @@ CG(
         TOCK(t5); // Preconditioner apply time
 
         if (k == 1) {
-            // Copy Mr to p.
-            CopyVector(z, p, ctx, lrt);
+            TICK(); // Copy Mr to p.
+            ComputeWAXPBY(nrow, 1.0, z, 0.0, z, p, ctx, lrt);
             TOCK(t2);
             //
             TICK(); // rtz = r'*z
