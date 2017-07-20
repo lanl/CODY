@@ -49,5 +49,6 @@ enum {
     ZERO_VECTOR_TID,
     WAXPBY_TID,
     SPMV_TID,
-    DDOT_TID
+    DDOT_TID,
+    SYMGS_TID
 };

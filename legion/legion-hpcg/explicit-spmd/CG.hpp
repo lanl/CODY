@@ -142,9 +142,9 @@ CG(
     Array<floatType> &z  = *(data.z); // Preconditioned residual vector.
     Array<floatType> &p  = *(data.p); // Direction vector (ncol >= nrow).
     Array<floatType> &Ap = *(data.Ap);// Holds result from A * p.
-
+    //
     Item< DynColl<floatType> > &dcarsFT = *A.dcAllRedSumFT;
-
+    //
     if (!doPreconditioning && rank == 0) {
         cout << "WARNING: PERFORMING UNPRECONDITIONED ITERATIONS" << endl;
     }
@@ -229,6 +229,7 @@ CG(
             cout << "Iteration = "<< k << "   Scaled Residual = "
                  << normr / normr0 << std::endl;
         }
+        //
         niters = k;
   }
     // Store times
@@ -239,6 +240,6 @@ CG(
     times[5] += t5; // preconditioner apply time
     times[6] += t6; // exchange halo time
     times[0] += mytimer() - t_begin;  // Total time. All done...
-
+    //
     return 0;
 }

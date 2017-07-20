@@ -55,6 +55,15 @@
 
 #include <cassert>
 
+/**
+ *
+ */
+struct ComputeSYMGSArgs {
+    local_int_t localNumberOfColumns;
+    local_int_t localNumberOfRows;
+    int stencilSize;
+};
+
 /*!
     Computes one step of symmetric Gauss-Seidel:
 
@@ -91,23 +100,22 @@
     @see ComputeSYMGS
 */
 inline int
-ComputeSYMGS(
-    SparseMatrix &A,
-    Array<floatType> &r,
-    Array<floatType> &x,
-    Context ctx,
-    Runtime *lrt
+ComputeSYMGSKernel(
+    Array<floatType>       &AmatrixValues,
+    Array<local_int_t>     &AmtxIndL,
+    Array<char>            &AnonzerosInRow,
+    Array<floatType>       &AmatrixDiagonal,
+    Array<floatType>       &r,
+    Array<floatType>       &x,
+    const ComputeSYMGSArgs &args
 ) {
-    const SparseMatrixScalars *const Asclrs = A.sclrs->data();
     // Make sure x contain space for halo values.
-    assert(x.length() == size_t(Asclrs->localNumberOfColumns));
+    assert(x.length() == size_t(args.localNumberOfColumns));
     //
-    ExchangeHalo(A, x, ctx, lrt);
+    const local_int_t nrow = args.localNumberOfRows;
+    const local_int_t nnpr = args.stencilSize;
     //
-    const local_int_t nrow = Asclrs->localNumberOfRows;
-    const local_int_t nnpr = A.geom->data()->stencilSize;
-    //
-    const floatType *const matrixDiagonal = A.matrixDiagonal->data();
+    const floatType *const matrixDiagonal = AmatrixDiagonal.data();
     assert(matrixDiagonal);
     //
     const floatType *const rv = r.data();
@@ -116,13 +124,13 @@ ComputeSYMGS(
     assert(xv);
     // Interpreted as 2D array
     Array2D<floatType> matrixValues(
-        nrow, nnpr, A.matrixValues->data()
+        nrow, nnpr, AmatrixValues.data()
     );
     // Interpreted as 2D array
     Array2D<local_int_t> mtxIndL(
-        nrow, nnpr, A.mtxIndL->data()
+        nrow, nnpr, AmtxIndL.data()
     );
-    const char *const nonzerosInRow = A.nonzerosInRow->data();
+    const char *const nonzerosInRow = AnonzerosInRow.data();
     //
     for (local_int_t i = 0; i < nrow; i++) {
         const floatType *const currentValues = matrixValues(i);
@@ -158,4 +166,105 @@ ComputeSYMGS(
     }
     //
     return 0;
+}
+
+/**
+ *
+ */
+inline int
+ComputeSYMGS(
+    SparseMatrix &A,
+    Array<floatType> &r,
+    Array<floatType> &x,
+    Context ctx,
+    Runtime *lrt
+) {
+    ExchangeHalo(A, x, ctx, lrt);
+    //
+    const ComputeSYMGSArgs args = {
+        .localNumberOfColumns = A.sclrs->data()->localNumberOfColumns,
+        .localNumberOfRows    = A.sclrs->data()->localNumberOfRows,
+        .stencilSize          = A.geom->data()->stencilSize
+    };
+    //
+#ifdef LGNCG_TASKING
+    //
+    TaskLauncher tl(
+        SYMGS_TID,
+        TaskArgument(&args, sizeof(args))
+    );
+    //
+    A.matrixValues->intent  (RO_E, tl, ctx, lrt);
+    A.mtxIndL->intent       (RO_E, tl, ctx, lrt);
+    A.nonzerosInRow->intent (RO_E, tl, ctx, lrt);
+    A.matrixDiagonal->intent(RO_E, tl, ctx, lrt);
+    //
+    r.intent(RO_E, tl, ctx, lrt);
+    x.intent(RW_E, tl, ctx, lrt);
+    //
+    auto f = lrt->execute_task(ctx, tl);
+    f.wait(); // TODO RM
+    return 0;
+#else
+    return ComputeSYMGSKernel(
+               *A.matrixValues,
+               *A.mtxIndL,
+               *A.nonzerosInRow,
+               *A.matrixDiagonal,
+               r,
+               x,
+               args
+           );
+#endif
+}
+
+/**
+ *
+ */
+void
+ComputeSYMGSTask(
+    const Task *task,
+    const std::vector<PhysicalRegion> &regions,
+    Context ctx,
+    Runtime *lrt
+) {
+    const auto *const args = (ComputeSYMGSArgs *)task->args;
+    //
+    int rid = 0;
+    Array<floatType> matrixValues  (regions[rid++], ctx, lrt);
+    Array<local_int_t> mtxIndL     (regions[rid++], ctx, lrt);
+    Array<char> nonzerosInRow      (regions[rid++], ctx, lrt);
+    Array<floatType> matrixDiagonal(regions[rid++], ctx, lrt);
+    //
+    Array<floatType> r(regions[rid++], ctx, lrt);
+    Array<floatType> x(regions[rid++], ctx, lrt);
+    //
+    ComputeSYMGSKernel(
+        matrixValues,
+        mtxIndL,
+        nonzerosInRow,
+        matrixDiagonal,
+        r,
+        x,
+        *args
+    );
+}
+
+/**
+ *
+ */
+inline void
+registerSYMGSTasks(void)
+{
+#ifdef LGNCG_TASKING
+    HighLevelRuntime::register_legion_task<ComputeSYMGSTask>(
+        SYMGS_TID /* task id */,
+        Processor::LOC_PROC /* proc kind  */,
+        true /* single */,
+        true /* index */,
+        AUTO_GENERATE_ID,
+        TaskConfigOptions(true /* leaf task */),
+        "ComputeSYMGSTask"
+    );
+#endif
 }
