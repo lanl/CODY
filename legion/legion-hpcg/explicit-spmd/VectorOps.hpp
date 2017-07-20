@@ -64,14 +64,50 @@
                       zero.
  */
 inline void
-ZeroVector(
-    Array<floatType> &v,
-    Context,
-    Runtime *
+ZeroVectorKernel(
+    Array<floatType> &v
 ) {
     const local_int_t localLength = v.length();
     floatType *const vv = v.data();
     for (local_int_t i = 0; i < localLength; ++i) vv[i] = 0.0;
+}
+
+/**
+ *
+ */
+inline void
+ZeroVector(
+    Array<floatType> &v,
+    Context ctx,
+    Runtime *lrt
+) {
+#ifdef LGNCG_TASKING
+    TaskLauncher tl(
+        ZERO_VECTOR_TID,
+        TaskArgument(NULL, 0)
+    );
+    v.intent(WO_E, tl, ctx, lrt);
+
+    auto f = lrt->execute_task(ctx, tl);
+    f.wait(); // TODO RM
+#else
+    ZeroVectorKernel(v);
+#endif
+}
+
+/**
+ *
+ */
+void
+ZeroVectorTask(
+    const Task *task,
+    const std::vector<PhysicalRegion> &regions,
+    Context ctx,
+    Runtime *lrt
+) {
+    Array<floatType> v(regions[0], ctx, lrt);
+
+    ZeroVectorKernel(v);
 }
 
 /*!
@@ -81,11 +117,9 @@ ZeroVector(
     @param[in] w Output vector.
  */
 inline void
-CopyVector(
+CopyVectorKernel(
     Array<floatType> &v,
-    Array<floatType> &w,
-    Context ctx,
-    Runtime *lrt
+    Array<floatType> &w
 ) {
     const local_int_t localLength = v.length();
     assert(w.length() >= size_t(localLength));
@@ -99,6 +133,31 @@ CopyVector(
 /**
  *
  */
+inline void
+CopyVector(
+    Array<floatType> &v,
+    Array<floatType> &w,
+    Context ctx,
+    Runtime *lrt
+) {
+#ifdef LGNCG_TASKING
+    TaskLauncher tl(
+        COPY_VECTOR_TID,
+        TaskArgument(NULL, 0)
+    );
+    v.intent(RO_E, tl, ctx, lrt);
+    w.intent(WO_E, tl, ctx, lrt);
+
+    auto f = lrt->execute_task(ctx, tl);
+    f.wait(); // TODO RM
+#else
+    CopyVectorKernel(v, w);
+#endif
+}
+
+/**
+ *
+ */
 void
 CopyVectorTask(
     const Task *task,
@@ -106,6 +165,11 @@ CopyVectorTask(
     Context ctx,
     Runtime *lrt
 ) {
+    int rid = 0;
+    Array<floatType> v(regions[rid++], ctx, lrt);
+    Array<floatType> w(regions[rid++], ctx, lrt);
+
+    CopyVectorKernel(v, w);
 }
 
 /**
@@ -211,6 +275,7 @@ ScaleVectorValue(
 inline void
 registerVectorOpTasks(void)
 {
+#ifdef LGNCG_TASKING
     HighLevelRuntime::register_legion_task<CopyVectorTask>(
         COPY_VECTOR_TID /* task id */,
         Processor::LOC_PROC /* proc kind  */,
@@ -220,5 +285,15 @@ registerVectorOpTasks(void)
         TaskConfigOptions(true /* leaf task */),
         "CopyVectorTask"
     );
-}
 
+    HighLevelRuntime::register_legion_task<ZeroVectorTask>(
+        ZERO_VECTOR_TID /* task id */,
+        Processor::LOC_PROC /* proc kind  */,
+        true /* single */,
+        true /* index */,
+        AUTO_GENERATE_ID,
+        TaskConfigOptions(true /* leaf task */),
+        "ZeroVectorTask"
+    );
+#endif
+}

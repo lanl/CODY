@@ -75,20 +75,6 @@ public:
     }
 
     /**
-     * Returns whether or not two LogicalArrays are the same (as far as the
-     * Legion RT is concerned).
-     */
-    static bool
-    same(
-        const LogicalArray &a,
-        const LogicalArray &b
-    ) {
-        return a.mIndexSpaceID == b.mIndexSpaceID &&
-               a.mFieldSpaceID == b.mFieldSpaceID &&
-               a.mRTreeID      == b.mRTreeID;
-    }
-
-    /**
      *
      */
     void

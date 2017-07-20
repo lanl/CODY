@@ -52,6 +52,17 @@
 
 #include <cassert>
 
+/**
+ *
+ */
+struct ComputeWAXPBYArgs {
+    local_int_t n;
+    floatType alpha;
+    floatType beta;
+    bool xySame;
+    bool xwSame;
+    bool ywSame;
+};
 
 /*!
     Routine to compute the update of a vector with the sum of two
@@ -69,17 +80,14 @@
 
     @see ComputeWAXPBY
 */
-
 inline int
-ComputeWAXPBY(
+ComputeWAXPBYKernel(
     const local_int_t n,
     const floatType alpha,
-    const Array<floatType> &x,
+    Array<floatType> &x,
     const floatType beta,
-    const Array<floatType> &y,
-    Array<floatType> &w,
-    Context,
-    Runtime *
+    Array<floatType> &y,
+    Array<floatType> &w
 ) {
     // Test vector lengths
     assert(x.length() >= size_t(n));
@@ -100,4 +108,101 @@ ComputeWAXPBY(
     }
     //
     return 0;
+}
+
+/**
+ *
+ */
+inline int
+ComputeWAXPBY(
+    const local_int_t n,
+    const floatType alpha,
+    Array<floatType> &x,
+    const floatType beta,
+    Array<floatType> &y,
+    Array<floatType> &w,
+    Context ctx,
+    Runtime *lrt
+) {
+#ifdef LGNCG_TASKING
+    const bool xySame = (&x == &y);
+    const bool xwSame = (&x == &w);
+    const bool ywSame = (&y == &w);
+    //
+    ComputeWAXPBYArgs args {
+        .n = n,
+        .alpha = alpha,
+        .beta = beta,
+        .xySame = xySame,
+        .xwSame = xwSame,
+        .ywSame = ywSame
+    };
+    //
+    TaskLauncher tl(
+        WAXPBY_TID,
+        TaskArgument(&args, sizeof(args))
+    );
+    //
+    x.intent(xwSame ? READ_WRITE : READ_ONLY, EXCLUSIVE, tl, ctx, lrt);
+    //
+    if (!xySame) {
+        y.intent(ywSame ? READ_WRITE : READ_ONLY, EXCLUSIVE, tl, ctx, lrt);
+    }
+    if (!xwSame && !ywSame) {
+        w.intent(WO_E, tl, ctx, lrt);
+    }
+    //
+    auto f = lrt->execute_task(ctx, tl);
+    f.wait(); // TODO RM
+    return 0;
+#else
+    return ComputeWAXPBYKernel(n, alpha, x, beta, y, w);
+#endif
+}
+
+/**
+ *
+ */
+void
+ComputeWAXPBYTask(
+    const Task *task,
+    const std::vector<PhysicalRegion> &regions,
+    Context ctx,
+    Runtime *lrt
+) {
+    const ComputeWAXPBYArgs *const args = (ComputeWAXPBYArgs *)task->args;
+    //
+    int xRID = 0;
+    int yRID = 1;
+    int wRID = 2;
+    // Aliased regions.
+    if (2 == regions.size()) {
+        yRID = args->xySame ? 0 : 1;
+        wRID = args->xwSame ? 0 : 1;
+    }
+    //
+    Array<floatType> x(regions[xRID], ctx, lrt);
+    Array<floatType> y(regions[yRID], ctx, lrt);
+    Array<floatType> w(regions[wRID], ctx, lrt);
+    //
+    ComputeWAXPBYKernel(args->n, args->alpha, x, args->beta, y, w);
+}
+
+/**
+ *
+ */
+inline void
+registerWAXPBYTasks(void)
+{
+#ifdef LGNCG_TASKING
+    HighLevelRuntime::register_legion_task<ComputeWAXPBYTask>(
+        WAXPBY_TID /* task id */,
+        Processor::LOC_PROC /* proc kind  */,
+        true /* single */,
+        true /* index */,
+        AUTO_GENERATE_ID,
+        TaskConfigOptions(true /* leaf task */),
+        "ComputeWAXPBYTask"
+    );
+#endif
 }

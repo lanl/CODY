@@ -110,19 +110,19 @@
 */
 inline int
 CG(
-    SparseMatrix           &A,
-    CGData                 &data,
-    const Array<floatType> &b,
-    Array<floatType>       &x,
-    const int              maxIter,
-    const floatType        tolerance,
-    int                    &niters,
-    floatType              &normr,
-    floatType              &normr0,
-    double                 *times,
-    bool                   doPreconditioning,
-    Context                ctx,
-    Runtime                *lrt
+    SparseMatrix     &A,
+    CGData           &data,
+    Array<floatType> &b,
+    Array<floatType> &x,
+    const int        maxIter,
+    const floatType  tolerance,
+    int              &niters,
+    floatType        &normr,
+    floatType        &normr0,
+    double           *times,
+    bool             doPreconditioning,
+    Context          ctx,
+    Runtime          *lrt
 ) {
     using namespace std;
     // Start timing right away.

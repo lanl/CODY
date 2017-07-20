@@ -501,6 +501,27 @@ public:
         //
         return rect.lo.x[0];
     }
+
+    /**
+     *
+     */
+    void
+    intent(
+        Legion::PrivilegeMode privMode,
+        Legion::CoherenceProperty cohProp,
+        Legion::TaskLauncher &launcher,
+        Context ctx,
+        Runtime *lrt
+    ) {
+        launcher.add_region_requirement(
+            RegionRequirement(
+                logicalRegion,
+                privMode,
+                cohProp,
+                logicalRegion
+            )
+        ).add_field(fid);
+    }
 };
 
 ////////////////////////////////////////////////////////////////////////////////
