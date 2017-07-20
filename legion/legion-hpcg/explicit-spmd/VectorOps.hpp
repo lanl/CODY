@@ -48,9 +48,9 @@
 
 #pragma once
 
-#include "Geometry.hpp"
 #include "hpcg.hpp"
 #include "LegionArrays.hpp"
+#include "Geometry.hpp"
 
 #include <cassert>
 #include <cstdlib>
@@ -84,8 +84,8 @@ inline void
 CopyVector(
     Array<floatType> &v,
     Array<floatType> &w,
-    Context,
-    Runtime *
+    Context ctx,
+    Runtime *lrt
 ) {
     const local_int_t localLength = v.length();
     assert(w.length() >= size_t(localLength));
@@ -94,6 +94,18 @@ CopyVector(
     floatType *const wv = w.data();
     //
     for (local_int_t i = 0; i < localLength; ++i) wv[i] = vv[i];
+}
+
+/**
+ *
+ */
+void
+CopyVectorTask(
+    const Task *task,
+    const std::vector<PhysicalRegion> &regions,
+    Context ctx,
+    Runtime *lrt
+) {
 }
 
 /**
@@ -192,3 +204,21 @@ ScaleVectorValue(
     floatType *const vv = v.data();
     vv[index] *= value;
 }
+
+/**
+ *
+ */
+inline void
+registerVectorOpTasks(void)
+{
+    HighLevelRuntime::register_legion_task<CopyVectorTask>(
+        COPY_VECTOR_TID /* task id */,
+        Processor::LOC_PROC /* proc kind  */,
+        true /* single */,
+        true /* index */,
+        AUTO_GENERATE_ID,
+        TaskConfigOptions(true /* leaf task */),
+        "CopyVectorTask"
+    );
+}
+

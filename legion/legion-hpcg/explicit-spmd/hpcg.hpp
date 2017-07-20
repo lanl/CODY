@@ -84,6 +84,7 @@ emit(const HPCG_Params &params) {
 // SPMD metadata.
 ////////////////////////////////////////////////////////////////////////////////
 struct SPMDMeta {
+    // Task ID in SPMD computation.
     int rank;
     // Number of participants in SPMD computation.
     int nRanks;

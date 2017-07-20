@@ -454,7 +454,7 @@ startBenchmarkTask(
     // Number of levels including first.
     const int numberOfMgLevels = NUM_MG_LEVELS;
     // Use this array for collecting timing information.
-    std::vector< double > times(10,0.0);
+    std::vector<double> times(10, 0.0);
     //
     const HPCG_Params params = *(HPCG_Params *)task->args;
     // Check if QuickPath option is enabled.  If the running time is set to

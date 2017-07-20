@@ -31,6 +31,7 @@
 
 #pragma once
 
+#include "TaskTIDs.hpp"
 #include "Types.hpp"
 
 #include "legion.h"
@@ -51,23 +52,6 @@ using namespace LegionRuntime::HighLevel;
 #define RW_S READ_WRITE, SIMULTANEOUS
 #define RO_S READ_ONLY , SIMULTANEOUS
 #define WO_S WRITE_ONLY, SIMULTANEOUS
-
-////////////////////////////////////////////////////////////////////////////////
-// Task IDs
-////////////////////////////////////////////////////////////////////////////////
-enum {
-    MAIN_TID = 0,
-    GEN_PROB_TID,
-    START_BENCHMARK_TID,
-    REGION_TO_REGION_COPY_TID,
-    DYN_COLL_TASK_CONTRIB_GIT_TID,
-    DYN_COLL_TASK_CONTRIB_FT_TID,
-    FLOAT_REDUCE_SUM_TID,
-    FLOAT_REDUCE_MIN_TID,
-    FLOAT_REDUCE_MAX_TID,
-    INT_REDUCE_SUM_TID,
-    TEST_TID
-};
 
 ////////////////////////////////////////////////////////////////////////////////
 // Task forward declarations.
@@ -114,14 +98,15 @@ regionToRegionCopyTask(
     Context ctx, HighLevelRuntime *runtime
 );
 
-
 void
 registerCollectiveOpsTasks(void);
+
+void
+registerVectorOpTasks(void);
 
 ////////////////////////////////////////////////////////////////////////////////
 // Task Registration
 ////////////////////////////////////////////////////////////////////////////////
-// TODO: be explicit about leaf tasks in registration.
 inline void
 registerTasks(void)
 {
@@ -159,6 +144,8 @@ registerTasks(void)
     );
     //
     registerCollectiveOpsTasks();
+    //
+    registerVectorOpTasks();
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -168,7 +155,7 @@ updateMappers(
     HighLevelRuntime *runtime,
     const std::set<Processor> &local_procs
 ) {
-#if 0 // SKG disable for now.
+#if 0 // Disable for now.
     for (const auto &p : local_procs) {
         runtime->replace_default_mapper(new CGMapper(machine, runtime, p), p);
     }
@@ -184,13 +171,17 @@ LegionInit(void)
 }
 
 /**
- * courtesy of some other legion code.
+ * Courtesy of some other legion code.
  */
 template <unsigned DIM, typename T>
 inline bool
-offsetsAreDense(const Rect<DIM> &bounds,
-                const LegionRuntime::Accessor::ByteOffset *offset)
-{
+offsetsAreDense(
+    const Rect<DIM> &bounds,
+    const LegionRuntime::Accessor::ByteOffset *offset
+) {
+#ifdef LGNCG_ASSUME_DENSE_OFFSETS
+    return true;
+#else
     off_t exp_offset = sizeof(T);
     for (unsigned i = 0; i < DIM; i++) {
         bool found = false;
@@ -203,39 +194,44 @@ offsetsAreDense(const Rect<DIM> &bounds,
         if (!found) return false;
     }
     return true;
+#endif
 }
 
 /**
- * courtesy of some other legion code.
+ * Courtesy of some other legion code.
  */
 inline bool
-offsetMismatch(int i,
-               const LegionRuntime::Accessor::ByteOffset *off1,
-               const LegionRuntime::Accessor::ByteOffset *off2)
-{
+offsetMismatch(
+    int i,
+    const LegionRuntime::Accessor::ByteOffset *off1,
+    const LegionRuntime::Accessor::ByteOffset *off2
+) {
+#ifdef LGNCG_ASSUME_OFFSETS_MATCH
+    return false;
+#else
     while (i-- > 0) {
         if ((off1++)->offset != (off2++)->offset) return true;
     }
     return false;
+#endif
 }
 
 /**
- * convenience routine to get a task's ID
+ * Convenience routine to get a task's ID.
  */
 inline int
 getTaskID(
-    const LegionRuntime::HighLevel::Task *task
+    const Task *task
 ) {
     return task->index_point.point_data[0];
 }
 
 /**
- * TODO add proc type
+ *
  */
 inline size_t
-getNumProcs(
-    void
-) {
+getNumProcs(void)
+{
     size_t nProc = 0;
     std::set<Processor> allProcs;
     Realm::Machine::get_machine().get_all_processors(allProcs);

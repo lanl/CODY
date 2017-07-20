@@ -125,7 +125,6 @@ CG(
     Runtime                *lrt
 ) {
     using namespace std;
-
     // Start timing right away.
     double t_begin = mytimer();
     //
