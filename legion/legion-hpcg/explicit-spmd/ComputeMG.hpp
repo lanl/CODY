@@ -110,7 +110,7 @@ ComputeMG(
         for (int i = 0; i < nPost; ++i) {
             ierr += ComputeSYMGS(A, r, x, ctx, lrt);
         }
-        if (ierr!=0) return ierr;
+        if (ierr != 0) return ierr;
     }
     else {
         ierr = ComputeSYMGS(A, r, x, ctx, lrt);

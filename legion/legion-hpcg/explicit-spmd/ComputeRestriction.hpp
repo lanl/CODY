@@ -69,21 +69,100 @@
     @return Returns zero on success and a non-zero value otherwise.
 */
 inline int
-ComputeRestriction(
-    SparseMatrix &A,
-    Array<floatType> &rf,
-    Context,
-    Runtime *
+ComputeRestrictionKernel(
+    Array<floatType>   &Axf,
+    Array<local_int_t> &Af2c,
+    Array<floatType>   &rc,
+    Array<floatType>   &rf
 ) {
-    const floatType *const Axfv = A.mgData->Axf->data();
+    const floatType *const Axfv = Axf.data();
+    const local_int_t *const f2c = Af2c.data();
+    floatType *const rcv = rc.data();
+    //
     const floatType *const rfv = rf.data();
-    floatType *const rcv = A.mgData->rc->data();
-    const local_int_t *const f2c = A.mgData->f2cOperator->data();
-    const local_int_t nc = A.mgData->rc->length();
 
+    const local_int_t nc = rc.length();
     for (local_int_t i = 0; i < nc; ++i) {
         rcv[i] = rfv[f2c[i]] - Axfv[f2c[i]];
     }
     //
     return 0;
+}
+
+inline int
+ComputeRestriction(
+    SparseMatrix &A,
+    Array<floatType> &rf,
+    Context ctx,
+    Runtime *lrt
+) {
+#ifdef LGNCG_TASKING
+    //
+    TaskLauncher tl(
+        RESTRICTION_TID,
+        TaskArgument(NULL, 0)
+    );
+    //
+    A.mgData->Axf->intent        (RO_E, tl, ctx, lrt);
+    A.mgData->f2cOperator->intent(RO_E, tl, ctx, lrt);
+    A.mgData->rc->intent         (WO_E, tl, ctx, lrt);
+    //
+    rf.intent(RO_E, tl, ctx, lrt);
+    //
+    auto f = lrt->execute_task(ctx, tl);
+    f.wait(); // TODO RM
+    return 0;
+#else
+    return ComputeRestrictionKernel(
+               *A.mgData->Axf,
+               *A.mgData->f2cOperator,
+               *A.mgData->rc,
+               rf
+           );
+#endif
+}
+
+/**
+ *
+ */
+void
+ComputeRestrictionTask(
+    const Task *task,
+    const std::vector<PhysicalRegion> &regions,
+    Context ctx,
+    Runtime *lrt
+) {
+    //
+    int rid = 0;
+    Array<floatType>   Axf (regions[rid++], ctx, lrt);
+    Array<local_int_t> Af2c(regions[rid++], ctx, lrt);
+    Array<floatType>   rc  (regions[rid++], ctx, lrt);
+    //
+    Array<floatType>   rf  (regions[rid++], ctx, lrt);
+    //
+    ComputeRestrictionKernel(
+        Axf,
+        Af2c,
+        rc,
+        rf
+    );
+}
+
+/**
+ *
+ */
+inline void
+registerRestrictionTasks(void)
+{
+#ifdef LGNCG_TASKING
+    HighLevelRuntime::register_legion_task<ComputeRestrictionTask>(
+        RESTRICTION_TID /* task id */,
+        Processor::LOC_PROC /* proc kind  */,
+        true /* single */,
+        true /* index */,
+        AUTO_GENERATE_ID,
+        TaskConfigOptions(true /* leaf task */),
+        "ComputeRestrictionTask"
+    );
+#endif
 }

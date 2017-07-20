@@ -52,6 +52,13 @@
 #include "LegionArrays.hpp"
 #include "LegionMatrices.hpp"
 
+/**
+ *
+ */
+struct ComputeProlongationArgs {
+    local_int_t nc;
+};
+
 /*!
     Routine to compute the coarse residual vector.
 
@@ -68,20 +75,108 @@
     @return Returns zero on success and a non-zero value otherwise.
 */
 inline int
-ComputeProlongation(
-    SparseMatrix &Af,
-    Array<floatType> &xf,
-    Context,
-    Runtime *
+ComputeProlongationKernel(
+    Array<floatType>              &Afxc,
+    Array<local_int_t>            &Aff2cOperator,
+    Array<floatType>              &xf,
+    const ComputeProlongationArgs &args
 ) {
+    const floatType *const xcv = Afxc.data();
+    assert(xcv);
+    const local_int_t *const f2c = Aff2cOperator.data();
+    assert(f2c);
+    //
     floatType *const xfv = xf.data();
-    const floatType *const xcv = Af.mgData->xc->data();
-    const local_int_t *const f2c = Af.mgData->f2cOperator->data();
-    const local_int_t nc = Af.mgData->rc->length();
+    assert(xfv);
+    //
+    const local_int_t nc = args.nc;
 
     for (local_int_t i = 0; i < nc; ++i) {
         xfv[f2c[i]] += xcv[i];
     }
     //
     return 0;
+}
+
+/**
+ *
+ */
+inline int
+ComputeProlongation(
+    SparseMatrix &Af,
+    Array<floatType> &xf,
+    Context ctx,
+    Runtime *lrt
+) {
+    const ComputeProlongationArgs args = {
+        .nc = local_int_t(Af.mgData->rc->length())
+    };
+#ifdef LGNCG_TASKING
+    //
+    TaskLauncher tl(
+        PROLONGATION_TID,
+        TaskArgument(&args, sizeof(args))
+    );
+    //
+    Af.mgData->xc->intent         (RO_E, tl, ctx, lrt);
+    Af.mgData->f2cOperator->intent(RO_E, tl, ctx, lrt);
+    //
+    xf.intent(WO_E, tl, ctx, lrt);
+    //
+    auto f = lrt->execute_task(ctx, tl);
+    f.wait(); // TODO RM
+    return 0;
+#else
+    return ComputeProlongationKernel(
+               *Af.mgData->xc,
+               *Af.mgData->f2cOperator,
+               xf,
+               args
+           );
+#endif
+}
+
+/**
+ *
+ */
+void
+ComputeProlongationTask(
+    const Task *task,
+    const std::vector<PhysicalRegion> &regions,
+    Context ctx,
+    Runtime *lrt
+) {
+    const auto *const args = (ComputeProlongationArgs *)task->args;
+    //
+    int rid = 0;
+    Array<floatType>   Afxc (regions[rid++], ctx, lrt);
+    Array<local_int_t> Aff2c(regions[rid++], ctx, lrt);
+    //
+    Array<floatType> xf(regions[rid++], ctx, lrt);
+    //
+    ComputeProlongationKernel(
+        Afxc,
+        Aff2c,
+        xf,
+        *args
+    );
+}
+
+/**
+ *
+ */
+inline void
+registerProlongationTasks(void)
+{
+#ifdef LGNCG_TASKING
+    HighLevelRuntime::register_legion_task<ComputeProlongationTask>(
+        PROLONGATION_TID /* task id */,
+        Processor::LOC_PROC /* proc kind  */,
+        true /* single */,
+        true /* index */,
+        AUTO_GENERATE_ID,
+        TaskConfigOptions(true /* leaf task */),
+        "ComputeProlongationTask"
+    );
+#endif
 }

@@ -106,6 +106,12 @@ registerDDotTasks(void);
 void
 registerSYMGSTasks(void);
 
+void
+registerProlongationTasks(void);
+
+void
+registerRestrictionTasks(void);
+
 ////////////////////////////////////////////////////////////////////////////////
 // Task Registration
 ////////////////////////////////////////////////////////////////////////////////
@@ -156,6 +162,10 @@ registerTasks(void)
     registerDDotTasks();
     //
     registerSYMGSTasks();
+    //
+    registerProlongationTasks();
+    //
+    registerRestrictionTasks();
 }
 
 ////////////////////////////////////////////////////////////////////////////////

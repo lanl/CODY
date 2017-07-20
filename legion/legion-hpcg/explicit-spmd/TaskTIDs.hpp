@@ -50,5 +50,7 @@ enum {
     WAXPBY_TID,
     SPMV_TID,
     DDOT_TID,
-    SYMGS_TID
+    SYMGS_TID,
+    PROLONGATION_TID,
+    RESTRICTION_TID
 };
