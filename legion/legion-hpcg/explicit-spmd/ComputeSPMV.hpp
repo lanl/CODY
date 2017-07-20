@@ -145,8 +145,8 @@ ComputeSPMV(
     //
     y.intent(WO_E, tl, ctx, lrt);
     //
-    auto f = lrt->execute_task(ctx, tl);
-    f.wait(); // TODO RM
+    lrt->execute_task(ctx, tl);
+    //
     return 0;
 #else
     return ComputeSPMVKernel(

@@ -137,6 +137,7 @@ ComputeDotProduct(
     y.intent(RO_E, tl, ctx, lrt);
     //
     auto f = lrt->execute_task(ctx, tl);
+    // TODO pass future to allReduce not result.
     localResult = f.get_result<floatType>();
 #else
     rc = ComputeDotProductKernel(x, y, args, localResult);

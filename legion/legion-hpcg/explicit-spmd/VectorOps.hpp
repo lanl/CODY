@@ -88,8 +88,7 @@ ZeroVector(
     );
     v.intent(WO_E, tl, ctx, lrt);
 
-    auto f = lrt->execute_task(ctx, tl);
-    f.wait(); // TODO RM
+    lrt->execute_task(ctx, tl);
 #else
     ZeroVectorKernel(v);
 #endif
@@ -148,8 +147,7 @@ CopyVector(
     v.intent(RO_E, tl, ctx, lrt);
     w.intent(WO_E, tl, ctx, lrt);
 
-    auto f = lrt->execute_task(ctx, tl);
-    f.wait(); // TODO RM
+    lrt->execute_task(ctx, tl);
 #else
     CopyVectorKernel(v, w);
 #endif

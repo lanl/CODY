@@ -109,8 +109,7 @@ ComputeRestriction(
     //
     rf.intent(RO_E, tl, ctx, lrt);
     //
-    auto f = lrt->execute_task(ctx, tl);
-    f.wait(); // TODO RM
+    lrt->execute_task(ctx, tl);
     return 0;
 #else
     return ComputeRestrictionKernel(
