@@ -47,5 +47,6 @@ enum {
     INT_REDUCE_SUM_TID,
     COPY_VECTOR_TID,
     ZERO_VECTOR_TID,
-    WAXPBY_TID
+    WAXPBY_TID,
+    SPMV_TID
 };

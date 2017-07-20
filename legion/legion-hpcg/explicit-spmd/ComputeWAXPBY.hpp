@@ -93,9 +93,9 @@ ComputeWAXPBYKernel(
     assert(x.length() >= size_t(n));
     assert(y.length() >= size_t(n));
 
-    const floatType *const xv = x.data();
-    const floatType *const yv = y.data();
-    floatType *const       wv = w.data();
+    floatType *const xv = x.data();
+    floatType *const yv = y.data();
+    floatType *const wv = w.data();
 
     if (alpha == 1.0) {
         for (local_int_t i = 0; i < n; i++) wv[i] = xv[i] + beta * yv[i];
@@ -143,10 +143,10 @@ ComputeWAXPBY(
         TaskArgument(&args, sizeof(args))
     );
     //
-    x.intent(xwSame ? READ_WRITE : READ_ONLY, EXCLUSIVE, tl, ctx, lrt);
+    x.intent(xwSame ? RW : RO , EXCLUSIVE, tl, ctx, lrt);
     //
     if (!xySame) {
-        y.intent(ywSame ? READ_WRITE : READ_ONLY, EXCLUSIVE, tl, ctx, lrt);
+        y.intent(ywSame ? RW : RO , EXCLUSIVE, tl, ctx, lrt);
     }
     if (!xwSame && !ywSame) {
         w.intent(WO_E, tl, ctx, lrt);
@@ -170,7 +170,7 @@ ComputeWAXPBYTask(
     Context ctx,
     Runtime *lrt
 ) {
-    const ComputeWAXPBYArgs *const args = (ComputeWAXPBYArgs *)task->args;
+    const auto *const args = (ComputeWAXPBYArgs *)task->args;
     //
     int xRID = 0;
     int yRID = 1;

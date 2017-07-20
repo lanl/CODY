@@ -197,7 +197,7 @@ PrintVector(
 /**
  *
  */
-void
+inline void
 PrintVector(
     Array<floatType> &v,
     std::string fName,

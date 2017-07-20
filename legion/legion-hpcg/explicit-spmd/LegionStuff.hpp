@@ -45,6 +45,10 @@ using namespace LegionRuntime::HighLevel;
 using namespace LegionRuntime::Accessor;
 using namespace LegionRuntime::HighLevel;
 
+#define RW READ_WRITE
+#define RO READ_ONLY
+#define WO WRITE_ONLY
+
 #define RW_E READ_WRITE, EXCLUSIVE
 #define RO_E READ_ONLY , EXCLUSIVE
 #define WO_E WRITE_ONLY, EXCLUSIVE
@@ -107,6 +111,9 @@ registerVectorOpTasks(void);
 void
 registerWAXPBYTasks(void);
 
+void
+registerSPMVTasks(void);
+
 ////////////////////////////////////////////////////////////////////////////////
 // Task Registration
 ////////////////////////////////////////////////////////////////////////////////
@@ -151,6 +158,8 @@ registerTasks(void)
     registerVectorOpTasks();
     //
     registerWAXPBYTasks();
+    //
+    registerSPMVTasks();
 }
 
 ////////////////////////////////////////////////////////////////////////////////

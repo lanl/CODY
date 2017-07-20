@@ -48,6 +48,16 @@
 #include "LegionMatrices.hpp"
 #include "ExchangeHalo.hpp"
 
+/**
+ *
+ */
+struct ComputeSPMVArgs {
+    local_int_t localNumberOfColumns;
+    local_int_t localNumberOfRows;
+    int stencilSize;
+};
+
+
 /*!
     Routine to compute matrix vector product y = Ax where: Precondition: First
     call exchange_externals to get off-processor values of x
@@ -61,32 +71,30 @@
     @see ComputeSPMV
 */
 inline int
-ComputeSPMV(
-    SparseMatrix &A,
-    Array<floatType> &x,
-    Array<floatType> &y,
-    LegionRuntime::HighLevel::Context ctx,
-    LegionRuntime::HighLevel::Runtime *lrt
+ComputeSPMVKernel(
+    Array<floatType>      &matrixValues,
+    Array<local_int_t>    &mtxIndL,
+    Array<char>           &nonzerosInRow,
+    Array<floatType>      &x,
+    Array<floatType>      &y,
+    const ComputeSPMVArgs &args
 ) {
-    const SparseMatrixScalars *Asclrs = A.sclrs->data();
     // Test vector lengths
-    assert(x.length() >= size_t(Asclrs->localNumberOfColumns));
-    assert(y.length() >= size_t(Asclrs->localNumberOfRows));
-
-    ExchangeHalo(A, x, ctx, lrt);
+    assert(x.length() >= size_t(args.localNumberOfColumns));
+    assert(y.length() >= size_t(args.localNumberOfRows));
     //
     const floatType *const xv = x.data();
     floatType *const yv       = y.data();
     // Number of rows.
-    const local_int_t nrow    = Asclrs->localNumberOfRows;
+    const local_int_t nrow    = args.localNumberOfRows;
     // Number of non-zeros per row.
-    const local_int_t nzpr    = A.geom->data()->stencilSize;
+    const local_int_t nzpr    = args.stencilSize;
     //
-    Array2D<floatType> AmatrixValues(nrow, nzpr, A.matrixValues->data());
+    Array2D<floatType> AmatrixValues(nrow, nzpr, matrixValues.data());
     //
-    Array2D<local_int_t> AmtxIndL(nrow, nzpr, A.mtxIndL->data());
+    Array2D<local_int_t> AmtxIndL(nrow, nzpr, mtxIndL.data());
     //
-    const char *const AnonzerosInRow = A.nonzerosInRow->data();
+    const char *const AnonzerosInRow = nonzerosInRow.data();
     //
     for (local_int_t i = 0; i < nrow; i++) {
         double sum = 0.0;
@@ -101,4 +109,95 @@ ComputeSPMV(
     }
     //
     return 0;
+}
+
+/**
+ *
+ */
+inline int
+ComputeSPMV(
+    SparseMatrix &A,
+    Array<floatType> &x,
+    Array<floatType> &y,
+    Context ctx,
+    Runtime *lrt
+) {
+    ExchangeHalo(A, x, ctx, lrt);
+    //
+    const ComputeSPMVArgs args = {
+        .localNumberOfColumns = A.sclrs->data()->localNumberOfColumns,
+        .localNumberOfRows    = A.sclrs->data()->localNumberOfRows,
+        .stencilSize          = A.geom->data()->stencilSize
+    };
+    //
+#ifdef LGNCG_TASKING
+    //
+    TaskLauncher tl(
+        SPMV_TID,
+        TaskArgument(&args, sizeof(args))
+    );
+    //
+    A.matrixValues->intent(RO_E, tl, ctx, lrt);
+    A.mtxIndL->intent(RO_E, tl, ctx, lrt);
+    A.nonzerosInRow->intent(RO_E, tl, ctx, lrt);
+    //
+    x.intent(RO_E, tl, ctx, lrt);
+    //
+    y.intent(WO_E, tl, ctx, lrt);
+    //
+    auto f = lrt->execute_task(ctx, tl);
+    f.wait(); // TODO RM
+    return 0;
+#else
+    return ComputeSPMVKernel(
+               *A.matrixValues,
+               *A.mtxIndL,
+               *A.nonzerosInRow,
+               x,
+               y,
+               args
+           );
+#endif
+}
+
+/**
+ *
+ */
+void
+ComputeSPMVTask(
+    const Task *task,
+    const std::vector<PhysicalRegion> &regions,
+    Context ctx,
+    Runtime *lrt
+) {
+    const auto *const args = (ComputeSPMVArgs *)task->args;
+    //
+    int rid = 0;
+    Array<floatType> matrixValues(regions[rid++], ctx, lrt);
+    Array<local_int_t> mtxIndL(regions[rid++], ctx, lrt);
+    Array<char> nonzerosInRow(regions[rid++], ctx, lrt);
+    //
+    Array<floatType> x(regions[rid++], ctx, lrt);
+    Array<floatType> y(regions[rid++], ctx, lrt);
+    //
+    ComputeSPMVKernel(matrixValues, mtxIndL, nonzerosInRow, x, y, *args);
+}
+
+/**
+ *
+ */
+inline void
+registerSPMVTasks(void)
+{
+#ifdef LGNCG_TASKING
+    HighLevelRuntime::register_legion_task<ComputeSPMVTask>(
+        SPMV_TID /* task id */,
+        Processor::LOC_PROC /* proc kind  */,
+        true /* single */,
+        true /* index */,
+        AUTO_GENERATE_ID,
+        TaskConfigOptions(true /* leaf task */),
+        "ComputeSPMVTask"
+    );
+#endif
 }

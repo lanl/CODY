@@ -451,6 +451,7 @@ startBenchmarkTask(
     Context ctx,
     HighLevelRuntime *lrt
 ) {
+    // TODO Unmap all regions if tasking???
     // Number of levels including first.
     const int numberOfMgLevels = NUM_MG_LEVELS;
     // Use this array for collecting timing information.
