@@ -55,6 +55,13 @@
 
 #include <cassert>
 
+/**
+ *
+ */
+struct ComputeDotProductArgs {
+    local_int_t n;
+};
+
 /*!
     Routine to compute the dot product of two vectors where:
 
@@ -72,17 +79,15 @@
     @see ComputeDotProduct
 */
 
-#if 0
 inline int
 ComputeDotProductKernel(
-    local_int_t n,
-    Array<floatType> &x, Array<floatType> &y,
-    floatType &result,
-    double &timeAllreduce,
-    Item< DynColl<floatType> > &dcReduceSum
+    Array<floatType> &x,
+    Array<floatType> &y,
+    const ComputeDotProductArgs &args,
+    floatType &result
 ) {
-    assert(x.length() >= size_t(n));
-    assert(y.length() >= size_t(n));
+    assert(x.length() >= size_t(args.n));
+    assert(y.length() >= size_t(args.n));
     //
     floatType local_result = 0.0;
     //
@@ -92,20 +97,13 @@ ComputeDotProductKernel(
     const floatType *const yv = y.data();
     assert(yv);
     //
-    if (yv == xv) {
-        for (local_int_t i = 0; i < n; i++) local_result += xv[i] * xv[i];
-    }
-    else {
-        for (local_int_t i = 0; i < n; i++) local_result += xv[i] * yv[i];
-    }
-    // Collect all partial sums.
-    double t0 = mytimer();
-    result = allReduce(local_result, dcReduceSum, ctx, runtime);
-    timeAllreduce += mytimer() - t0;
+    const local_int_t n = args.n;
+    for (local_int_t i = 0; i < n; i++) local_result += xv[i] * yv[i];
+    //
+    result = local_result;
     //
     return 0;
 }
-#endif
 
 /**
  *
@@ -119,57 +117,70 @@ ComputeDotProduct(
     double &timeAllreduce,
     Item< DynColl<floatType> > &dcReduceSum,
     Context ctx,
-    Runtime *runtime
+    Runtime *lrt
 ) {
-    assert(x.length() >= size_t(n));
-    assert(y.length() >= size_t(n));
+    ComputeDotProductArgs args = {
+        .n = n
+    };
     //
-    floatType local_result = 0.0;
+    floatType localResult = 0.0;
     //
-    const floatType *const xv = x.data();
-    assert(xv);
+    int rc = 0;
+#ifdef LGNCG_TASKING
     //
-    const floatType *const yv = y.data();
-    assert(yv);
+    TaskLauncher tl(
+        DDOT_TID,
+        TaskArgument(&args, sizeof(args))
+    );
     //
-    if (yv == xv) {
-        for (local_int_t i = 0; i < n; i++) local_result += xv[i] * xv[i];
-    }
-    else {
-        for (local_int_t i = 0; i < n; i++) local_result += xv[i] * yv[i];
-    }
-    // Collect all partial sums.
+    x.intent(RO_E, tl, ctx, lrt);
+    y.intent(RO_E, tl, ctx, lrt);
+    //
+    auto f = lrt->execute_task(ctx, tl);
+    localResult = f.get_result<floatType>();
+#else
+    rc = ComputeDotProductKernel(x, y, args, localResult);
+#endif
     double t0 = mytimer();
-    result = allReduce(local_result, dcReduceSum, ctx, runtime);
+    result = allReduce(localResult, dcReduceSum, ctx, lrt);
     timeAllreduce += mytimer() - t0;
     //
-    return 0;
+    return rc;
 }
 
 /**
  *
  */
-void
+floatType
 ComputeDotProductTask(
     const Task *task,
     const std::vector<PhysicalRegion> &regions,
     Context ctx,
     Runtime *lrt
 ) {
+    const auto *const args = (ComputeDotProductArgs *)task->args;
+    //
+    Array<floatType> x(regions[0], ctx, lrt);
+    Array<floatType> y(regions[1], ctx, lrt);
+    //
+    floatType localResult = 0.0;
+    ComputeDotProductKernel(x, y, *args, localResult);
+    //
+    return localResult;
 }
 
 inline void
 registerDDotTasks(void)
 {
 #ifdef LGNCG_TASKING
-    HighLevelRuntime::register_legion_task<ComputeWAXPBYTask>(
-        WAXPBY_TID /* task id */,
+    HighLevelRuntime::register_legion_task<floatType, ComputeDotProductTask>(
+        DDOT_TID /* task id */,
         Processor::LOC_PROC /* proc kind  */,
         true /* single */,
         true /* index */,
         AUTO_GENERATE_ID,
         TaskConfigOptions(true /* leaf task */),
-        "ComputeWAXPBYTask"
+        "ComputeDotProductTask"
     );
 #endif
 }
