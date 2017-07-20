@@ -72,16 +72,14 @@
     @see ComputeDotProduct
 */
 
+#if 0
 inline int
-ComputeDotProduct(
+ComputeDotProductKernel(
     local_int_t n,
-    Array<floatType> &x,
-    Array<floatType> &y,
+    Array<floatType> &x, Array<floatType> &y,
     floatType &result,
     double &timeAllreduce,
-    Item< DynColl<floatType> > &dcReduceSum,
-    LegionRuntime::HighLevel::Context ctx,
-    LegionRuntime::HighLevel::Runtime *runtime
+    Item< DynColl<floatType> > &dcReduceSum
 ) {
     assert(x.length() >= size_t(n));
     assert(y.length() >= size_t(n));
@@ -106,4 +104,72 @@ ComputeDotProduct(
     timeAllreduce += mytimer() - t0;
     //
     return 0;
+}
+#endif
+
+/**
+ *
+ */
+inline int
+ComputeDotProduct(
+    local_int_t n,
+    Array<floatType> &x,
+    Array<floatType> &y,
+    floatType &result,
+    double &timeAllreduce,
+    Item< DynColl<floatType> > &dcReduceSum,
+    Context ctx,
+    Runtime *runtime
+) {
+    assert(x.length() >= size_t(n));
+    assert(y.length() >= size_t(n));
+    //
+    floatType local_result = 0.0;
+    //
+    const floatType *const xv = x.data();
+    assert(xv);
+    //
+    const floatType *const yv = y.data();
+    assert(yv);
+    //
+    if (yv == xv) {
+        for (local_int_t i = 0; i < n; i++) local_result += xv[i] * xv[i];
+    }
+    else {
+        for (local_int_t i = 0; i < n; i++) local_result += xv[i] * yv[i];
+    }
+    // Collect all partial sums.
+    double t0 = mytimer();
+    result = allReduce(local_result, dcReduceSum, ctx, runtime);
+    timeAllreduce += mytimer() - t0;
+    //
+    return 0;
+}
+
+/**
+ *
+ */
+void
+ComputeDotProductTask(
+    const Task *task,
+    const std::vector<PhysicalRegion> &regions,
+    Context ctx,
+    Runtime *lrt
+) {
+}
+
+inline void
+registerDDotTasks(void)
+{
+#ifdef LGNCG_TASKING
+    HighLevelRuntime::register_legion_task<ComputeWAXPBYTask>(
+        WAXPBY_TID /* task id */,
+        Processor::LOC_PROC /* proc kind  */,
+        true /* single */,
+        true /* index */,
+        AUTO_GENERATE_ID,
+        TaskConfigOptions(true /* leaf task */),
+        "ComputeWAXPBYTask"
+    );
+#endif
 }

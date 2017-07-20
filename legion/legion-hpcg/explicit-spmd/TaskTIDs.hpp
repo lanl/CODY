@@ -48,5 +48,6 @@ enum {
     COPY_VECTOR_TID,
     ZERO_VECTOR_TID,
     WAXPBY_TID,
-    SPMV_TID
+    SPMV_TID,
+    DDOT_TID
 };

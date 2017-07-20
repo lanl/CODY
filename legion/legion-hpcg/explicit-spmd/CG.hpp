@@ -142,10 +142,10 @@ CG(
     Array<floatType> &p  = *(data.p); // Direction vector (ncol >= nrow).
     Array<floatType> &Ap = *(data.Ap);// Holds result from A * p.
 
-    Item< DynColl<floatType> > &dcFT = *A.dcAllRedSumFT;
+    Item< DynColl<floatType> > &dcARSFT = *A.dcAllRedSumFT;
 
     if (!doPreconditioning && rank == 0) {
-        std::cout << "WARNING: PERFORMING UNPRECONDITIONED ITERATIONS" << std::endl;
+        cout << "WARNING: PERFORMING UNPRECONDITIONED ITERATIONS" << endl;
     }
     // p is of length ncols, copy x to p for sparse MV operation
     CopyVector(x, p, ctx, lrt);
@@ -159,7 +159,7 @@ CG(
     TOCK(t2);
     //
     TICK();
-    ComputeDotProduct(nrow, r, r, normr, t4, dcFT, ctx, lrt);
+    ComputeDotProduct(nrow, r, r, normr, t4, dcARSFT, ctx, lrt);
     TOCK(t1);
     //
     normr = sqrt(normr);
@@ -187,14 +187,14 @@ CG(
             TOCK(t2);
             //
             TICK(); // rtz = r'*z
-            ComputeDotProduct(nrow, r, z, rtz, t4, dcFT, ctx, lrt);
+            ComputeDotProduct(nrow, r, z, rtz, t4, dcARSFT, ctx, lrt);
             TOCK(t1);
         }
         else {
             oldrtz = rtz;
             //
             TICK(); // rtz = r'*z
-            ComputeDotProduct(nrow, r, z, rtz, t4, dcFT, ctx, lrt);
+            ComputeDotProduct(nrow, r, z, rtz, t4, dcARSFT, ctx, lrt);
             TOCK(t1);
             //
             beta = rtz / oldrtz;
@@ -208,7 +208,7 @@ CG(
         TOCK(t3);
         //
         TICK(); // alpha = p'*Ap
-        ComputeDotProduct(nrow, p, Ap, pAp, t4, dcFT, ctx, lrt);
+        ComputeDotProduct(nrow, p, Ap, pAp, t4, dcARSFT, ctx, lrt);
         TOCK(t1);
         //
         alpha = rtz / pAp;
@@ -220,7 +220,7 @@ CG(
         TOCK(t2);
         //
         TICK();
-        ComputeDotProduct(nrow, r, r, normr, t4, dcFT, ctx, lrt);
+        ComputeDotProduct(nrow, r, r, normr, t4, dcARSFT, ctx, lrt);
         TOCK(t1);
         normr = sqrt(normr);
         //

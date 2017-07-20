@@ -81,20 +81,6 @@ startBenchmarkTask(
     Context ctx, HighLevelRuntime *runtime
 );
 
-global_int_t
-dynCollTaskContribGIT(
-    const Task *task,
-    const std::vector<PhysicalRegion> &regions,
-    Context ctx, HighLevelRuntime *runtime
-);
-
-floatType
-dynCollTaskContribFT(
-    const Task *task,
-    const std::vector<PhysicalRegion> &regions,
-    Context ctx, HighLevelRuntime *runtime
-);
-
 void
 regionToRegionCopyTask(
     const Task *task,
@@ -113,6 +99,9 @@ registerWAXPBYTasks(void);
 
 void
 registerSPMVTasks(void);
+
+void
+registerDDotTasks(void);
 
 ////////////////////////////////////////////////////////////////////////////////
 // Task Registration
@@ -160,6 +149,8 @@ registerTasks(void)
     registerWAXPBYTasks();
     //
     registerSPMVTasks();
+    //
+    registerDDotTasks();
 }
 
 ////////////////////////////////////////////////////////////////////////////////

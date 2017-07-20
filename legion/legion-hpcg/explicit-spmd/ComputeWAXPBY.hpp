@@ -143,10 +143,18 @@ ComputeWAXPBY(
         TaskArgument(&args, sizeof(args))
     );
     //
-    x.intent(xwSame ? RW : RO , EXCLUSIVE, tl, ctx, lrt);
+    x.intent(
+        xwSame ? RW : RO,
+        EXCLUSIVE,
+        tl, ctx, lrt
+    );
     //
     if (!xySame) {
-        y.intent(ywSame ? RW : RO , EXCLUSIVE, tl, ctx, lrt);
+        y.intent(
+            ywSame ? RW : RO,
+            EXCLUSIVE,
+            tl, ctx, lrt
+        );
     }
     if (!xwSame && !ywSame) {
         w.intent(WO_E, tl, ctx, lrt);

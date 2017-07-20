@@ -215,27 +215,5 @@ allReduce(
     dynCol = runtime->advance_dynamic_collective(ctx, dynCol);
     //
     Future fres = runtime->get_dynamic_collective_result(ctx, dynCol);
-    //
     return fres.get<TYPE>();
 }
-
-/**
- *
- */
-global_int_t
-dynCollTaskContribGIT(
-    const Task *task,
-    const std::vector<PhysicalRegion> &regions,
-    Context ctx,
-    HighLevelRuntime *runtime
-);
-
-/**
- *
- */
-floatType
-dynCollTaskContribFT(
-    const Task *task,
-    const std::vector<PhysicalRegion> &regions,
-    Context ctx, HighLevelRuntime *runtime
-);
