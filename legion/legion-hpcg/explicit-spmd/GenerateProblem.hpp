@@ -263,7 +263,7 @@ GenerateProblem(
     //
     Asclrs->totalNumberOfNonzeros = allReduce(
         localNumberOfNonzeros, *A.dcAllRedSumGI, ctx, runtime
-    );
+    ).get<global_int_t>();
 #endif
     // If this assert fails, it most likely means that the global_int_t is
     // set to int and should be set to long long This assert is usually the

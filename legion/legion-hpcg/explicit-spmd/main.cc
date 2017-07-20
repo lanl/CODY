@@ -59,10 +59,14 @@
 #include "CG.hpp"
 #include "OptimizeProblem.hpp"
 #include "TestCG.hpp"
+#if 0 // TODO
 #include "TestSymmetry.hpp"
+#endif
 #include "TestNorms.hpp"
+#if 0
 #include "CheckProblem.hpp"
 #include "ReportResults.hpp"
+#endif
 
 #include <iostream>
 #include <cstdlib>

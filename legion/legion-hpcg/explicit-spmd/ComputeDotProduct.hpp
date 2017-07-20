@@ -113,8 +113,8 @@ ComputeDotProduct(
     local_int_t n,
     Array<floatType> &x,
     Array<floatType> &y,
-    floatType &result,
-    double &timeAllreduce,
+    Future &resultFuture,
+    double &timeAllreduce, // FIXME
     Item< DynColl<floatType> > &dcReduceSum,
     Context ctx,
     Runtime *lrt
@@ -141,8 +141,8 @@ ComputeDotProduct(
 #else
     rc = ComputeDotProductKernel(x, y, args, localResult);
 #endif
-    double t0 = mytimer();
-    result = allReduce(localResult, dcReduceSum, ctx, lrt);
+    double t0 = mytimer(); // FIXME
+    resultFuture = allReduce(localResult, dcReduceSum, ctx, lrt);
     timeAllreduce += mytimer() - t0;
     //
     return rc;

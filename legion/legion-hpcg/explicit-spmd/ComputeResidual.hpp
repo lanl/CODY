@@ -86,7 +86,7 @@ ComputeResidual(
         if (diff > local_residual) local_residual = diff;
     }
     // Get max residual from all tasks.
-    residual = allReduce(local_residual, dcReduceMax, ctx, lrt);
+    residual = allReduce(local_residual, dcReduceMax, ctx, lrt).get<floatType>(); // TODO FIXME
     //
     return 0;
 }

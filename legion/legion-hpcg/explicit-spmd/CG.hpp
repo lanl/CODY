@@ -132,17 +132,18 @@ CG(
     const int rank = A.geom->data()->rank;
     const local_int_t nrow = A.sclrs->data()->localNumberOfRows;
     //
-    floatType rtz = 0.0, oldrtz = 0.0, alpha = 0.0, beta = 0.0, pAp = 0.0;
+    Future normrFuture, pApFuture, rtzFuture, oldrtzFuture;
+    floatType alpha = 0.0, beta = 0.0;
     double t0 = 0.0, t1 = 0.0, t2 = 0.0, t3 = 0.0, t4 = 0.0, t5 = 0.0, t6 = 0.0;
-
+    //
     normr = 0.0;
-
+    //
     Array<floatType> &r  = *(data.r); // Residual vector.
     Array<floatType> &z  = *(data.z); // Preconditioned residual vector.
     Array<floatType> &p  = *(data.p); // Direction vector (ncol >= nrow).
     Array<floatType> &Ap = *(data.Ap);// Holds result from A * p.
 
-    Item< DynColl<floatType> > &dcARSFT = *A.dcAllRedSumFT;
+    Item< DynColl<floatType> > &dcarsFT = *A.dcAllRedSumFT;
 
     if (!doPreconditioning && rank == 0) {
         cout << "WARNING: PERFORMING UNPRECONDITIONED ITERATIONS" << endl;
@@ -159,70 +160,70 @@ CG(
     TOCK(t2);
     //
     TICK();
-    ComputeDotProduct(nrow, r, r, normr, t4, dcARSFT, ctx, lrt);
+    ComputeDotProduct(nrow, r, r, normrFuture, t4, dcarsFT, ctx, lrt);
     TOCK(t1);
     //
-    normr = sqrt(normr);
+    normr = sqrt(normrFuture.get<floatType>());
     //
     if (rank == 0) std::cout << "Initial Residual = "<< normr << std::endl;
-    // Record initial residual for convergence testing
+    // Record initial residual for convergence testing.
     normr0 = normr;
-
-    // Start iterations
+    // Start iterations.
     for (int k = 1; k <= maxIter && normr / normr0 > tolerance; k++ ) {
         TICK();
         if (doPreconditioning) {
-            // Apply preconditioner
+            // Apply preconditioner.
             ComputeMG(A, r, z, ctx, lrt);
         }
         else {
-            // copy r to z (no preconditioning)
-            CopyVector(r, z, ctx, lrt); // copy r to z (no preconditioning)
+            // Copy r to z (no preconditioning).
+            CopyVector(r, z, ctx, lrt);
         }
-        TOCK(t5); // Preconditioner apply time
-
+        TOCK(t5); // Preconditioner apply time.
+        //
         if (k == 1) {
             TICK(); // Copy Mr to p.
             ComputeWAXPBY(nrow, 1.0, z, 0.0, z, p, ctx, lrt);
             TOCK(t2);
             //
-            TICK(); // rtz = r'*z
-            ComputeDotProduct(nrow, r, z, rtz, t4, dcARSFT, ctx, lrt);
+            TICK(); // rtz = r' * z
+            ComputeDotProduct(nrow, r, z, rtzFuture, t4, dcarsFT, ctx, lrt);
             TOCK(t1);
         }
         else {
-            oldrtz = rtz;
+            oldrtzFuture = rtzFuture;
             //
-            TICK(); // rtz = r'*z
-            ComputeDotProduct(nrow, r, z, rtz, t4, dcARSFT, ctx, lrt);
+            TICK(); // rtz = r' * z
+            ComputeDotProduct(nrow, r, z, rtzFuture, t4, dcarsFT, ctx, lrt);
             TOCK(t1);
             //
-            beta = rtz / oldrtz;
+            beta = rtzFuture.get<floatType>() / oldrtzFuture.get<floatType>();
             //
             TICK(); // p = beta*p + z
             ComputeWAXPBY(nrow, 1.0, z, beta, p, p, ctx, lrt);
             TOCK(t2);
         }
-        TICK(); // Ap = A*p
+        TICK(); // Ap = A * p
         ComputeSPMV(A, p, Ap, ctx, lrt);
         TOCK(t3);
         //
         TICK(); // alpha = p'*Ap
-        ComputeDotProduct(nrow, p, Ap, pAp, t4, dcARSFT, ctx, lrt);
+        ComputeDotProduct(nrow, p, Ap, pApFuture, t4, dcarsFT, ctx, lrt);
         TOCK(t1);
         //
-        alpha = rtz / pAp;
+        alpha = rtzFuture.get<floatType>() / pApFuture.get<floatType>();
         //
-        TICK(); // x = x + alpha*p
+        TICK(); // x = x + alpha * p
         ComputeWAXPBY(nrow, 1.0, x, alpha, p, x, ctx, lrt);
-        // r = r - alpha*Ap
+        // r = r - alpha * Ap
         ComputeWAXPBY(nrow, 1.0, r, -alpha, Ap, r, ctx, lrt);
         TOCK(t2);
         //
         TICK();
-        ComputeDotProduct(nrow, r, r, normr, t4, dcARSFT, ctx, lrt);
+        ComputeDotProduct(nrow, r, r, normrFuture, t4, dcarsFT, ctx, lrt);
         TOCK(t1);
-        normr = sqrt(normr);
+        //
+        normr = sqrt(normrFuture.get<floatType>());
         //
         if (rank == 0 && ( k % print_freq == 0 || k == maxIter)) {
             cout << "Iteration = "<< k << "   Scaled Residual = "

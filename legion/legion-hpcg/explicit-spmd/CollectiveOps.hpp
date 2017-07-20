@@ -176,7 +176,7 @@ public:
  * The type of DynColl passed in changes the behavior of the all reduce.
  */
 template <typename TYPE>
-TYPE
+Future
 allReduce(
     floatType localResult,
     Item< DynColl<TYPE> > &dc,
@@ -214,6 +214,5 @@ allReduce(
     runtime->defer_dynamic_collective_arrival(ctx, dynCol, f);
     dynCol = runtime->advance_dynamic_collective(ctx, dynCol);
     //
-    Future fres = runtime->get_dynamic_collective_result(ctx, dynCol);
-    return fres.get<TYPE>();
+    return runtime->get_dynamic_collective_result(ctx, dynCol);
 }
