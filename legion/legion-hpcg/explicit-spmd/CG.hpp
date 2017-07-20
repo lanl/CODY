@@ -152,7 +152,7 @@ CG(
     CopyVector(x, p, ctx, lrt);
     //
     TICK(); // Ap = A*p
-    ComputeSPMV(A, p, Ap, ctx, lrt);  TOCK(t3); // Ap = A*p
+    ComputeSPMV(A, p, Ap, ctx, lrt);
     TOCK(t3);
     //
     TICK(); // r = b - Ax (x stored in p)
