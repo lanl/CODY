@@ -178,7 +178,7 @@ public:
 template <typename TYPE>
 Future
 allReduce(
-    floatType localResult,
+    TYPE localResult,
     Item< DynColl<TYPE> > &dc,
     Context ctx,
     Runtime *runtime
