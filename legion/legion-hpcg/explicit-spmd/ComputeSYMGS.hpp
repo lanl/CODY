@@ -103,9 +103,9 @@ inline int
 ComputeSYMGSKernel(
     Array<floatType>       &AmatrixValues,
     Array<local_int_t>     &AmtxIndL,
-    Array<char>            &AnonzerosInRow,
-    Array<floatType>       &AmatrixDiagonal,
-    Array<floatType>       &r,
+    const Array<char>      &AnonzerosInRow,
+    const Array<floatType> &AmatrixDiagonal,
+    const Array<floatType> &r,
     Array<floatType>       &x,
     const ComputeSYMGSArgs &args
 ) {
@@ -135,11 +135,11 @@ ComputeSYMGSKernel(
     for (local_int_t i = 0; i < nrow; i++) {
         const floatType *const currentValues = matrixValues(i);
         const local_int_t *const currentColIndices = mtxIndL(i);
-        const int currentNumberOfNonzeros = nonzerosInRow[i];
+        const uint8_t currentNumberOfNonzeros = nonzerosInRow[i];
         const floatType currentDiagonal = matrixDiagonal[i];
-        double sum = rv[i]; // RHS value
+        floatType sum = rv[i]; // RHS value
         //
-        for (int j = 0; j < currentNumberOfNonzeros; j++) {
+        for (uint8_t j = 0; j < currentNumberOfNonzeros; j++) {
             const local_int_t curCol = currentColIndices[j];
             sum -= currentValues[j] * xv[curCol];
         }
@@ -152,11 +152,11 @@ ComputeSYMGSKernel(
     for (local_int_t i = nrow - 1; i >= 0; i--) {
         const floatType *const currentValues = matrixValues(i);
         const local_int_t *const currentColIndices = mtxIndL(i);
-        const int currentNumberOfNonzeros = nonzerosInRow[i];
+        const uint8_t currentNumberOfNonzeros = nonzerosInRow[i];
         const floatType currentDiagonal = matrixDiagonal[i];
-        double sum = rv[i]; // RHS value
+        floatType sum = rv[i]; // RHS value
         //
-        for (int j = 0; j < currentNumberOfNonzeros; j++) {
+        for (uint8_t j = 0; j < currentNumberOfNonzeros; j++) {
             const local_int_t curCol = currentColIndices[j];
             sum -= currentValues[j] * xv[curCol];
         }

@@ -82,10 +82,9 @@ ComputeMG(
     myassert(Asclrs);
     // Make sure x contain space for halo values.
     myassert(x.length() == size_t(Asclrs->localNumberOfColumns));
-
     // Initialize x to zero.
     ZeroVector(x, ctx, lrt);
-
+    //
     int ierr = 0;
     // Go to next coarse level if defined
     if (A.mgData != NULL) {

@@ -71,6 +71,8 @@
 //!< store time difference in 't' using time in 't0'
 #define TOCK(t) t += mytimer() - t0
 
+
+
 /*!
     Reference routine to compute an approximate solution to Ax = b
 
@@ -199,7 +201,7 @@ CG(
             //
             beta = rtzFuture.get<floatType>() / oldrtzFuture.get<floatType>();
             //
-            TICK(); // p = beta*p + z
+            TICK(); // p = beta * p + z
             ComputeWAXPBY(nrow, 1.0, z, beta, p, p, ctx, lrt);
             TOCK(t2);
         }
@@ -207,7 +209,7 @@ CG(
         ComputeSPMV(A, p, Ap, ctx, lrt);
         TOCK(t3);
         //
-        TICK(); // alpha = p'*Ap
+        TICK(); // alpha = p' * Ap
         ComputeDotProduct(nrow, p, Ap, pApFuture, t4, dcarsFT, ctx, lrt);
         TOCK(t1);
         //
@@ -232,13 +234,13 @@ CG(
         //
         niters = k;
   }
-    // Store times
-    times[1] += t1; // dot product time
-    times[2] += t2; // WAXPBY time
-    times[3] += t3; // SPMV time
-    times[4] += t4; // AllReduce time
-    times[5] += t5; // preconditioner apply time
-    times[6] += t6; // exchange halo time
+    // Store times.
+    times[1] += t1; // Dot product time.
+    times[2] += t2; // WAXPBY time.
+    times[3] += t3; // SPMV time.
+    times[4] += t4; // AllReduce time.
+    times[5] += t5; // Preconditioner apply time.
+    times[6] += t6; // Exchange halo time.
     times[0] += mytimer() - t_begin;  // Total time. All done...
     //
     return 0;

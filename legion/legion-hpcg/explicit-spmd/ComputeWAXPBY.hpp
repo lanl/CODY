@@ -84,17 +84,17 @@ inline int
 ComputeWAXPBYKernel(
     const local_int_t n,
     const floatType alpha,
-    Array<floatType> &x,
+    const Array<floatType> &x,
     const floatType beta,
-    Array<floatType> &y,
+    const Array<floatType> &y,
     Array<floatType> &w
 ) {
     // Test vector lengths
     assert(x.length() >= size_t(n));
     assert(y.length() >= size_t(n));
 
-    floatType *const xv = x.data();
-    floatType *const yv = y.data();
+    const floatType *const xv = x.data();
+    const floatType *const yv = y.data();
     floatType *const wv = w.data();
 
     if (alpha == 1.0) {
@@ -131,8 +131,8 @@ ComputeWAXPBY(
     //
     ComputeWAXPBYArgs args {
         .n = n,
-        .alpha = alpha,
-        .beta = beta,
+        .alpha  = alpha,
+        .beta   = beta,
         .xySame = xySame,
         .xwSame = xwSame,
         .ywSame = ywSame

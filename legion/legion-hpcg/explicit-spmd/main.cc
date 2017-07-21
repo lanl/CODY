@@ -455,7 +455,6 @@ startBenchmarkTask(
     Context ctx,
     HighLevelRuntime *lrt
 ) {
-    // TODO Unmap all regions if tasking???
     // Number of levels including first.
     const int numberOfMgLevels = NUM_MG_LEVELS;
     // Use this array for collecting timing information.
@@ -484,6 +483,10 @@ startBenchmarkTask(
     Array<floatType> b     (regions[rid++], ctx, lrt);
     Array<floatType> x     (regions[rid++], ctx, lrt);
     Array<floatType> xexact(regions[rid++], ctx, lrt);
+    //
+#ifdef LGNCG_TASKING
+    lrt->unmap_all_regions(ctx); // TODO Is this needed?
+#endif
     ////////////////////////////////////////////////////////////////////////////
     // Private data for this task.
     ////////////////////////////////////////////////////////////////////////////

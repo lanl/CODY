@@ -232,13 +232,15 @@ struct Array : public Item<TYPE> {
  */
 template<typename TYPE>
 class Array2D {
+
 protected:
     //
-    size_t mNRows = 0;
+    local_int_t mNRows = 0;
     //
-    size_t mNCols = 0;
+    local_int_t mNCols = 0;
     //
-    TYPE *mBasePtr = nullptr;
+    TYPE *const mBasePtr = nullptr;
+
 public:
     /**
      *
@@ -269,17 +271,8 @@ public:
     /**
      *
      */
-    const TYPE &
-    operator()(size_t row, size_t col) const
-    {
-        return mBasePtr[(row * mNCols) + col];
-    }
-
-    /**
-     *
-     */
     TYPE &
-    operator()(size_t row, size_t col)
+    operator()(local_int_t row, local_int_t col)
     {
         return mBasePtr[(row * mNCols) + col];
     }
@@ -288,7 +281,7 @@ public:
      *
      */
     TYPE *
-    operator()(size_t row)
+    operator()(local_int_t row)
     {
         return (mBasePtr + (row * mNCols));
     }
