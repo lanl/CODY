@@ -165,8 +165,7 @@ CG(
     TOCK(t1);
     //
     normr = ComputeFuture(
-                &normrFuture, FMO_SQRT,
-                NULL, ctx, lrt
+                &normrFuture, FMO_SQRT, NULL, ctx, lrt
             ).get<floatType>();
     //
     if (rank == 0) std::cout << "Initial Residual = "<< normr << std::endl;
@@ -202,10 +201,7 @@ CG(
             TOCK(t1);
             //
             beta = ComputeFuture(
-                       &rtzFuture,
-                       FMO_DIV,
-                       &oldrtzFuture,
-                       ctx, lrt
+                       &rtzFuture, FMO_DIV, &oldrtzFuture, ctx, lrt
                    ).get<floatType>();
             //
             TICK(); // p = beta * p + z
@@ -221,10 +217,7 @@ CG(
         TOCK(t1);
         //
         alpha = ComputeFuture(
-                    &rtzFuture,
-                    FMO_DIV,
-                    &pApFuture,
-                    ctx, lrt
+                    &rtzFuture, FMO_DIV, &pApFuture, ctx, lrt
                 ).get<floatType>();
         //
         TICK(); // x = x + alpha * p
@@ -238,8 +231,7 @@ CG(
         TOCK(t1);
         //
         normr = ComputeFuture(
-                    &normrFuture, FMO_SQRT,
-                    NULL, ctx, lrt
+                    &normrFuture, FMO_SQRT, NULL, ctx, lrt
                 ).get<floatType>();
         //
         if (rank == 0 && ( k % print_freq == 0 || k == maxIter)) {
@@ -249,6 +241,7 @@ CG(
         //
         niters = k;
   }
+    // TODO pass future to WAXPBY instead of future result.
     // Store times.
     times[1] += t1; // Dot product time.
     times[2] += t2; // WAXPBY time.
