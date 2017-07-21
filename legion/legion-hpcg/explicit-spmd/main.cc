@@ -55,7 +55,9 @@
 #include "GenerateProblem.hpp"
 #include "GenerateCoarseProblem.hpp"
 #include "SetupHalo.hpp"
+#if 0 // TODO
 #include "ComputeResidual.hpp"
+#endif
 #include "CG.hpp"
 #include "OptimizeProblem.hpp"
 #include "TestCG.hpp"

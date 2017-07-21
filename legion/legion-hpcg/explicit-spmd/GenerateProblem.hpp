@@ -239,7 +239,7 @@ GenerateProblem(
             } // end ix loop
         } // end iy loop
     } // end iz loop
-
+    //
     SparseMatrixScalars *Asclrs   = A.sclrs->data();
     Asclrs->totalNumberOfRows     = totalNumberOfRows;
     Asclrs->localNumberOfRows     = localNumberOfRows;
@@ -261,8 +261,9 @@ GenerateProblem(
     }
 #else
     //
+    Future lnnzf = Future::from_value(runtime, localNumberOfNonzeros);
     Asclrs->totalNumberOfNonzeros = allReduce(
-        localNumberOfNonzeros, *A.dcAllRedSumGI, ctx, runtime
+        lnnzf, *A.dcAllRedSumGI, ctx, runtime
     ).get<global_int_t>();
 #endif
     // If this assert fails, it most likely means that the global_int_t is

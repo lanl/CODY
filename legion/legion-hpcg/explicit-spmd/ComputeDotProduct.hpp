@@ -123,7 +123,7 @@ ComputeDotProduct(
         .n = n
     };
     //
-    floatType localResult = 0.0;
+    Future localFuture;
     //
     int rc = 0;
 #ifdef LGNCG_TASKING
@@ -136,14 +136,13 @@ ComputeDotProduct(
     x.intent(RO_E, tl, ctx, lrt);
     y.intent(RO_E, tl, ctx, lrt);
     //
-    auto f = lrt->execute_task(ctx, tl);
-    // TODO pass future to allReduce not result.
-    localResult = f.get_result<floatType>();
+    localFuture = lrt->execute_task(ctx, tl);
 #else
     rc = ComputeDotProductKernel(x, y, args, localResult);
+    localFuture = Future::from_value(lrt, localResult);
 #endif
     double t0 = mytimer(); // FIXME
-    resultFuture = allReduce(localResult, dcReduceSum, ctx, lrt);
+    resultFuture = allReduce(localFuture, dcReduceSum, ctx, lrt);
     timeAllreduce += mytimer() - t0;
     //
     return rc;

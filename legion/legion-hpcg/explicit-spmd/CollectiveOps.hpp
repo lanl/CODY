@@ -178,7 +178,7 @@ public:
 template <typename TYPE>
 Future
 allReduce(
-    TYPE localResult,
+    Future localFuture,
     Item< DynColl<TYPE> > &dc,
     Context ctx,
     Runtime *runtime
@@ -192,20 +192,12 @@ allReduce(
         tid = DYN_COLL_TASK_CONTRIB_GIT_TID;
     }
     else {
-        assert(false);
+        exit(1);
     }
     //
     TaskLauncher tl(tid, TaskArgument(NULL, 0));
     //
-    tl.add_region_requirement(
-        RegionRequirement(
-            dc.logicalRegion,
-            RO_E,
-            dc.logicalRegion
-        )
-    ).add_field(dc.fid);
-    //
-    dc.data()->localBuffer = localResult;
+    tl.add_future(localFuture);
     //
     Future f = runtime->execute_task(ctx, tl);
     //

@@ -160,10 +160,11 @@ floatType
 dynCollTaskContribFT(
     const Task *task,
     const std::vector<PhysicalRegion> &regions,
-    Context ctx, HighLevelRuntime *runtime
+    Context ctx,
+    Runtime *runtime
 ) {
-    Item< DynColl<floatType> > dc(regions[0], ctx, runtime);
-    return dc.data()->localBuffer;
+    Future f = task->futures[0];
+    return f.get<floatType>();
 }
 
 /**
@@ -174,10 +175,10 @@ dynCollTaskContribGIT(
     const Task *task,
     const std::vector<PhysicalRegion> &regions,
     Context ctx,
-    HighLevelRuntime *runtime
+    Runtime *runtime
 ) {
-    Item< DynColl<global_int_t> > dc(regions[0], ctx, runtime);
-    return dc.data()->localBuffer;
+    Future f = task->futures[0];
+    return f.get<global_int_t>();
 }
 
 /**
