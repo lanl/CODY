@@ -47,7 +47,7 @@ struct DynColl {
     //
     int tid;
     //
-    int64_t nArrivals = 0;
+    int nArrivals = 0;
     //
     TYPE localBuffer;
     //
@@ -58,7 +58,7 @@ struct DynColl {
      */
     DynColl(
         int tid,
-        int64_t nArrivals
+        int nArrivals
     ) : tid(tid)
       , nArrivals(nArrivals)
     {

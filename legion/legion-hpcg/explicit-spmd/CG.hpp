@@ -60,6 +60,7 @@
 #include "ComputeWAXPBY.hpp"
 #include "ComputeDotProduct.hpp"
 #include "ComputeMG.hpp"
+#include "FutureMath.hpp"
 
 #include <fstream>
 #include <cmath>
@@ -70,8 +71,6 @@
 #define TICK()  t0 = mytimer()
 //!< store time difference in 't' using time in 't0'
 #define TOCK(t) t += mytimer() - t0
-
-
 
 /*!
     Reference routine to compute an approximate solution to Ax = b
@@ -165,7 +164,10 @@ CG(
     ComputeDotProduct(nrow, r, r, normrFuture, t4, dcarsFT, ctx, lrt);
     TOCK(t1);
     //
-    normr = sqrt(normrFuture.get<floatType>());
+    normr = ComputeFuture(
+                &normrFuture, FMO_SQRT,
+                NULL, ctx, lrt
+            ).get<floatType>();
     //
     if (rank == 0) std::cout << "Initial Residual = "<< normr << std::endl;
     // Record initial residual for convergence testing.
@@ -199,7 +201,12 @@ CG(
             ComputeDotProduct(nrow, r, z, rtzFuture, t4, dcarsFT, ctx, lrt);
             TOCK(t1);
             //
-            beta = rtzFuture.get<floatType>() / oldrtzFuture.get<floatType>();
+            beta = ComputeFuture(
+                       &rtzFuture,
+                       FMO_DIV,
+                       &oldrtzFuture,
+                       ctx, lrt
+                   ).get<floatType>();
             //
             TICK(); // p = beta * p + z
             ComputeWAXPBY(nrow, 1.0, z, beta, p, p, ctx, lrt);
@@ -213,7 +220,12 @@ CG(
         ComputeDotProduct(nrow, p, Ap, pApFuture, t4, dcarsFT, ctx, lrt);
         TOCK(t1);
         //
-        alpha = rtzFuture.get<floatType>() / pApFuture.get<floatType>();
+        alpha = ComputeFuture(
+                    &rtzFuture,
+                    FMO_DIV,
+                    &pApFuture,
+                    ctx, lrt
+                ).get<floatType>();
         //
         TICK(); // x = x + alpha * p
         ComputeWAXPBY(nrow, 1.0, x, alpha, p, x, ctx, lrt);
@@ -225,7 +237,10 @@ CG(
         ComputeDotProduct(nrow, r, r, normrFuture, t4, dcarsFT, ctx, lrt);
         TOCK(t1);
         //
-        normr = sqrt(normrFuture.get<floatType>());
+        normr = ComputeFuture(
+                    &normrFuture, FMO_SQRT,
+                    NULL, ctx, lrt
+                ).get<floatType>();
         //
         if (rank == 0 && ( k % print_freq == 0 || k == maxIter)) {
             cout << "Iteration = "<< k << "   Scaled Residual = "
