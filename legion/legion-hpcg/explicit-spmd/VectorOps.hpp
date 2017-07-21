@@ -278,7 +278,7 @@ registerVectorOpTasks(void)
         COPY_VECTOR_TID /* task id */,
         Processor::LOC_PROC /* proc kind  */,
         true /* single */,
-        true /* index */,
+        false /* index */,
         AUTO_GENERATE_ID,
         TaskConfigOptions(true /* leaf task */),
         "CopyVectorTask"
@@ -288,7 +288,7 @@ registerVectorOpTasks(void)
         ZERO_VECTOR_TID /* task id */,
         Processor::LOC_PROC /* proc kind  */,
         true /* single */,
-        true /* index */,
+        false /* index */,
         AUTO_GENERATE_ID,
         TaskConfigOptions(true /* leaf task */),
         "ZeroVectorTask"

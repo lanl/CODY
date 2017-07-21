@@ -206,7 +206,7 @@ registerWAXPBYTasks(void)
         WAXPBY_TID /* task id */,
         Processor::LOC_PROC /* proc kind  */,
         true /* single */,
-        true /* index */,
+        false /* index */,
         AUTO_GENERATE_ID,
         TaskConfigOptions(true /* leaf task */),
         "ComputeWAXPBYTask"

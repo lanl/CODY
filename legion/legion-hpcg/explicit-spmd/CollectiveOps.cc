@@ -191,7 +191,7 @@ registerCollectiveOpsTasks(void)
         DYN_COLL_TASK_CONTRIB_GIT_TID /* task id */,
         Processor::LOC_PROC /* proc kind  */,
         true /* single */,
-        true /* index */,
+        false /* index */,
         AUTO_GENERATE_ID,
         TaskConfigOptions(true /* leaf task */),
         "dynCollTaskContribGIT"
@@ -200,7 +200,7 @@ registerCollectiveOpsTasks(void)
         DYN_COLL_TASK_CONTRIB_FT_TID /* task id */,
         Processor::LOC_PROC /* proc kind  */,
         true /* single */,
-        true /* index */,
+        false /* index */,
         AUTO_GENERATE_ID,
         TaskConfigOptions(true /* leaf task */),
         "dynCollTaskContribFT"
