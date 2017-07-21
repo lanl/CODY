@@ -138,6 +138,7 @@ ComputeDotProduct(
     //
     localFuture = lrt->execute_task(ctx, tl);
 #else
+    floatType localResult = 0.0;
     rc = ComputeDotProductKernel(x, y, args, localResult);
     localFuture = Future::from_value(lrt, localResult);
 #endif
