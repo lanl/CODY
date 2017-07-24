@@ -76,22 +76,22 @@ ExchangeHalo(
     const int nNeighbors = Asclrs->numberOfSendNeighbors;
     // Nothing to do.
     if (nNeighbors == 0) return;
-    // We have neighbors.
-    Synchronizers *syncs = A.synchronizers->data();
-    PhaseBarriers &myPBs = syncs->mine;
+    // Else we have neighbors and data to move around.
     const int *const neighbors = A.neighbors->data();
     // Non-region memory populated during SetupHalo().
     const local_int_t *const elementsToSend = A.elementsToSend;
     assert(elementsToSend);
-
     // Setup ghost regions if not already there.
     if (!x.hasGhosts()) {
         SetupGhostArrays(A, x, ctx, lrt);
     }
-
+    //
     const floatType *const xv = x.data();
     assert(xv);
-
+    //
+    Synchronizers *syncs = A.synchronizers->data();
+    PhaseBarriers &myPBs = syncs->mine;
+    //
     myPBs.done.wait();
     myPBs.done = lrt->advance_phase_barrier(ctx, myPBs.done);
     // Fill up pull buffers (the buffers that neighboring task will pull from).
@@ -116,23 +116,20 @@ ExchangeHalo(
         auto srcIt = A.nidToPullRegion.find(nid);
         assert(srcIt != A.nidToPullRegion.end());
         auto srclr = srcIt->second.get_logical_region();
+        //
+        RegionRequirement srcrr(
+            srclr, RO_E, srclr
+        );
+        // Only ever one field for all of our structures.
+        static const int srcFid = 0;
+        srcrr.add_field(srcFid);
         // Destination.
         LogicalArray<floatType> *dstArray = x.ghosts[n];
         assert(dstArray->hasParentLogicalRegion());
-        // Setup copy.
-        RegionRequirement srcrr(
-            srclr,
-            READ_ONLY,
-            EXCLUSIVE,
-            srclr
-        );
-        // Only ever one field for all of our structures.
-        srcrr.add_field(0);
-
+        //
         RegionRequirement dstrr(
             dstArray->logicalRegion,
-            WRITE_DISCARD,
-            EXCLUSIVE,
+            WO_E,
             dstArray->getParentLogicalRegion()
         );
         dstrr.add_field(dstArray->fid);

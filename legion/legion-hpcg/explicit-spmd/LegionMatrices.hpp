@@ -238,7 +238,7 @@ public:
         // their index into the neighbor list.
         vector< map<int, int> > tidToNIdx(mSize);
         for (int shard = 0; shard < mSize; ++shard) {
-            // Get total number of neighbors this shard has
+            // Get total number of neighbors this shard has.
             const SparseMatrixScalars &myScalars = sclrsd[shard];
             const int nNeighbors = myScalars.numberOfSendNeighbors;
             //
