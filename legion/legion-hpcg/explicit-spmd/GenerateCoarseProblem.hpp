@@ -55,6 +55,35 @@
 
 #include <cassert>
 
+/**
+ *
+ */
+inline void
+getXYZFineAndCoarse(
+    const Geometry &AfGeom,
+    global_int_t &nxf,
+    global_int_t &nyf,
+    global_int_t &nzf,
+    local_int_t  &nxc,
+    local_int_t  &nyc,
+    local_int_t  &nzc
+) {
+    nxf = AfGeom.nx;
+    nyf = AfGeom.ny;
+    nzf = AfGeom.nz;
+    // Need fine grid dimensions to be divisible by 2.
+    assert(nxf % 2 == 0);
+    assert(nyf % 2 == 0);
+    assert(nzf % 2 == 0);
+    //Coarse nx, ny, nz.
+    nxc = nxf / 2;
+    nyc = nyf / 2;
+    nzc = nzf / 2;
+}
+
+/**
+ *
+ */
 inline void
 GenerateCoarseProblemTopLevel(
     LogicalSparseMatrix &Af,
@@ -64,18 +93,11 @@ GenerateCoarseProblemTopLevel(
 ) {
     // Make local copies of geometry information.  Use global_int_t since the
     // RHS products in the calculations below may result in global range values.
-    global_int_t nxf = Af.geom->nx;
-    global_int_t nyf = Af.geom->ny;
-    global_int_t nzf = Af.geom->nz;
-    // Need fine grid dimensions to be divisible by 2
-    assert(nxf % 2 == 0);
-    assert(nyf % 2 == 0);
-    assert(nzf % 2 == 0);
+    global_int_t nxf, nyf, nzf;
     //Coarse nx, ny, nz
     local_int_t nxc, nyc, nzc;
-    nxc = nxf / 2;
-    nyc = nyf / 2;
-    nzc = nzf / 2;
+    //
+    getXYZFineAndCoarse(*Af.geom, nxf, nyf, nzf, nxc, nyc, nzc);
     // Construct the geometry and linear system
     Geometry *geomc = new Geometry();
     GenerateGeometry(
@@ -122,18 +144,11 @@ GenerateCoarseProblem(
     assert(AfGeom);
     // Make local copies of geometry information.  Use global_int_t since the
     // RHS products in the calculations below may result in global range values.
-    global_int_t nxf = AfGeom->nx;
-    global_int_t nyf = AfGeom->ny;
-    global_int_t nzf = AfGeom->nz;
-    // Need fine grid dimensions to be divisible by 2
-    assert(nxf % 2 == 0);
-    assert(nyf % 2 == 0);
-    assert(nzf % 2 == 0);
+    global_int_t nxf, nyf, nzf;
     //Coarse nx, ny, nz
     local_int_t nxc, nyc, nzc;
-    nxc = nxf / 2;
-    nyc = nyf / 2;
-    nzc = nzf / 2;
+    //
+    getXYZFineAndCoarse(*AfGeom, nxf, nyf, nzf, nxc, nyc, nzc);
     // Construct the geometry and linear system
     GenerateGeometry(
         AfGeom->size,
@@ -163,18 +178,11 @@ f2cOperatorPopulate(
     assert(AfGeom);
     // Make local copies of geometry information.  Use global_int_t since the
     // RHS products in the calculations below may result in global range values.
-    global_int_t nxf = AfGeom->nx;
-    global_int_t nyf = AfGeom->ny;
-    global_int_t nzf = AfGeom->nz;
-    // Need fine grid dimensions to be divisible by 2
-    assert(nxf % 2 == 0);
-    assert(nyf % 2 == 0);
-    assert(nzf % 2 == 0);
+    global_int_t nxf, nyf, nzf;
     //Coarse nx, ny, nz
     local_int_t nxc, nyc, nzc;
-    nxc = nxf / 2;
-    nyc = nyf / 2;
-    nzc = nzf / 2;
+    //
+    getXYZFineAndCoarse(*AfGeom, nxf, nyf, nzf, nxc, nyc, nzc);
     //
     local_int_t *f2cOperator = Af.mgData->f2cOperator->data();
     assert(f2cOperator);

@@ -42,11 +42,10 @@ regionToRegionCopyTask(
     const Task *task,
     const std::vector<PhysicalRegion> &regions,
     Context ctx,
-    HighLevelRuntime *lrt
+    Runtime *lrt
 ) {
-    int rid = 0;
-    Array<floatType> src(regions[rid++], ctx, lrt);
-    Array<floatType> dst(regions[rid++], ctx, lrt);
+    Array<floatType> src(regions[0], ctx, lrt);
+    Array<floatType> dst(regions[1], ctx, lrt);
 
     assert(src.length() == dst.length());
 
