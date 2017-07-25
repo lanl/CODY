@@ -34,7 +34,7 @@ GEN_GPU_SRC	?= 			      # .cu files
 INC_FLAGS	 ?=
 CC_FLAGS	 ?= \
 -DNDEBUG -Wall -std=c++11 \
--O3 -ffast-math -ftree-vectorize -ftree-vectorizer-verbose=0 \
+-O2 -ffast-math -ftree-vectorize -ftree-vectorizer-verbose=0 \
 -DLGNCG_ASSUME_DENSE_OFFSETS -DLGNCG_ASSUME_OFFSETS_MATCH -DLGNCG_TASKING
 NVCC_FLAGS	 ?=
 GASNET_FLAGS ?=
