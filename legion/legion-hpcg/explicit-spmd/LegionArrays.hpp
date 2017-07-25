@@ -118,7 +118,8 @@ public:
             this->mIndexSpace,
             colorDomain,
             disjointColoring,
-            true
+            true,
+            0 /* partition color */
         );
         // Logical partitions.
         this->logicalPartition = lrt->get_logical_partition(
@@ -168,7 +169,8 @@ public:
             this->mIndexSpace,
             colorDomain,
             disjointColoring,
-            true /* disjoint */
+            true /* disjoint */,
+            0 /* partition color */
         );
         // Logical partitions.
         this->logicalPartition = lrt->get_logical_partition(

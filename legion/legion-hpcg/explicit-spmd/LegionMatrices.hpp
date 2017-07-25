@@ -328,7 +328,7 @@ public:
                         READ_WRITE,
                         SIMULTANEOUS,
                         lr
-                    ).add_flags(NO_ACCESS_FLAG)
+                    )
                 ).add_field(ap->fid);
             }
             // Next nNeighbors regions are the ones I need for my computation.
@@ -343,7 +343,7 @@ public:
                         READ_ONLY,
                         SIMULTANEOUS,
                         lr
-                    )
+                    ).add_flags(NO_ACCESS_FLAG)
                 ).add_field(ap->fid);
             }
             //
