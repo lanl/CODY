@@ -33,7 +33,7 @@ GEN_GPU_SRC	?= 			      # .cu files
 # makefile
 INC_FLAGS	 ?=
 CC_FLAGS	 ?= \
--DNDEBUG -Wall -std=c++11 \
+-Wall -std=c++11 \
 -O2 -ffast-math -ftree-vectorize -ftree-vectorizer-verbose=0 \
 -DLGNCG_ASSUME_DENSE_OFFSETS -DLGNCG_ASSUME_OFFSETS_MATCH -DLGNCG_TASKING
 NVCC_FLAGS	 ?=
