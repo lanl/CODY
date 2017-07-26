@@ -113,7 +113,9 @@ int main(int argc, char * argv[]) {
   // Problem setup Phase //
   /////////////////////////
 
+#ifdef HPCG_DEBUG
   double t1 = mytimer();
+#endif
 
   // Construct the geometry and linear system
   Geometry * geom = new Geometry;
@@ -161,6 +163,7 @@ int main(int argc, char * argv[]) {
   InitializeSparseCGData(A, data);
 
 
+
   ////////////////////////////////////
   // Reference SpMV+MG Timing Phase //
   ////////////////////////////////////
@@ -189,13 +192,17 @@ int main(int argc, char * argv[]) {
     if (ierr) HPCG_fout << "Error in call to MG: " << ierr << ".\n" << endl;
   }
   times[8] = (mytimer() - t_begin)/((double) numberOfCalls);  // Total time divided by number of calls.
+#ifdef HPCG_DEBUG
   if (rank==0) HPCG_fout << "Total SpMV+MG timing phase execution time in main (sec) = " << mytimer() - t1 << endl;
+#endif
 
   ///////////////////////////////
   // Reference CG Timing Phase //
   ///////////////////////////////
 
+#ifdef HPCG_DEBUG
   t1 = mytimer();
+#endif
   int global_failure = 0; // assume all is well: no failures
 
   int niters = 0;
@@ -218,7 +225,14 @@ int main(int argc, char * argv[]) {
   if (rank == 0 && err_count) HPCG_fout << err_count << " error(s) in call(s) to reference CG." << endl;
   double refTolerance = normr / normr0;
 
+  // Call user-tunable set up function.
+  double t7 = mytimer();
+  OptimizeProblem(A, data, b, x, xexact);
+  t7 = mytimer() - t7;
+  times[7] = t7;
+#ifdef HPCG_DEBUG
   if (rank==0) HPCG_fout << "Total problem setup time in main (sec) = " << mytimer() - t1 << endl;
+#endif
 
 #ifdef HPCG_DETAILED_DEBUG
   if (geom->size == 1) WriteProblem(*geom, A, b, x, xexact);
@@ -229,7 +243,9 @@ int main(int argc, char * argv[]) {
   // Validation Testing Phase //
   //////////////////////////////
 
+#ifdef HPCG_DEBUG
   t1 = mytimer();
+#endif
   TestCGData testcg_data;
   testcg_data.count_pass = testcg_data.count_fail = 0;
   TestCG(A, data, b, x, testcg_data);
@@ -237,9 +253,13 @@ int main(int argc, char * argv[]) {
   TestSymmetryData testsymmetry_data;
   TestSymmetry(A, b, xexact, testsymmetry_data);
 
+#ifdef HPCG_DEBUG
   if (rank==0) HPCG_fout << "Total validation (TestCG and TestSymmetry) execution time in main (sec) = " << mytimer() - t1 << endl;
+#endif
 
+#ifdef HPCG_DEBUG
   t1 = mytimer();
+#endif
 
   //////////////////////////////
   // Optimized CG Setup Phase //
@@ -291,24 +311,26 @@ int main(int argc, char * argv[]) {
   ///////////////////////////////
 
   // Here we finally run the benchmark phase
-  // The variable total_runTime is the target benchmark execution time in seconds
+  // The variable total_runtime is the target benchmark execution time in seconds
 
-  double total_runTime = params.runningTime;
-  int numberOfCgSets = int(total_runTime / opt_worst_time) + 1; // Run at least once, account for rounding
+  double total_runtime = params.runningTime;
+  int numberOfCgSets = int(total_runtime / opt_worst_time) + 1; // Run at least once, account for rounding
 
+#ifdef HPCG_DEBUG
   if (rank==0) {
-    HPCG_fout << "Projected running time: " << total_runTime << " seconds" << endl;
+    HPCG_fout << "Projected running time: " << total_runtime << " seconds" << endl;
     HPCG_fout << "Number of CG sets: " << numberOfCgSets << endl;
   }
+#endif
 
   /* This is the timed run for a specified amount of time. */
+
   optMaxIters = optNiters;
   double optTolerance = 0.0;  // Force optMaxIters iterations
   TestNormsData testnorms_data;
   testnorms_data.samples = numberOfCgSets;
   testnorms_data.values = new double[numberOfCgSets];
 
-  double optTimeStart = mytimer();
   for (int i=0; i< numberOfCgSets; ++i) {
     ZeroVector(x); // Zero out x
     ierr = CG( A, data, b, x, optMaxIters, optTolerance, niters, normr, normr0, &times[0], true);
@@ -316,18 +338,25 @@ int main(int argc, char * argv[]) {
     if (rank==0) HPCG_fout << "Call [" << i << "] Scaled Residual [" << normr/normr0 << "]" << endl;
     testnorms_data.values[i] = normr/normr0; // Record scaled residual from this run
   }
-  double optTimeEnd = mytimer();
-  double runTime = optTimeEnd - optTimeStart;
-  HPCG_fout << numberOfCgSets << " CG set complete in " << runTime << "s" << endl;
-  double aveRuntime = runTime / double(numberOfCgSets);
-  HPCG_fout << "Average Run Time " << aveRuntime << "s" << endl;
 
   // Compute difference between known exact solution and computed solution
   // All processors are needed here.
+#ifdef HPCG_DEBUG
   double residual = 0;
   ierr = ComputeResidual(A.localNumberOfRows, x, xexact, residual);
   if (ierr) HPCG_fout << "Error in call to compute_residual: " << ierr << ".\n" << endl;
   if (rank==0) HPCG_fout << "Difference between computed and exact  = " << residual << ".\n" << endl;
+#endif
+
+  // Test Norm Results
+  ierr = TestNorms(testnorms_data);
+
+  ////////////////////
+  // Report Results //
+  ////////////////////
+
+  // Report results to YAML file
+  ReportResults(A, numberOfMgLevels, numberOfCgSets, refMaxIters, optMaxIters, &times[0], testcg_data, testsymmetry_data, testnorms_data, global_failure, quickPath);
 
   // Clean up
   DeleteMatrix(A); // This delete will recursively delete all coarse grid data
@@ -338,6 +367,8 @@ int main(int argc, char * argv[]) {
   DeleteVector(x_overlap);
   DeleteVector(b_computed);
   delete [] testnorms_data.values;
+
+
 
   HPCG_Finalize();
 

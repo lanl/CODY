@@ -78,16 +78,20 @@ int CG_ref(const SparseMatrix & A, CGData & data, const Vector & b, Vector & x,
 
   if (!doPreconditioning && A.geom->rank==0) HPCG_fout << "WARNING: PERFORMING UNPRECONDITIONED ITERATIONS" << std::endl;
 
-  int print_freq = 10;
+#ifdef HPCG_DEBUG
+  int print_freq = 1;
   if (print_freq>50) print_freq=50;
   if (print_freq<1)  print_freq=1;
+#endif
   // p is of length ncols, copy x to p for sparse MV operation
   CopyVector(x, p);
   TICK(); ComputeSPMV_ref(A, p, Ap);  TOCK(t3); // Ap = A*p
   TICK(); ComputeWAXPBY_ref(nrow, 1.0, b, -1.0, Ap, r); TOCK(t2); // r = b - Ax (x stored in p)
   TICK(); ComputeDotProduct_ref(nrow, r, r, normr, t4);  TOCK(t1);
   normr = sqrt(normr);
+#ifdef HPCG_DEBUG
   if (A.geom->rank==0) HPCG_fout << "Initial Residual = "<< normr << std::endl;
+#endif
 
   // Record initial residual for convergence testing
   normr0 = normr;
@@ -119,8 +123,10 @@ int CG_ref(const SparseMatrix & A, CGData & data, const Vector & b, Vector & x,
             ComputeWAXPBY_ref(nrow, 1.0, r, -alpha, Ap, r);  TOCK(t2);// r = r - alpha*Ap
     TICK(); ComputeDotProduct_ref(nrow, r, r, normr, t4); TOCK(t1);
     normr = sqrt(normr);
+#ifdef HPCG_DEBUG
     if (A.geom->rank==0 && (k%print_freq == 0 || k == max_iter))
       HPCG_fout << "Iteration = "<< k << "   Scaled Residual = "<< normr/normr0 << std::endl;
+#endif
     niters = k;
   }
 
