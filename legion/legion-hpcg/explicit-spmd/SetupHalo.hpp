@@ -415,5 +415,5 @@ SetupHaloTopLevel(
     //
     const double initEnd = mytimer();
     const double initTime = initEnd - startTime;
-    cout << "--> Time=" << initTime << "s" << endl;
+    cout << "--> Time=" << initTime << " s" << endl;
 }

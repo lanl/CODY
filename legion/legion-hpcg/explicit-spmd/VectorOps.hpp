@@ -234,16 +234,51 @@ ColorVector(
     @param[in] v
  */
 inline void
-FillRandomVector(
-    Array<floatType> &v,
-    Context,
-    Runtime *
+FillRandomVectorKernel(
+    Array<floatType> &v
 ) {
     const local_int_t localLength = v.length();
     floatType *const vv = v.data();
     for (int i = 0; i < localLength; ++i) {
         vv[i] = rand() / (floatType)(RAND_MAX) + 1.0;
     }
+}
+
+/**
+ *
+ */
+inline void
+FillRandomVector(
+    Array<floatType> &v,
+    Context ctx,
+    Runtime *lrt
+) {
+#ifdef LGNCG_TASKING
+    TaskLauncher tl(
+        FILLRAND_VECTOR_TID,
+        TaskArgument(NULL, 0)
+    );
+    v.intent(WO_E, tl, ctx, lrt);
+
+    lrt->execute_task(ctx, tl);
+#else
+    FillRandomVectorKernel(v);
+#endif
+}
+
+/**
+ *
+ */
+void
+FillRandomVectorTask(
+    const Task *task,
+    const std::vector<PhysicalRegion> &regions,
+    Context ctx,
+    Runtime *lrt
+) {
+    Array<floatType> v(regions[0], ctx, lrt);
+
+    FillRandomVectorKernel(v);
 }
 
 /*!
@@ -283,7 +318,7 @@ registerVectorOpTasks(void)
         TaskConfigOptions(true /* leaf task */),
         "CopyVectorTask"
     );
-
+    //
     HighLevelRuntime::register_legion_task<ZeroVectorTask>(
         ZERO_VECTOR_TID /* task id */,
         Processor::LOC_PROC /* proc kind  */,
@@ -292,6 +327,16 @@ registerVectorOpTasks(void)
         AUTO_GENERATE_ID,
         TaskConfigOptions(true /* leaf task */),
         "ZeroVectorTask"
+    );
+    //
+    HighLevelRuntime::register_legion_task<FillRandomVectorTask>(
+        FILLRAND_VECTOR_TID /* task id */,
+        Processor::LOC_PROC /* proc kind  */,
+        true /* single */,
+        false /* index */,
+        AUTO_GENERATE_ID,
+        TaskConfigOptions(true /* leaf task */),
+        "FillRandomVectorTask"
     );
 #endif
 }

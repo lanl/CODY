@@ -136,7 +136,7 @@ CheckProblem(
     const global_int_t *const AlocalToGlobalMap = A.localToGlobalMap->data();
     myassert(AlocalToGlobalMap);
     //
-    local_int_t localNumberOfNonzeros = 0;
+    global_int_t localNumberOfNonzeros = 0;
     //
     for (local_int_t iz = 0; iz < nz; iz++) {
         global_int_t giz = ipz * nz + iz;
@@ -183,12 +183,10 @@ CheckProblem(
         } // end iy loop
     } // end iz loop
     //
+    Future lnnzf = Future::from_value(runtime, localNumberOfNonzeros);
     global_int_t totalNumberOfNonzeros = allReduce(
-        localNumberOfNonzeros,
-        *A.dcAllRedSumGI,
-        ctx,
-        runtime
-    );
+        lnnzf, *A.dcAllRedSumGI, ctx, runtime
+    ).get<global_int_t>();
     //
     myassert(Asclrs->totalNumberOfRows == totalNumberOfRows);
     myassert(Asclrs->totalNumberOfNonzeros == totalNumberOfNonzeros);

@@ -55,20 +55,9 @@
 #include "GenerateProblem.hpp"
 #include "GenerateCoarseProblem.hpp"
 #include "SetupHalo.hpp"
-#if 0 // TODO
-#include "ComputeResidual.hpp"
-#endif
 #include "CG.hpp"
-#include "OptimizeProblem.hpp"
-#include "TestCG.hpp"
-#if 0 // TODO
-#include "TestSymmetry.hpp"
-#endif
 #include "TestNorms.hpp"
-#if 0
 #include "CheckProblem.hpp"
-#include "ReportResults.hpp"
-#endif
 
 #include <iostream>
 #include <cstdlib>
@@ -211,7 +200,7 @@ createLogicalStructures(
     //
     const double initEnd = mytimer();
     const double initTime = initEnd - initStart;
-    cout << "--> Time=" << initTime << "s" << endl;
+    cout << "--> Time=" << initTime << " s" << endl;
 }
 
 /**
@@ -241,7 +230,7 @@ destroyLogicalStructures(
     //
     const double end = mytimer();
     const double totalTime = end - start;
-    cout << "--> Time=" << totalTime << "s" << endl;
+    cout << "--> Time=" << totalTime << " s" << endl;
 }
 
 /**
@@ -343,7 +332,7 @@ mainTask(
     }
     // Capture phase 1 initialization time to pass to benchmark tasks.
     params.phase1InitTime = mytimer() - initStart;
-    cout << "--> Time=" << params.phase1InitTime << "s" << endl;
+    cout << "--> Time=" << params.phase1InitTime << " s" << endl;
 
     ////////////////////////////////////////////////////////////////////////////
     // Launch the tasks to begin the benchmark.
@@ -353,7 +342,7 @@ mainTask(
         cout << "*****************************************************" << endl;
         cout << "*** Starting Benchmark..." << endl;
         cout << "*****************************************************" << endl;
-        cout << endl;
+        //
         const double start = mytimer();
         //
         MustEpochLauncher mel;
@@ -386,7 +375,7 @@ mainTask(
         cout << "*** Benchmark Complete..." << endl;
         cout << "*****************************************************" << endl;
         //
-        cout << "--> Time=" << totalTime << "s" << endl;
+        cout << "--> Time=" << totalTime << " s" << endl;
     }
     //
     cout << "*** Cleaning Up..." << endl;
@@ -543,15 +532,12 @@ startBenchmarkTask(
     if (quickPath) numberOfCalls = 1;
     //
     const auto *const Asclrs = A.sclrs->data();
-#if 0
+
     ////////////////////////////////////////////////////////////////////////////
     // Problem Sanity Phase
     ////////////////////////////////////////////////////////////////////////////
+
     {
-        double t_sanity = mytimer();
-        if (rank == 0) {
-            cout << "Starting Problem Sanity Phase " << endl;
-        }
         SparseMatrix *curLevelMatrix = &A;
         Array<floatType> *curb = &b;
         Array<floatType> *curx = &x;
@@ -566,71 +552,12 @@ startBenchmarkTask(
             curx = NULL;
             curxexact = NULL;
         }
-        if (rank == 0) {
-            cout << "Total sanity timing phase execution time in main (sec) = "
-                 << mytimer() - t_sanity << endl;
-        }
     }
 
-    ////////////////////////////////////////////////////////////////////////////
-    // Reference SpMV+MG Timing Phase                                         //
-    ////////////////////////////////////////////////////////////////////////////
-    {
-        if (rank == 0) {
-            cout << endl << "Starting Reference SpMV+MG Timing Phase " << endl;
-        }
-        //
-        local_int_t nrow = Asclrs->localNumberOfRows;
-        local_int_t ncol = Asclrs->localNumberOfColumns;
-        //
-        LogicalArray<floatType> x_overlapl, b_computedl;
-        x_overlapl.allocate("x_overlap" , ncol, ctx, lrt);
-        b_computedl.allocate("b_computed", nrow, ctx, lrt);
-        //
-        Partition(A, x_overlapl, ctx, lrt);
-        //
-        Array<floatType> x_overlap(
-            x_overlapl.mapRegion(RW_E, ctx, lrt),
-            ctx, lrt
-        );
-        Array<floatType> b_computed(
-            b_computedl.mapRegion(RW_E, ctx, lrt),
-            ctx, lrt
-        );
-
-        FillRandomVector(x_overlap, ctx, lrt);
-
-        double t_begin = mytimer();
-        for (int i = 0; i < numberOfCalls; ++i) {
-            // b_computed = A*x_overlap
-            ierr = ComputeSPMV(A, x_overlap, b_computed, ctx, lrt);
-            if (ierr) cerr << "Error in call to SpMV: "
-                           << ierr << ".\n" << endl;
-            // b_computed = Minv*y_overlap
-            ierr = ComputeMG(A, b_computed, x_overlap, ctx, lrt);
-            if (ierr) cerr << "Error in call to MG: "
-                           << ierr << ".\n" << endl;
-        }
-        // Total time divided by number of calls.
-        times[8] = (mytimer() - t_begin)/((double)numberOfCalls);
-        if (rank == 0) {
-            cout << "Total SpMV+MG timing phase execution time in main (sec) = "
-                 << mytimer() - t_begin << endl;
-        }
-        // No longer needed, so deallocate and unmap.
-        x_overlapl.deallocate(ctx, lrt);
-        x_overlapl.unmapRegion(ctx, lrt);
-        //
-        b_computedl.deallocate(ctx, lrt);
-        b_computedl.unmapRegion(ctx, lrt);
-    }
-#endif
     ////////////////////////////////////////////////////////////////////////////
     // Reference CG Timing Phase                                              //
     ////////////////////////////////////////////////////////////////////////////
-    if (rank == 0) {
-        cout << endl << "Starting Reference CG Timing Phase" << endl;
-    }
+
     double t1 = mytimer();
     // Assume all is well: no failures.
     int global_failure = 0;
@@ -662,11 +589,6 @@ startBenchmarkTask(
     }
     //
     double refTolerance = normr / normr0;
-    // Call user-tunable set up function (Nothing to do here).
-    double t7 = mytimer();
-    OptimizeProblem(A, data, b, x, xexact);
-    t7 = mytimer() - t7;
-    times[7] = t7;
     //
     if (rank == 0) {
         cout << "Total problem setup time in main (sec) = "
@@ -674,51 +596,26 @@ startBenchmarkTask(
     }
 
     ////////////////////////////////////////////////////////////////////////////
-    // Validation Testing Phase                                               //
-    ////////////////////////////////////////////////////////////////////////////
-#if 0
-    if (rank == 0) {
-        cout << endl << "Starting Validation Testing Phase" << endl;
-    }
-    //
-    t1 = mytimer();
-    TestCGData testCGData;
-    testCGData.count_pass = testCGData.count_fail = 0;
-    TestCG(A, data, b, x, testCGData, ctx, lrt);
-    //
-    TestSymmetryData testSymmetryData;
-    TestSymmetry(A, b, xexact, testSymmetryData, ctx, lrt);
-    //
-    if (rank == 0) {
-        cout << "Total validation (TestCG and TestSymmetry) execution "
-                "time in main (sec) = " << mytimer() - t1 << endl;
-    }
-
-    ////////////////////////////////////////////////////////////////////////////
     // Optimized CG Setup Phase                                               //
     ////////////////////////////////////////////////////////////////////////////
-    if (rank == 0) {
-        cout << endl << "Starting Optimized CG Setup Phase" << endl;
-    }
-    //
+
     niters                 = 0;
     normr                  = 0.0;
     normr0                 = 0.0;
     err_count              = 0;
     int tolerance_failures = 0;
-
+    //
     int optMaxIters = 10 * refMaxIters;
     int optNiters = refMaxIters;
-    double opt_worst_time = 0.0;
-
-    std::vector<double> opt_times(9,0.0);
-
+    floatType opt_worst_time = 0.0;
+    //
+    std::vector<double> opt_times(9, 0.0);
     // Compute the residual reduction and residual count for the user ordering
     // and optimized kernels.
     for (int i = 0; i < numberOfCalls; ++i) {
         // Start x at all zeros.
         ZeroVector(x, ctx, lrt);
-        double last_cummulative_time = opt_times[0];
+        floatType last_cummulative_time = opt_times[0];
         ierr = CG(A, data, b, x, optMaxIters, refTolerance, niters,
                   normr, normr0, &opt_times[0], true, ctx, lrt
                );
@@ -729,9 +626,15 @@ startBenchmarkTask(
         // Pick the largest number of iterations to guarantee convergence.
         if (niters > optNiters) optNiters = niters;
         //
-        double current_time = opt_times[0] - last_cummulative_time;
+        floatType current_time = opt_times[0] - last_cummulative_time;
         if (current_time > opt_worst_time) opt_worst_time = current_time;
     }
+    //
+    Future localOptWorstF = Future::from_value(lrt, opt_worst_time);
+    opt_worst_time = allReduce(
+        localOptWorstF, *A.dcAllRedMaxFT, ctx, lrt
+    ).get<floatType>();
+    //
     if (rank == 0 && err_count) {
         cerr << err_count << " error(s) in call(s) to optimized CG." << endl;
     }
@@ -746,9 +649,6 @@ startBenchmarkTask(
     ////////////////////////////////////////////////////////////////////////////
     // Optimized CG Timing Phase                                              //
     ////////////////////////////////////////////////////////////////////////////
-    if (rank == 0) {
-        cout << endl << "Starting Optimized CG Timing Phase" << endl;
-    }
 
     // Here we finally run the benchmark phase The variable total_runtime is the
     // target benchmark execution time in seconds.
@@ -770,6 +670,7 @@ startBenchmarkTask(
     testnormsData.samples = numberOfCgSets;
     testnormsData.values = new double[numberOfCgSets];
 
+    const double optTimeStart = mytimer();
     for (int i = 0; i < numberOfCgSets; ++i) {
         // Zero out x.
         ZeroVector(x, ctx, lrt);
@@ -786,6 +687,16 @@ startBenchmarkTask(
         // Record scaled residual from this run.
         testnormsData.values[i] = normr / normr0;
     }
+    //
+    if (rank == 0) {
+        const double optTimeEnd = mytimer();
+        const double runTime = optTimeEnd - optTimeStart;
+        //
+        const double aveRuntime = runTime / double(numberOfCgSets);
+        cout << endl << "--> Average Run Time for CG="
+             << aveRuntime << " s" << endl;
+    }
+#if 0
     // Compute difference between known exact solution and computed solution All
     // processors are needed here.
     floatType residual = 0;

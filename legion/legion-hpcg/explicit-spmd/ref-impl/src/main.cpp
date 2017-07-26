@@ -144,6 +144,9 @@ int main(int argc, char * argv[]) {
   setup_time = mytimer() - setup_time; // Capture total time of setup
   times[9] = setup_time; // Save it for reporting
 
+  ////////////////////////////////////////////////////////////////////////////
+  // Problem Sanity Phase
+  ////////////////////////////////////////////////////////////////////////////
   curLevelMatrix = &A;
   Vector * curb = &b;
   Vector * curx = &x;
@@ -160,40 +163,11 @@ int main(int argc, char * argv[]) {
   CGData data;
   InitializeSparseCGData(A, data);
 
-
-  ////////////////////////////////////
-  // Reference SpMV+MG Timing Phase //
-  ////////////////////////////////////
-
-  // Call Reference SpMV and MG. Compute Optimization time as ratio of times in these routines
-
-  local_int_t nrow = A.localNumberOfRows;
-  local_int_t ncol = A.localNumberOfColumns;
-
-  Vector x_overlap, b_computed;
-  InitializeVector(x_overlap, ncol); // Overlapped copy of x vector
-  InitializeVector(b_computed, nrow); // Computed RHS vector
-
-
-  // Record execution time of reference SpMV and MG kernels for reporting times
-  // First load vector with random values
-  FillRandomVector(x_overlap);
-
+  ////////////////////////////////////////////////////////////////////////////
+  // Reference CG Timing Phase                                              //
+  ////////////////////////////////////////////////////////////////////////////
   int numberOfCalls = 10;
   if (quickPath) numberOfCalls = 1; //QuickPath means we do on one call of each block of repetitive code
-  double t_begin = mytimer();
-  for (int i=0; i< numberOfCalls; ++i) {
-    ierr = ComputeSPMV_ref(A, x_overlap, b_computed); // b_computed = A*x_overlap
-    if (ierr) HPCG_fout << "Error in call to SpMV: " << ierr << ".\n" << endl;
-    ierr = ComputeMG_ref(A, b_computed, x_overlap); // b_computed = Minv*y_overlap
-    if (ierr) HPCG_fout << "Error in call to MG: " << ierr << ".\n" << endl;
-  }
-  times[8] = (mytimer() - t_begin)/((double) numberOfCalls);  // Total time divided by number of calls.
-  if (rank==0) HPCG_fout << "Total SpMV+MG timing phase execution time in main (sec) = " << mytimer() - t1 << endl;
-
-  ///////////////////////////////
-  // Reference CG Timing Phase //
-  ///////////////////////////////
 
   t1 = mytimer();
   int global_failure = 0; // assume all is well: no failures
@@ -224,27 +198,9 @@ int main(int argc, char * argv[]) {
   if (geom->size == 1) WriteProblem(*geom, A, b, x, xexact);
 #endif
 
-
-  //////////////////////////////
-  // Validation Testing Phase //
-  //////////////////////////////
-
-  t1 = mytimer();
-  TestCGData testcg_data;
-  testcg_data.count_pass = testcg_data.count_fail = 0;
-  TestCG(A, data, b, x, testcg_data);
-
-  TestSymmetryData testsymmetry_data;
-  TestSymmetry(A, b, xexact, testsymmetry_data);
-
-  if (rank==0) HPCG_fout << "Total validation (TestCG and TestSymmetry) execution time in main (sec) = " << mytimer() - t1 << endl;
-
-  t1 = mytimer();
-
-  //////////////////////////////
-  // Optimized CG Setup Phase //
-  //////////////////////////////
-
+  ////////////////////////////////////////////////////////////////////////////
+  // Optimized CG Setup Phase                                               //
+  ////////////////////////////////////////////////////////////////////////////
   niters = 0;
   normr = 0.0;
   normr0 = 0.0;
