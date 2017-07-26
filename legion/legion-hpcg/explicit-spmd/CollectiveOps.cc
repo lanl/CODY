@@ -160,8 +160,8 @@ floatType
 dynCollTaskContribFT(
     const Task *task,
     const std::vector<PhysicalRegion> &regions,
-    Context ctx,
-    Runtime *runtime
+    Context,
+    Runtime *
 ) {
     Future f = task->futures[0];
     return f.get<floatType>();
@@ -174,8 +174,8 @@ global_int_t
 dynCollTaskContribGIT(
     const Task *task,
     const std::vector<PhysicalRegion> &regions,
-    Context ctx,
-    Runtime *runtime
+    Context,
+    Runtime *
 ) {
     Future f = task->futures[0];
     return f.get<global_int_t>();

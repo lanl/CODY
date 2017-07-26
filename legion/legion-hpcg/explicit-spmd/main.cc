@@ -446,6 +446,8 @@ startBenchmarkTask(
     Context ctx,
     HighLevelRuntime *lrt
 ) {
+    //
+    double setup_time = mytimer();
     // Number of levels including first.
     const int numberOfMgLevels = NUM_MG_LEVELS;
     // Use this array for collecting timing information.
@@ -455,8 +457,6 @@ startBenchmarkTask(
     // Check if QuickPath option is enabled.  If the running time is set to
     // zero, we minimize all paths through the program.
     const bool quickPath = (params.runningTime == 0);
-    //
-    double setup_time = mytimer();
     //
     size_t rid = 0;
     const ItemFlags aif = IFLAG_W_GHOSTS;
@@ -515,6 +515,13 @@ startBenchmarkTask(
     setup_time += params.phase1InitTime;
     // Save it for reporting.
     times[9] = setup_time;
+    //
+    const int rank = A.geom->data()->rank;
+    //
+    if (rank == 0) {
+        cout << "Total problem setup time in main (sec) = "
+             << setup_time << endl;
+    }
 
     ////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////
@@ -522,7 +529,6 @@ startBenchmarkTask(
     ////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////
 
-    const int rank = A.geom->data()->rank;
     // Sanity
     myassert(getTaskID(task) == rank);
     // Used to check return codes on function calls.
@@ -558,7 +564,6 @@ startBenchmarkTask(
     // Reference CG Timing Phase                                              //
     ////////////////////////////////////////////////////////////////////////////
 
-    double t1 = mytimer();
     // Assume all is well: no failures.
     int global_failure = 0;
 
@@ -589,11 +594,6 @@ startBenchmarkTask(
     }
     //
     double refTolerance = normr / normr0;
-    //
-    if (rank == 0) {
-        cout << "Total problem setup time in main (sec) = "
-             << mytimer() - t1 << endl;
-    }
 
     ////////////////////////////////////////////////////////////////////////////
     // Optimized CG Setup Phase                                               //
