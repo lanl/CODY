@@ -231,7 +231,7 @@ offsetMismatch(
     const LegionRuntime::Accessor::ByteOffset *off1,
     const LegionRuntime::Accessor::ByteOffset *off2
 ) {
-#ifdef LGNCG_ASSUME_OFFSETS_MATCH
+#ifdef LGNCG_ASSUME_MATCHING_OFFSETS
     return false;
 #else
     while (i-- > 0) {

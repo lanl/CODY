@@ -519,7 +519,14 @@ startBenchmarkTask(
     const int rank = A.geom->data()->rank;
     //
     if (rank == 0) {
-        cout << "Total problem setup time in main (sec) = "
+        bool taskingEnabled = false;
+#ifdef LGNCG_TASKING
+        taskingEnabled = true;
+#endif
+        cout << "--> Tasking="
+             << (taskingEnabled ? "enabled" : "disabled")
+             << endl;
+        cout << "--> Total problem setup time in main (s) = "
              << setup_time << endl;
     }
 

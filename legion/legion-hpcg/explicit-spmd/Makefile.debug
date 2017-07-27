@@ -33,8 +33,7 @@ GEN_GPU_SRC	?= 			      # .cu files
 # makefile
 INC_FLAGS	 ?=
 CC_FLAGS	 ?= \
--Wall -std=c++11 -O0 -g \
--DLGNCG_TASKING
+-Wall -std=c++11 -O0 -g -DLGNCG_TASKING
 NVCC_FLAGS	 ?=
 GASNET_FLAGS ?=
 LD_FLAGS	 ?=
