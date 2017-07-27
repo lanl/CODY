@@ -79,9 +79,9 @@ ComputeMG(
     Runtime *lrt
 ) {
     const auto *const Asclrs = A.sclrs->data();
-    myassert(Asclrs);
+    assert(Asclrs);
     // Make sure x contain space for halo values.
-    myassert(x.length() == size_t(Asclrs->localNumberOfColumns));
+    assert(x.length() == size_t(Asclrs->localNumberOfColumns));
     // Initialize x to zero.
     ZeroVector(x, ctx, lrt);
     //

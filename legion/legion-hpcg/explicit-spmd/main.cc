@@ -529,7 +529,7 @@ startBenchmarkTask(
     ////////////////////////////////////////////////////////////////////////////
 
     // Sanity
-    myassert(getTaskID(task) == rank);
+    assert(getTaskID(task) == rank);
     // Used to check return codes on function calls.
     int ierr = 0;
     int numberOfCalls = 10;

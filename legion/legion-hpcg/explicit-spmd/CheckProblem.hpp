@@ -117,24 +117,24 @@ CheckProblem(
     if (xexact != 0) xexactv = xexact->data();
 
     const floatType *const AmatrixDiagonal = A.matrixDiagonal->data();
-    myassert(AmatrixDiagonal);
+    assert(AmatrixDiagonal);
     //
     const local_int_t numberOfNonzerosPerRow = Ageom->stencilSize;
     // Interpreted as 2D array
-    myassert(A.matrixValues->data());
+    assert(A.matrixValues->data());
     Array2D<floatType> matrixValues(
         localNumberOfRows, numberOfNonzerosPerRow, A.matrixValues->data()
     );
     // Interpreted as 2D array
-    myassert(A.mtxIndG->data());
+    assert(A.mtxIndG->data());
     Array2D<global_int_t> mtxIndG(
         localNumberOfRows, numberOfNonzerosPerRow, A.mtxIndG->data()
     );
     const char *const AnonzerosInRow = A.nonzerosInRow->data();
-    myassert(AnonzerosInRow);
+    assert(AnonzerosInRow);
     //
     const global_int_t *const AlocalToGlobalMap = A.localToGlobalMap->data();
-    myassert(AlocalToGlobalMap);
+    assert(AlocalToGlobalMap);
     //
     global_int_t localNumberOfNonzeros = 0;
     //
@@ -146,7 +146,7 @@ CheckProblem(
                 global_int_t gix = ipx * nx + ix;
                 local_int_t currentLocalRow = iz * nx * ny + iy * nx + ix;
                 global_int_t currentGlobalRow = giz * gnx * gny + giy * gnx + gix;
-                myassert(AlocalToGlobalMap[currentLocalRow] == currentGlobalRow);
+                assert(AlocalToGlobalMap[currentLocalRow] == currentGlobalRow);
                 char numberOfNonzerosInRow = 0;
                 // Current index in current row.
                 global_int_t currentIndexG = 0;
@@ -159,14 +159,14 @@ CheckProblem(
                                     if (gix + sx > -1 && gix + sx < gnx) {
                                         global_int_t curcol = currentGlobalRow + sz * gnx * gny + sy * gnx + sx;
                                         if (curcol == currentGlobalRow) {
-                                            myassert(AmatrixDiagonal[currentLocalRow] == 26.0);
-                                            myassert(matrixValues(currentLocalRow, currentNonZeroElemIndex) == 26.0);
+                                            assert(AmatrixDiagonal[currentLocalRow] == 26.0);
+                                            assert(matrixValues(currentLocalRow, currentNonZeroElemIndex) == 26.0);
                                         }
                                         else {
-                                            myassert(matrixValues(currentLocalRow, currentNonZeroElemIndex) == -1.0);
+                                            assert(matrixValues(currentLocalRow, currentNonZeroElemIndex) == -1.0);
                                         }
                                         currentNonZeroElemIndex++;
-                                        myassert(mtxIndG(currentLocalRow, currentIndexG++) == curcol);
+                                        assert(mtxIndG(currentLocalRow, currentIndexG++) == curcol);
                                         numberOfNonzerosInRow++;
                                     } // end x bounds test
                                 } // end sx loop
@@ -174,11 +174,11 @@ CheckProblem(
                         } // end sy loop
                     } // end z bounds test
                 } // end sz loop
-                myassert(AnonzerosInRow[currentLocalRow] == numberOfNonzerosInRow);
+                assert(AnonzerosInRow[currentLocalRow] == numberOfNonzerosInRow);
                 localNumberOfNonzeros += numberOfNonzerosInRow;
-                if (b != 0)      myassert(bv[currentLocalRow] == 26.0 - ((floatType)(numberOfNonzerosInRow-1)));
-                if (x != 0)      myassert(xv[currentLocalRow] == 0.0);
-                if (xexact != 0) myassert(xexactv[currentLocalRow] == 1.0);
+                if (b != 0)      assert(bv[currentLocalRow] == 26.0 - ((floatType)(numberOfNonzerosInRow-1)));
+                if (x != 0)      assert(xv[currentLocalRow] == 0.0);
+                if (xexact != 0) assert(xexactv[currentLocalRow] == 1.0);
             } // end ix loop
         } // end iy loop
     } // end iz loop
@@ -188,8 +188,8 @@ CheckProblem(
         lnnzf, *A.dcAllRedSumGI, ctx, runtime
     ).get<global_int_t>();
     //
-    myassert(Asclrs->totalNumberOfRows == totalNumberOfRows);
-    myassert(Asclrs->totalNumberOfNonzeros == totalNumberOfNonzeros);
-    myassert(Asclrs->localNumberOfRows == localNumberOfRows);
-    myassert(Asclrs->localNumberOfNonzeros == localNumberOfNonzeros);
+    assert(Asclrs->totalNumberOfRows == totalNumberOfRows);
+    assert(Asclrs->totalNumberOfNonzeros == totalNumberOfNonzeros);
+    assert(Asclrs->localNumberOfRows == localNumberOfRows);
+    assert(Asclrs->localNumberOfNonzeros == localNumberOfNonzeros);
 }
