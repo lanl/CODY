@@ -126,6 +126,23 @@ sub make_datadir
 }
 
 ################################################################################
+sub env_or_def
+{
+    my (@env_def) = @_;
+    #
+    my $env_var_name = $env_def[0];
+    my $default_val  = $env_def[1];
+    #
+    if (env_def($env_var_name)) {
+        return $ENV{$env_var_name};
+    }
+    else {
+        # if not, set to default value
+        return $default_val;
+    }
+}
+
+################################################################################
 sub get_setup
 {
     my (@env_array) = @_;
@@ -150,60 +167,23 @@ sub get_setup
                 }
             }
             case 'RXHPCG_START_INDEX' {
-                if (env_def($env)) {
-                    $env_hash{$env} = $ENV{$env};
-                }
-                # if not, set to default value
-                else {
-                    $env_hash{$env} = '0';
-                }
+                $env_hash{$env} = env_or_def(($env, '0'));
             }
             case 'RXHPCG_PPN' {
-                if (env_def($env)) {
-                    $env_hash{$env} = $ENV{$env};
-                }
-                # if not, set to default value
-                else {
-                    $env_hash{$env} = '1';
-                }
+                $env_hash{$env} = env_or_def(($env, '1'));
             }
             case 'RXHPCG_DATA_DIR_PREFIX' {
-                if (env_def($env)) {
-                    $env_hash{$env} = $ENV{$env};
-                }
-                # if not, set to default value
-                else {
-                    $env_hash{$env} = getcwd;
-                }
+                $env_hash{$env} = env_or_def(($env, getcwd));
             }
             case 'RXHPCG_BIN_PATH' {
-                if (env_def($env)) {
-                    $env_hash{$env} = $ENV{$env};
-                }
-                # if not, search for something usable
-                else {
-                    $env_hash{$env} = which_rxhpcg(
-                                          $env_hash{'RXHPCG_EXEC_NAME'}
-                                      );
-                }
+                my $exec_name = $env_hash{'RXHPCG_EXEC_NAME'};
+                $env_hash{$env} = env_or_def(($env, which_rxhpcg($exec_name)));
             }
             case ['RXHPCG_NX', 'RXHPCG_NY', 'RXHPCG_NZ'] {
-                if (env_def($env)) {
-                    $env_hash{$env} = $ENV{$env};
-                }
-                # if not, set to the smallest acceptable value.
-                else {
-                    $env_hash{$env} = '16';
-                }
+                $env_hash{$env} = env_or_def(($env, '16'));
             }
             case 'RXHPCG_RT' {
-                if (env_def($env)) {
-                    $env_hash{$env} = $ENV{$env};
-                }
-                # if not, search for something usable
-                else {
-                    $env_hash{$env} = '1';
-                }
+                $env_hash{$env} = env_or_def(($env, '1'));
             }
         }
     }

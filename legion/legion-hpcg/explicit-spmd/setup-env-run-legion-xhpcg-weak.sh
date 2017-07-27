@@ -1,6 +1,6 @@
 export RXHPCG_EXEC_NAME="legion-xhpcg"
 
-export RXHPCG_MAX_START_INDEX=1
+export RXHPCG_START_INDEX=11
 
 export RXHPCG_MAX_SUBBLOCKS=2
 
