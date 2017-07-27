@@ -55,6 +55,13 @@
 
 #include <cmath>
 
+/**
+ *
+ */
+struct ComputeResidualArgs {
+    local_int_t n;
+};
+
 /*!
     Routine to compute the inf-norm difference between two vectors where:
 
@@ -68,6 +75,29 @@
     @return Returns zero on success and a non-zero value otherwise.
 */
 inline int
+ComputeResidualKernel(
+    const ComputeResidualArgs &args,
+    Array<floatType> &v1,
+    Array<floatType> &v2,
+    floatType &residual
+) {
+    const floatType *const v1v = v1.data();
+    const floatType *const v2v = v2.data();
+    floatType local_residual = 0.0;
+
+    for (local_int_t i = 0; i < args.n; i++) {
+        floatType diff = std::fabs(v1v[i] - v2v[i]);
+        if (diff > local_residual) local_residual = diff;
+    }
+    residual = local_residual;
+    //
+    return 0;
+}
+
+/**
+ *
+ */
+inline int
 ComputeResidual(
     local_int_t n,
     Array<floatType> &v1,
@@ -77,16 +107,68 @@ ComputeResidual(
     Context ctx,
     Runtime *lrt
 ) {
-    const floatType *const v1v = v1.data();
-    const floatType *const v2v = v2.data();
+    const ComputeResidualArgs args = {
+        .n = n
+    };
+    //
+    Future lrf;
+#ifdef LGNCG_TASKING
+    TaskLauncher tl(
+        COMPUTE_RESIDUAL_TID,
+        TaskArgument(&args, sizeof(args))
+    );
+    //
+    v1.intent(RO_E, tl, ctx, lrt);
+    v2.intent(RO_E, tl, ctx, lrt);
+    //
+    lrf = lrt->execute_task(ctx, tl);
+#else
     floatType local_residual = 0.0;
-
-    for (local_int_t i = 0; i < n; i++) {
-        floatType diff = std::fabs(v1v[i] - v2v[i]);
-        if (diff > local_residual) local_residual = diff;
-    }
+    ComputeResidualKernel(args, v1, v2, local_residual);
+    lrf = Future::from_value(lrt, local_residual);
+#endif
     // Get max residual from all tasks.
-    residual = allReduce(local_residual, dcReduceMax, ctx, lrt).get<floatType>(); // TODO FIXME
+    residual = allReduce(lrf, dcReduceMax, ctx, lrt).get<floatType>();
     //
     return 0;
+}
+
+/**
+ *
+ */
+floatType
+ComputeResidualTask(
+    const Task *task,
+    const std::vector<PhysicalRegion> &regions,
+    Context ctx,
+    Runtime *lrt
+) {
+    const auto *const args = (ComputeResidualArgs *)task->args;
+    //
+    Array<floatType> v1(regions[0], ctx, lrt);
+    Array<floatType> v2(regions[1], ctx, lrt);
+    //
+    floatType local_residual = 0.0;
+    ComputeResidualKernel(*args, v1, v2, local_residual);
+    //
+    return local_residual;
+}
+
+/**
+ *
+ */
+inline void
+registerComputeResidualTasks(void)
+{
+#ifdef LGNCG_TASKING
+    HighLevelRuntime::register_legion_task<floatType, ComputeResidualTask>(
+        COMPUTE_RESIDUAL_TID /* task id */,
+        Processor::LOC_PROC /* proc kind  */,
+        true /* single */,
+        false /* index */,
+        AUTO_GENERATE_ID,
+        TaskConfigOptions(true /* leaf task */),
+        "ComputeResidualTask"
+    );
+#endif
 }

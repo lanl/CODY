@@ -57,7 +57,6 @@ struct ComputeSPMVArgs {
     int stencilSize;
 };
 
-
 /*!
     Routine to compute matrix vector product y = Ax where: Precondition: First
     call exchange_externals to get off-processor values of x

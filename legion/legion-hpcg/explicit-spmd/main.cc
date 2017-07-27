@@ -58,6 +58,7 @@
 #include "CG.hpp"
 #include "TestNorms.hpp"
 #include "CheckProblem.hpp"
+#include "ComputeResidual.hpp"
 
 #include <iostream>
 #include <cstdlib>
@@ -275,6 +276,7 @@ mainTask(
     cout << "--> nx="   << initGeom.nx   << endl;
     cout << "--> ny="   << initGeom.ny   << endl;
     cout << "--> nz="   << initGeom.nz   << endl;
+    cout << "--> nmg="  << NUM_MG_LEVELS << endl;
     ////////////////////////////////////////////////////////////////////////////
     cout << "*** Starting Initialization..." << endl;;
     // Application structures.
@@ -282,13 +284,7 @@ mainTask(
     LogicalArray<floatType> b, x, xexact;
     //
     createLogicalStructures(
-        A,
-        b,
-        x,
-        xexact,
-        initGeom,
-        ctx,
-        runtime
+        A, b, x, xexact, initGeom, ctx, runtime
     );
     // Time to initialize problem before start of benchmark (phase 1).
     const double initStart = mytimer();
@@ -379,13 +375,9 @@ mainTask(
     }
     //
     cout << "*** Cleaning Up..." << endl;
+    //
     destroyLogicalStructures(
-        A,
-        b,
-        x,
-        xexact,
-        ctx,
-        runtime
+        A, b, x, xexact, ctx, runtime
     );
 }
 
@@ -571,9 +563,6 @@ startBenchmarkTask(
     // Reference CG Timing Phase                                              //
     ////////////////////////////////////////////////////////////////////////////
 
-    // Assume all is well: no failures.
-    int global_failure = 0;
-
     int niters          = 0;
     int totalNiters_ref = 0;
     floatType normr     = 0.0;
@@ -646,7 +635,6 @@ startBenchmarkTask(
         cerr << err_count << " error(s) in call(s) to optimized CG." << endl;
     }
     if (tolerance_failures) {
-        global_failure = 1;
         if (rank == 0) {
             cerr << "Failed to reduce the residual "
                  << tolerance_failures << " times." << endl;
@@ -701,12 +689,11 @@ startBenchmarkTask(
         //
         const double aveRuntime = runTime / double(numberOfCgSets);
         cout << endl << "--> Average Run Time for CG="
-             << aveRuntime << " s" << endl;
+             << aveRuntime << " s" << endl << endl;
     }
-#if 0
     // Compute difference between known exact solution and computed solution All
     // processors are needed here.
-    floatType residual = 0;
+    floatType residual = 0.0;
     ierr = ComputeResidual(
         Asclrs->localNumberOfRows,
         x, xexact, residual, *A.dcAllRedMaxFT, ctx, lrt
@@ -715,9 +702,10 @@ startBenchmarkTask(
         cerr << "Error in call to compute_residual: " << ierr << ".\n" << endl;
     }
     if (rank == 0) {
-        cout << "Difference between computed and exact  = "
+        cout << "Difference between computed and exact = "
              << residual << ".\n" << endl;
     }
+#if 0
     // Test Norm Results.
     ierr = TestNorms(testnormsData);
 
