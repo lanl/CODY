@@ -14,8 +14,6 @@
 # liability or responsibility for the use of this software.
 ################################################################################
 
-# Author: Samuel K. Gutierrez
-
 use strict;
 use warnings;
 
@@ -232,7 +230,15 @@ sub get_numpes
         print wrap('', '', $err) . "\n";
         exit(1);
     }
-
+    #
+    my $x_count = () = $numpefun =~ /X/g;
+    if ($x_count > 1) {
+        my $err = "Invalid RXHPCG_NUMPE_FUN format provided - " .
+                  "more than one 'X' variable found. Cannot continue.\n";
+        print wrap('', '', $err) . "\n";
+        exit(1);
+    }
+    #
     $cur_math_expr =~ s/X/$i/;
     $cur_numpe = eval($cur_math_expr);
 
