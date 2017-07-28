@@ -31,6 +31,7 @@
 #include "ComputeDotProduct.hpp"
 #include "ComputeWAXPBY.hpp"
 
+#include <iostream>
 
 // Use TICK and TOCK to time a code section in MATLAB-like fashion
 #define TICK()  t0 = mytimer() //!< record current time in 't0'
@@ -75,7 +76,7 @@ int CG(const SparseMatrix & A, CGData & data, const Vector & b, Vector & x,
   Vector & p = data.p; // Direction vector (in MPI mode ncol>=nrow)
   Vector & Ap = data.Ap;
 
-  if (!doPreconditioning && A.geom->rank==0) HPCG_fout << "WARNING: PERFORMING UNPRECONDITIONED ITERATIONS" << std::endl;
+  if (!doPreconditioning && A.geom->rank==0) std::cout << "WARNING: PERFORMING UNPRECONDITIONED ITERATIONS" << std::endl;
 
   int print_freq = 10;
   if (print_freq>50) print_freq=50;
@@ -86,7 +87,7 @@ int CG(const SparseMatrix & A, CGData & data, const Vector & b, Vector & x,
   TICK(); ComputeWAXPBY(nrow, 1.0, b, -1.0, Ap, r, A.isWaxpbyOptimized);  TOCK(t2); // r = b - Ax (x stored in p)
   TICK(); ComputeDotProduct(nrow, r, r, normr, t4, A.isDotProductOptimized); TOCK(t1);
   normr = sqrt(normr);
-  if (A.geom->rank==0) HPCG_fout << "Initial Residual = "<< normr << std::endl;
+  if (A.geom->rank==0) std::cout << "Initial Residual = "<< normr << std::endl;
 
   // Record initial residual for convergence testing
   normr0 = normr;
@@ -119,7 +120,7 @@ int CG(const SparseMatrix & A, CGData & data, const Vector & b, Vector & x,
     TICK(); ComputeDotProduct(nrow, r, r, normr, t4, A.isDotProductOptimized); TOCK(t1);
     normr = sqrt(normr);
     if (A.geom->rank==0 && (k%print_freq == 0 || k == max_iter))
-      HPCG_fout << "Iteration = "<< k << "   Scaled Residual = "<< normr/normr0 << std::endl;
+      std::cout << "Iteration = "<< k << "   Scaled Residual = "<< normr/normr0 << std::endl;
     niters = k;
   }
 

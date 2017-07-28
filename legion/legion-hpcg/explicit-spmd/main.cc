@@ -515,6 +515,7 @@ startBenchmarkTask(
 #ifdef LGNCG_TASKING
         taskingEnabled = true;
 #endif
+        cout << "--> Implementation=Legion" << endl;
         cout << "--> Tasking="
              << (taskingEnabled ? "enabled" : "disabled")
              << endl;
@@ -688,6 +689,9 @@ startBenchmarkTask(
         const double runTime = optTimeEnd - optTimeStart;
         //
         const double aveRuntime = runTime / double(numberOfCgSets);
+        cout << numberOfCgSets << " CG set complete in " << runTime
+             << " s" << endl;
+        //
         cout << endl << "--> Average Run Time for CG="
              << aveRuntime << " s" << endl << endl;
     }

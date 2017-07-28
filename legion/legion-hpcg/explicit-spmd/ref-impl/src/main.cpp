@@ -71,6 +71,8 @@ using std::endl;
 
 */
 int main(int argc, char * argv[]) {
+  using namespace std;
+
 
 #ifndef HPCG_NO_MPI
   MPI_Init(&argc, &argv);
@@ -119,6 +121,18 @@ int main(int argc, char * argv[]) {
   Geometry * geom = new Geometry;
   GenerateGeometry(size, rank, params.numThreads, nx, ny, nz, geom);
 
+  if (rank == 0) {
+      cout << "*** Problem Information:"   << endl;
+      cout << "--> size=" << geom->size << endl;
+      cout << "--> npx="  << geom->npx  << endl;
+      cout << "--> npy="  << geom->npy  << endl;
+      cout << "--> npz="  << geom->npz  << endl;
+      cout << "--> nx="   << geom->nx   << endl;
+      cout << "--> ny="   << geom->ny   << endl;
+      cout << "--> nz="   << geom->nz   << endl;
+      cout << "--> nmg="  << 4 << endl;
+  }
+
   ierr = CheckAspectRatio(0.125, geom->npx, geom->npy, geom->npz, "process grid", rank==0);
   if (ierr)
     return ierr;
@@ -143,6 +157,16 @@ int main(int argc, char * argv[]) {
 
   setup_time = mytimer() - setup_time; // Capture total time of setup
   times[9] = setup_time; // Save it for reporting
+  if (rank == 0) {
+      cout << endl;
+      cout << "*****************************************************" << endl;
+      cout << "*** Starting Benchmark..." << endl;
+      cout << "*****************************************************" << endl;
+      //
+      cout << "--> Implementation=MPI" << endl;
+      cout << "--> Total problem setup time in main (s) = "
+          << setup_time << endl;
+  }
 
   ////////////////////////////////////////////////////////////////////////////
   // Problem Sanity Phase
@@ -191,8 +215,6 @@ int main(int argc, char * argv[]) {
   }
   if (rank == 0 && err_count) HPCG_fout << err_count << " error(s) in call(s) to reference CG." << endl;
   double refTolerance = normr / normr0;
-
-  if (rank==0) HPCG_fout << "Total problem setup time in main (sec) = " << mytimer() - t1 << endl;
 
 #ifdef HPCG_DETAILED_DEBUG
   if (geom->size == 1) WriteProblem(*geom, A, b, x, xexact);
@@ -253,8 +275,8 @@ int main(int argc, char * argv[]) {
   int numberOfCgSets = int(total_runTime / opt_worst_time) + 1; // Run at least once, account for rounding
 
   if (rank==0) {
-    HPCG_fout << "Projected running time: " << total_runTime << " seconds" << endl;
-    HPCG_fout << "Number of CG sets: " << numberOfCgSets << endl;
+    cout << "Projected running time: " << total_runTime << " seconds" << endl;
+    cout << "Number of CG sets: " << numberOfCgSets << endl;
   }
 
   /* This is the timed run for a specified amount of time. */
@@ -269,30 +291,35 @@ int main(int argc, char * argv[]) {
     ZeroVector(x); // Zero out x
     ierr = CG( A, data, b, x, optMaxIters, optTolerance, niters, normr, normr0, &times[0], true);
     if (ierr) HPCG_fout << "Error in call to CG: " << ierr << ".\n" << endl;
-    if (rank==0) HPCG_fout << "Call [" << i << "] Scaled Residual [" << normr/normr0 << "]" << endl;
+    if (rank==0) std::cout << "Call [" << i << "] Scaled Residual [" << normr/normr0 << "]" << endl;
     testnorms_data.values[i] = normr/normr0; // Record scaled residual from this run
   }
   double optTimeEnd = mytimer();
   double runTime = optTimeEnd - optTimeStart;
-  HPCG_fout << numberOfCgSets << " CG set complete in " << runTime << "s" << endl;
   double aveRuntime = runTime / double(numberOfCgSets);
-  HPCG_fout << "Average Run Time " << aveRuntime << "s" << endl;
+  if (rank == 0) {
+      std::cout << numberOfCgSets << " CG set complete in " << runTime << " s" << endl;
+      cout << endl << "--> Average Run Time for CG="
+           << aveRuntime << " s" << endl << endl;
+  }
 
   // Compute difference between known exact solution and computed solution
   // All processors are needed here.
   double residual = 0;
   ierr = ComputeResidual(A.localNumberOfRows, x, xexact, residual);
-  if (ierr) HPCG_fout << "Error in call to compute_residual: " << ierr << ".\n" << endl;
-  if (rank==0) HPCG_fout << "Difference between computed and exact  = " << residual << ".\n" << endl;
-
+  if (ierr) std::cerr << "Error in call to compute_residual: " << ierr << ".\n" << endl;
+  if (rank==0) std::cout << "Difference between computed and exact  = " << residual << ".\n" << endl;
+  if (rank == 0) {
+      cout << "*****************************************************" << endl;
+      cout << "*** Benchmark Complete..." << endl;
+      cout << "*****************************************************" << endl;
+  }
   // Clean up
   DeleteMatrix(A); // This delete will recursively delete all coarse grid data
   DeleteCGData(data);
   DeleteVector(x);
   DeleteVector(b);
   DeleteVector(xexact);
-  DeleteVector(x_overlap);
-  DeleteVector(b_computed);
   delete [] testnorms_data.values;
 
   HPCG_Finalize();
