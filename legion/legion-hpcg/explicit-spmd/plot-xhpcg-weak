@@ -1,0 +1,42 @@
+#!/usr/bin/env python
+
+import os
+import sys
+
+
+def usage():
+
+    print('usage:')
+
+
+def check_args(argv):
+
+    if len(argv) < 2:
+        usage()
+        exit(os.EX_USAGE)
+
+
+def get_logf_names_from_dir(path_str):
+
+    (_, _, file_names) = os.walk(path_str).next()
+
+    output_files = [f for f in file_names if f.endswith('rxhpcg')]
+
+    return output_files
+
+
+def main(argv=None):
+
+    if argv is None:
+        argv = sys.argv
+
+    check_args(argv)
+
+    for file in get_logf_names_from_dir(argv[1]):
+        print file
+
+    return os.EX_OK
+
+
+if __name__ == "__main__":
+    sys.exit(main())

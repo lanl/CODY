@@ -289,7 +289,7 @@ sub run
                                    $setup{'RXHPCG_PPN'},
                                    $app_str);
 
-        my $log = catfile($datadir, $numpe);
+        my $log = catfile($datadir, $numpe . '.rxhpcg');
         print wrap('', '', "\n# running: $cmd\n");
         # run the command and capture its output
         unless (open(OUTFILE, "$cmd 2>&1 |")) {

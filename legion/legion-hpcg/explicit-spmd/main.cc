@@ -516,8 +516,8 @@ startBenchmarkTask(
         taskingEnabled = true;
 #endif
         cout << "--> Implementation=Legion" << endl;
-        cout << "--> Tasking="
-             << (taskingEnabled ? "enabled" : "disabled")
+        cout << "--> Options="
+             << (taskingEnabled ? "Tasking" : "")
              << endl;
         cout << "--> Total problem setup time in main (s) = "
              << setup_time << endl;

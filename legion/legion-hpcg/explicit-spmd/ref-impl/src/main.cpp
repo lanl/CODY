@@ -164,6 +164,7 @@ int main(int argc, char * argv[]) {
       cout << "*****************************************************" << endl;
       //
       cout << "--> Implementation=MPI" << endl;
+      cout << "--> Options=" << endl;
       cout << "--> Total problem setup time in main (s) = "
           << setup_time << endl;
   }
