@@ -86,7 +86,8 @@ sub which_rxhpcg
         }
     }
     else {
-        return $which_rxhpcg;
+        $which_rxhpcg =~ s/\R//g;
+        return $which_rxhpcg
     }
 }
 
@@ -174,7 +175,7 @@ sub get_setup
                 $env_hash{$env} = env_or_def(($env, getcwd));
             }
             case 'RXHPCG_BIN_PATH' {
-                my $exec_name = $env_hash{'RXHPCG_EXEC_NAME'};
+                my $exec_name = $env_hash{'RXHPCG_BIN_PATH'};
                 $env_hash{$env} = env_or_def(($env, which_rxhpcg($exec_name)));
             }
             case ['RXHPCG_NX', 'RXHPCG_NY', 'RXHPCG_NZ'] {
