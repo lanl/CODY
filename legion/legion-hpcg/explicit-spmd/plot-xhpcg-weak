@@ -133,12 +133,24 @@ def process_experiments(data_dirs):
     return experiments
 
 
+def get_usable_file_name(name, extension):
+    fidx = 1
+    cwd = os.getcwd()
+    target_fname = '{}/{}.{}'.format(cwd, name, extension)
+    while (os.path.isfile(target_fname)):
+        target_fname = '{}/{}-{}.{}'.format(cwd, name, fidx, extension)
+        fidx += 1
+
+    return target_fname
+
+
 def main(argv=None):
     if argv is None:
         argv = sys.argv
 
     check_args(argv)
-    plotter = Plotter('test.pdf', process_experiments(argv[1:]))
+    f_name = get_usable_file_name('xhpcg-plot-weak', 'pdf')
+    plotter = Plotter(f_name, process_experiments(argv[1:]))
     plotter.plot()
 
     return os.EX_OK
