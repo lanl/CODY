@@ -71,7 +71,7 @@ class Plotter:
         plt.grid(True)
         plt.axis('tight')
 
-        self.ax.set_ylabel('Solve Time (s)', fontsize=16)
+        self.ax.set_ylabel('Average Solve Time (s)', fontsize=16)
         self.ax.set_xlabel('Number of Sub-Blocks', fontsize=16)
 
         scalf = 1.05
