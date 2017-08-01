@@ -49,8 +49,8 @@ class Plotter:
     def __init__(self, out_fname, experiments_to_plot):
         self.fname = out_fname
         self.experiments = experiments_to_plot
-        self.markers = ['o', '^']
-        self.colors = ['#6384B1', '#98A942']
+        self.markers = ['o',      '^',       's',       'D',       '8']
+        self.colors = ['#6384B1', '#98A942', '#999999', '#D79C43', '#111111']
         self.numpes = set()
         self.cg_time = set()
         self.fig, self.ax = plt.subplots()
@@ -98,6 +98,8 @@ class Plotter:
         mrker = self.markers[self.num_plots % mlen]
         clr = self.colors[self.num_plots % clen]
         lbl = experiment.hpcg_impl
+        if experiment.hpcg_opts:
+            lbl += ' ({})'.format(experiment.hpcg_opts)
         #
         plt.errorbar(x, y, marker=mrker, color=clr, label=lbl,
                      linestyle=self.line_style)

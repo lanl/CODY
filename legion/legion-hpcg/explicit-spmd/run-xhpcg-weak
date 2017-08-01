@@ -66,11 +66,11 @@ sub which_rxhpcg
 {
     my ($exec_name) = @_;
 
-    my $which_rxhpcg = undef;
+    my $wrxhpcg = undef;
 
-    $which_rxhpcg = `which $exec_name 2>/dev/null`;
+    $wrxhpcg = `which $exec_name 2>/dev/null`;
 
-    if (!$which_rxhpcg) {
+    if (!$wrxhpcg) {
         # check if it is in the same directory as this script
         my $script_abs_dir_name = dirname(abs_path($0));
         my $mmu_test_path = catfile($script_abs_dir_name, $exec_name);
@@ -86,8 +86,8 @@ sub which_rxhpcg
         }
     }
     else {
-        $which_rxhpcg =~ s/\R//g;
-        return $which_rxhpcg
+        $wrxhpcg =~ s/\R//g;
+        return $wrxhpcg
     }
 }
 
@@ -127,10 +127,10 @@ sub make_datadir
 ################################################################################
 sub env_or_def
 {
-    my (@env_def) = @_;
+    my @eod = @_;
     #
-    my $env_var_name = $env_def[0];
-    my $default_val  = $env_def[1];
+    my $env_var_name = $eod[0];
+    my $default_val  = $eod[1];
     #
     if (env_def($env_var_name)) {
         return $ENV{$env_var_name};
@@ -175,8 +175,13 @@ sub get_setup
                 $env_hash{$env} = env_or_def(($env, getcwd));
             }
             case 'RXHPCG_BIN_PATH' {
-                my $exec_name = $env_hash{'RXHPCG_BIN_PATH'};
-                $env_hash{$env} = env_or_def(($env, which_rxhpcg($exec_name)));
+                if (env_def($env)) {
+                    $env_hash{$env} = $ENV{$env};
+                }
+                else {
+                    my $exec_name = $env_hash{'RXHPCG_EXEC_NAME'};
+                    $env_hash{$env} = which_rxhpcg($exec_name);
+                }
             }
             case ['RXHPCG_NX', 'RXHPCG_NY', 'RXHPCG_NZ'] {
                 $env_hash{$env} = env_or_def(($env, '16'));
@@ -321,14 +326,14 @@ sub main
 {
     # environment variables that dictate how this script behaves.
     my @rxhpcg_envs = (
+        'RXHPCG_EXEC_NAME',
+        'RXHPCG_BIN_PATH',
         'RXHPCG_START_INDEX',
         'RXHPCG_MAX_SUBBLOCKS',
         'RXHPCG_PPN',
         'RXHPCG_RUN_CMD',
         'RXHPCG_NUMPE_FUN',
         'RXHPCG_DATA_DIR_PREFIX',
-        'RXHPCG_EXEC_NAME',
-        'RXHPCG_BIN_PATH',
         'RXHPCG_NX',
         'RXHPCG_NY',
         'RXHPCG_NZ',
