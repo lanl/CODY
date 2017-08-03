@@ -20,7 +20,9 @@ class RunStats:
             find_str = '--> n{}'.format(i)
             tmp_xyz += '{},'.format(int(self.get_val(content, find_str)))
 
-        self.nxyz = '(nx={0}, ny={1}, nz={2})'.format(*(tmp_xyz.split(',')[:3]))
+        self.nxyz = '(nx={0}, ny={1}, nz={2})'.format(
+            *(tmp_xyz.split(',')[:3])
+        )
 
     def get_val(self, content, swith):
         line = [l for l in content if l.startswith(swith)]
@@ -86,7 +88,8 @@ class Plotter:
         plt.axis('tight')
 
         plt.title('Weak Scaling {}'.format(
-            self.experiments[0].get_problem_size_string()))
+            self.experiments[0].get_problem_size_string())
+        )
         self.ax.set_ylabel('Average Solve Time (s)', fontsize=16)
         self.ax.set_xlabel('Number of Sub-Blocks', fontsize=16)
 
