@@ -66,7 +66,7 @@ class Plotter:
         plt.grid(True)
         plt.axis('tight')
 
-        self.ax.set_ylabel('Solve Time (s)', fontsize=16)
+        self.ax.set_ylabel('Average Solve Time (s)', fontsize=16)
         self.ax.set_xlabel('Number of Sub-Blocks', fontsize=16)
 
         scalf = 1.05
@@ -85,7 +85,7 @@ class Plotter:
     def add_plot(self, experiment):
         x = []
         y = []
-        for k, v in experiment.numpe_stats.iteritems():
+        for k, v in sorted(experiment.numpe_stats.iteritems()):
             x.append(k)
             y.append(v.ave_cg)
         for i in x:
