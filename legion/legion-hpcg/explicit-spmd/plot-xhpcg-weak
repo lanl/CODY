@@ -14,6 +14,13 @@ class RunStats:
     def __init__(self, content):
         self.ave_cg_str = '--> Average Run Time for CG'
         self.ave_cg = self.get_val(content, self.ave_cg_str)
+        self.nxyz = ''
+        tmp_xyz = ''
+        for i in ['x', 'y', 'z']:
+            find_str = '--> n{}'.format(i)
+            tmp_xyz += '{},'.format(int(self.get_val(content, find_str)))
+
+        self.nxyz = '(nx={0}, ny={1}, nz={2})'.format(*(tmp_xyz.split(',')[:3]))
 
     def get_val(self, content, swith):
         line = [l for l in content if l.startswith(swith)]
@@ -39,15 +46,22 @@ class Experiment:
         (_, _, file_names) = os.walk(log_path).next()
         return [f for f in file_names if f.endswith('rxhpcg')]
 
+    def get_numpe(self, content):
+        numpel = [l for l in content if l.startswith('--> size')]
+        return int(numpel[0].split('=')[1])
+
+    def get_problem_size_string(self):
+        return self.numpe_stats.itervalues().next().nxyz
+
     def crunch(self):
         for log in self.log_files:
-            numpe = log.split('.')[0]
             fpath = '{}/{}'.format(self.log_path, log)
             with open(fpath, 'r') as f:
                 content = f.readlines()
+                numpe = self.get_numpe(content)
                 content = [x.strip('\n') for x in content]
                 self.set_hpcg_info(content)
-                self.numpe_stats[int(numpe)] = RunStats(content)
+                self.numpe_stats[numpe] = RunStats(content)
 
 
 class Plotter:
@@ -71,6 +85,8 @@ class Plotter:
         plt.grid(True)
         plt.axis('tight')
 
+        plt.title('Weak Scaling {}'.format(
+            self.experiments[0].get_problem_size_string()))
         self.ax.set_ylabel('Average Solve Time (s)', fontsize=16)
         self.ax.set_xlabel('Number of Sub-Blocks', fontsize=16)
 
