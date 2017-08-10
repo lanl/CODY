@@ -886,7 +886,7 @@ Partition(
     const local_int_t *const recvLength = A.recvLength->data();
     //
     for (int n = 0; n < nNeighbors; ++n) {
-        const int recvl = recvLength[n];
+        const local_int_t recvl = recvLength[n];
         partLens.push_back(recvl);
         totLen += recvl;
     }
