@@ -164,7 +164,7 @@ dynCollTaskContribFT(
     Runtime *
 ) {
     Future f = task->futures[0];
-    return f.get<floatType>();
+    return f.get_result<floatType>(disableWarnings);
 }
 
 /**
@@ -178,7 +178,7 @@ dynCollTaskContribGIT(
     Runtime *
 ) {
     Future f = task->futures[0];
-    return f.get<global_int_t>();
+    return f.get_result<global_int_t>(disableWarnings);
 }
 
 /**

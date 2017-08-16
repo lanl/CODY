@@ -440,6 +440,10 @@ startBenchmarkTask(
 ) {
     //
     double setup_time = mytimer();
+    //
+#ifdef LGNCG_TASKING
+    lrt->unmap_all_regions(ctx);
+#endif
     // Number of levels including first.
     const int numberOfMgLevels = NUM_MG_LEVELS;
     // Use this array for collecting timing information.
@@ -466,10 +470,6 @@ startBenchmarkTask(
     Array<floatType> b     (regions[rid++], ctx, lrt);
     Array<floatType> x     (regions[rid++], ctx, lrt);
     Array<floatType> xexact(regions[rid++], ctx, lrt);
-    //
-#ifdef LGNCG_TASKING
-    lrt->unmap_all_regions(ctx); // TODO Is this needed?
-#endif
     ////////////////////////////////////////////////////////////////////////////
     // Private data for this task.
     ////////////////////////////////////////////////////////////////////////////
@@ -542,7 +542,7 @@ startBenchmarkTask(
     ////////////////////////////////////////////////////////////////////////////
     // Problem Sanity Phase
     ////////////////////////////////////////////////////////////////////////////
-
+#if 0
     {
         SparseMatrix *curLevelMatrix = &A;
         Array<floatType> *curb = &b;
@@ -559,6 +559,7 @@ startBenchmarkTask(
             curxexact = NULL;
         }
     }
+#endif
 
     ////////////////////////////////////////////////////////////////////////////
     // Reference CG Timing Phase                                              //
@@ -568,7 +569,9 @@ startBenchmarkTask(
     int totalNiters_ref = 0;
     floatType normr     = 0.0;
     floatType normr0    = 0.0;
-    int refMaxIters     = 50;
+    //int refMaxIters     = 50;
+    // FIXME
+    int refMaxIters     = 1;
     // Only need to run the residual reduction analysis once
     numberOfCalls = 1;
     // Compute the residual reduction for the natural ordering and reference
@@ -589,6 +592,7 @@ startBenchmarkTask(
     if (rank == 0 && err_count) {
         cerr << err_count << " error(s) in call(s) to reference CG." << endl;
     }
+#if 0
     //
     double refTolerance = normr / normr0;
 
@@ -709,6 +713,7 @@ startBenchmarkTask(
         cout << "Difference between computed and exact = "
              << residual << ".\n" << endl;
     }
+#endif
 #if 0
     // Test Norm Results.
     ierr = TestNorms(testnormsData);
