@@ -582,9 +582,11 @@ startBenchmarkTask(
     int err_count = 0;
     for (int i = 0; i < numberOfCalls; ++i) {
         ZeroVector(x, ctx, lrt);
+#if 0
         ierr = CG(A, data, b, x, refMaxIters, tolerance, niters,
                   normr, normr0, &ref_times[0], true, ctx, lrt
                );
+#endif
         // Count the number of errors in CG.
         if (ierr) ++err_count;
         totalNiters_ref += niters;
