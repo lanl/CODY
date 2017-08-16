@@ -20,7 +20,7 @@ include common.mk
 
 # Flags for directing the runtime makefile what to include
 DEBUG           ?= 0		  # Include debugging symbols
-OUTPUT_LEVEL    ?= LEVEL_NONE # Compile time logging level
+OUTPUT_LEVEL    ?= LEVEL_WARN # Compile time logging level
 SHARED_LOWLEVEL ?= 0		  # Use shared-memory runtime (not recommended)
 USE_CUDA        ?= 0		  # Include CUDA support (requires CUDA)
 USE_GASNET      ?= 1		  # Include GASNet support (requires GASNet)
