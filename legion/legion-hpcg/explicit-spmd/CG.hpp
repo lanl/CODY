@@ -151,7 +151,6 @@ CG(
     }
     // p is of length ncols, copy x to p for sparse MV operation
     CopyVector(x, p, ctx, lrt);
-#if 0
     //
     TICK(); // Ap = A*p
     ComputeSPMV(A, p, Ap, ctx, lrt);
@@ -251,7 +250,6 @@ CG(
     times[5] += t5; // Preconditioner apply time.
     times[6] += t6; // Exchange halo time.
     times[0] += mytimer() - t_begin;  // Total time. All done...
-#endif
     //
     return 0;
 }

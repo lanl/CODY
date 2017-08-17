@@ -438,12 +438,10 @@ startBenchmarkTask(
     Context ctx,
     HighLevelRuntime *lrt
 ) {
+    // Flag that turns multigrid on and off.
+    static const bool doMG = true;
     //
     double setup_time = mytimer();
-    //
-#ifdef LGNCG_TASKING
-    lrt->unmap_all_regions(ctx);
-#endif
     // Number of levels including first.
     const int numberOfMgLevels = NUM_MG_LEVELS;
     // Use this array for collecting timing information.
@@ -470,6 +468,9 @@ startBenchmarkTask(
     Array<floatType> b     (regions[rid++], ctx, lrt);
     Array<floatType> x     (regions[rid++], ctx, lrt);
     Array<floatType> xexact(regions[rid++], ctx, lrt);
+#ifdef LGNCG_TASKING
+    lrt->unmap_all_regions(ctx);
+#endif
     ////////////////////////////////////////////////////////////////////////////
     // Private data for this task.
     ////////////////////////////////////////////////////////////////////////////
@@ -560,7 +561,7 @@ startBenchmarkTask(
         }
     }
 #endif
-
+    //
     ////////////////////////////////////////////////////////////////////////////
     // Reference CG Timing Phase                                              //
     ////////////////////////////////////////////////////////////////////////////
@@ -569,9 +570,7 @@ startBenchmarkTask(
     int totalNiters_ref = 0;
     floatType normr     = 0.0;
     floatType normr0    = 0.0;
-    //int refMaxIters     = 50;
-    // FIXME
-    int refMaxIters     = 1;
+    int refMaxIters     = 50;
     // Only need to run the residual reduction analysis once
     numberOfCalls = 1;
     // Compute the residual reduction for the natural ordering and reference
@@ -582,11 +581,9 @@ startBenchmarkTask(
     int err_count = 0;
     for (int i = 0; i < numberOfCalls; ++i) {
         ZeroVector(x, ctx, lrt);
-#if 0
         ierr = CG(A, data, b, x, refMaxIters, tolerance, niters,
-                  normr, normr0, &ref_times[0], true, ctx, lrt
+                  normr, normr0, &ref_times[0], doMG, ctx, lrt
                );
-#endif
         // Count the number of errors in CG.
         if (ierr) ++err_count;
         totalNiters_ref += niters;
@@ -620,7 +617,7 @@ startBenchmarkTask(
         ZeroVector(x, ctx, lrt);
         floatType last_cummulative_time = opt_times[0];
         ierr = CG(A, data, b, x, optMaxIters, refTolerance, niters,
-                  normr, normr0, &opt_times[0], true, ctx, lrt
+                  normr, normr0, &opt_times[0], doMG, ctx, lrt
                );
         // Count the number of errors in CG.
         if (ierr) ++err_count;
@@ -677,7 +674,7 @@ startBenchmarkTask(
         // Zero out x.
         ZeroVector(x, ctx, lrt);
         ierr = CG(A, data, b, x, optMaxIters, optTolerance, niters,
-                  normr, normr0, &times[0], true, ctx, lrt
+                  normr, normr0, &times[0], doMG, ctx, lrt
                );
         if (ierr) {
             cerr << "Error in call to CG: " << ierr << ".\n" << endl;
