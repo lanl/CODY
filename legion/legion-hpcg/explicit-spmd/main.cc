@@ -468,9 +468,11 @@ startBenchmarkTask(
     Array<floatType> b     (regions[rid++], ctx, lrt);
     Array<floatType> x     (regions[rid++], ctx, lrt);
     Array<floatType> xexact(regions[rid++], ctx, lrt);
+    //
 #ifdef LGNCG_TASKING
     lrt->unmap_all_regions(ctx);
 #endif
+
     ////////////////////////////////////////////////////////////////////////////
     // Private data for this task.
     ////////////////////////////////////////////////////////////////////////////
@@ -490,6 +492,9 @@ startBenchmarkTask(
     //
     const int cgDataBaseRID = 0;
     CGData data(cgRegions, cgDataBaseRID, ctx, lrt);
+    // Now unmap structures that are done using accessors.
+    lCGData.r.unmapRegion(ctx, lrt);
+    lCGData.Ap.unmapRegion(ctx, lrt);
     // MGData
     curLevelMatrix = &A;
     for (int level = 1; level < numberOfMgLevels; ++level) {
