@@ -67,8 +67,8 @@ inline void
 ExchangeHalo(
     SparseMatrix &A,
     Array<floatType> &x,
-    LegionRuntime::HighLevel::Context ctx,
-    LegionRuntime::HighLevel::Runtime *lrt
+    Context ctx,
+    Runtime *lrt
 ) {
     using namespace std;
     // Extract Matrix pieces
@@ -83,7 +83,7 @@ ExchangeHalo(
     assert(elementsToSend);
     // Setup ghost regions if not already there.
     if (!x.hasGhosts()) {
-        SetupGhostArrays(A, x, ctx, lrt);
+        assert(false && "x does not have ghost regions setup.");
     }
     //
     const floatType *const xv = x.data();

@@ -470,9 +470,9 @@ startBenchmarkTask(
     Array<floatType> xexact(regions[rid++], ctx, lrt);
     //
 #ifdef LGNCG_TASKING
-    //lrt->unmap_all_regions(ctx);
+    lrt->unmap_all_regions(ctx);
 #endif
-
+    // Passed this point, we have to manually unmap regions.
     ////////////////////////////////////////////////////////////////////////////
     // Private data for this task.
     ////////////////////////////////////////////////////////////////////////////
@@ -492,9 +492,6 @@ startBenchmarkTask(
     //
     const int cgDataBaseRID = 0;
     CGData data(cgRegions, cgDataBaseRID, ctx, lrt);
-    // Now unmap structures that are done using accessors.
-    lCGData.r.unmapRegion(ctx, lrt);
-    lCGData.Ap.unmapRegion(ctx, lrt);
     // MGData
     curLevelMatrix = &A;
     for (int level = 1; level < numberOfMgLevels; ++level) {
@@ -508,6 +505,25 @@ startBenchmarkTask(
         SetupHalo(*curLevelMatrix, ctx, lrt);
         curLevelMatrix = curLevelMatrix->Ac;
     }
+    // Ghost info setup (we can't do it lazily like before because Legion
+    // doesn't like that (mapping/remapping warnings + bad performance).
+    SetupGhostArrays(A, *data.z, ctx, lrt);
+    SetupGhostArrays(A, *data.p, ctx, lrt);
+    // Setup ghost information for all levels before we begin.
+    curLevelMatrix = &A;
+    for (int level = 1; level < numberOfMgLevels; ++level) {
+        SetupGhostArrays(
+            *curLevelMatrix->Ac,
+            *curLevelMatrix->mgData->xc,
+            ctx,
+            lrt
+        );
+        curLevelMatrix = curLevelMatrix->Ac;
+    }
+    // Now unmap structures that are done using accessors.
+    lCGData.r.unmapRegion(ctx, lrt);
+    lCGData.Ap.unmapRegion(ctx, lrt);
+
     // Capture total time of setup.
     setup_time = mytimer() - setup_time;
     setup_time += params.phase1InitTime;

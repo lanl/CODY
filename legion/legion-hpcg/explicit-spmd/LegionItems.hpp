@@ -199,8 +199,8 @@ public:
         Legion::CoherenceProperty cohProp,
         int shard,
         Legion::TaskLauncher &launcher,
-        LegionRuntime::HighLevel::Context ctx,
-        LegionRuntime::HighLevel::HighLevelRuntime *lrt
+        Context ctx,
+        HighLevelRuntime *lrt
     ) {
         for (auto &a : mLogicalItems) {
             a->intent(privMode, cohProp, shard, launcher, ctx, lrt);
