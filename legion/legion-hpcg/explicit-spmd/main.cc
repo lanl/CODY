@@ -470,7 +470,7 @@ startBenchmarkTask(
     Array<floatType> xexact(regions[rid++], ctx, lrt);
     //
 #ifdef LGNCG_TASKING
-    lrt->unmap_all_regions(ctx);
+    //lrt->unmap_all_regions(ctx);
 #endif
 
     ////////////////////////////////////////////////////////////////////////////
@@ -638,7 +638,7 @@ startBenchmarkTask(
     Future localOptWorstF = Future::from_value(lrt, opt_worst_time);
     opt_worst_time = allReduce(
         localOptWorstF, *A.dcAllRedMaxFT, ctx, lrt
-    ).get<floatType>();
+    ).get_result<floatType>(disableWarnings);
     //
     if (rank == 0 && err_count) {
         cerr << err_count << " error(s) in call(s) to optimized CG." << endl;

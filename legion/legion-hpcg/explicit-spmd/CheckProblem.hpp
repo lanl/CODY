@@ -186,7 +186,7 @@ CheckProblem(
     Future lnnzf = Future::from_value(runtime, localNumberOfNonzeros);
     global_int_t totalNumberOfNonzeros = allReduce(
         lnnzf, *A.dcAllRedSumGI, ctx, runtime
-    ).get<global_int_t>();
+    ).get_result<global_int_t>(disableWarnings);
     //
     assert(Asclrs->totalNumberOfRows == totalNumberOfRows);
     assert(Asclrs->totalNumberOfNonzeros == totalNumberOfNonzeros);

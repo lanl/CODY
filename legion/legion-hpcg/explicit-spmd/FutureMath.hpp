@@ -56,11 +56,11 @@ ComputeFutureKernel(
     FutureMathOp op,
     Future *b
 ) {
-    const floatType av = a->get<floatType>();
+    const floatType av = a->get_result<floatType>(disableWarnings);
     floatType bv = 0.0;
     //
     if (b) {
-        bv = b->get<floatType>();
+        bv = b->get_result<floatType>(disableWarnings);
     }
     //
     switch (op) {

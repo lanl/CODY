@@ -264,7 +264,7 @@ GenerateProblem(
     Future lnnzf = Future::from_value(runtime, localNumberOfNonzeros);
     Asclrs->totalNumberOfNonzeros = allReduce(
         lnnzf, *A.dcAllRedSumGI, ctx, runtime
-    ).get<global_int_t>();
+    ).get_result<global_int_t>(disableWarnings);
 #endif
     // If this assert fails, it most likely means that the global_int_t is
     // set to int and should be set to long long This assert is usually the

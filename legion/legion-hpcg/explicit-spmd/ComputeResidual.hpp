@@ -128,7 +128,12 @@ ComputeResidual(
     lrf = Future::from_value(lrt, local_residual);
 #endif
     // Get max residual from all tasks.
-    residual = allReduce(lrf, dcReduceMax, ctx, lrt).get<floatType>();
+    residual = allReduce(
+        lrf,
+        dcReduceMax,
+        ctx,
+        lrt
+    ).get_result<floatType>(disableWarnings);
     //
     return 0;
 }
