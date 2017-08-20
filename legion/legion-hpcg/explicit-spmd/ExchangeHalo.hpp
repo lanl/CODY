@@ -154,3 +154,32 @@ ExchangeHalo(
         lrt->execute_task(ctx, tl);
     }
 }
+
+/**
+ *
+ */
+void
+ExchangeHaloTask(
+    const Task *task,
+    const std::vector<PhysicalRegion> &regions,
+    Context ctx,
+    Runtime *lrt
+) {
+}
+
+/**
+ *
+ */
+inline void
+registerExchangeHaloTasks(void)
+{
+    HighLevelRuntime::register_legion_task<ExchangeHaloTask>(
+        EXCHANGE_HALO_TID /* task id */,
+        Processor::LOC_PROC /* proc kind  */,
+        true /* single */,
+        false /* index */,
+        AUTO_GENERATE_ID,
+        TaskConfigOptions(false /* leaf task */),
+        "ExchangeHaloTask"
+    );
+}
