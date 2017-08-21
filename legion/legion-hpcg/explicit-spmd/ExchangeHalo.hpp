@@ -79,11 +79,10 @@ ExchangeHalo(
     Runtime *lrt
 ) {
     // Extract Matrix pieces
-    const SparseMatrixScalars *const Asclrs = &A.cachedScalars;
+    const SparseMatrixScalars *const Asclrs = &A.dcache.sclrs;
     const int nTxNeighbors = Asclrs->numberOfSendNeighbors;
     const int nRxNeighbors = Asclrs->numberOfRecvNeighbors;
-    const int *const neighbors = A.neighbors->data();
-    assert(neighbors);
+    const int *const neighbors = A.dcache.neighbors;
     // Nothing to do.
     if (nTxNeighbors == 0) return;
     // Make sure that x's ghosts are already setup.

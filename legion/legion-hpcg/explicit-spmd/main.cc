@@ -469,10 +469,6 @@ startBenchmarkTask(
     Array<floatType> x     (regions[rid++], ctx, lrt);
     Array<floatType> xexact(regions[rid++], ctx, lrt);
     //
-#ifdef LGNCG_TASKING
-    lrt->unmap_all_regions(ctx);
-#endif
-    // Passed this point, we have to manually unmap regions.
     ////////////////////////////////////////////////////////////////////////////
     // Private data for this task.
     ////////////////////////////////////////////////////////////////////////////
@@ -520,9 +516,13 @@ startBenchmarkTask(
         );
         curLevelMatrix = curLevelMatrix->Ac;
     }
-    // Now unmap structures that are done using accessors.
-    lCGData.r.unmapRegion(ctx, lrt);
-    lCGData.Ap.unmapRegion(ctx, lrt);
+    // Cache data that we will need for the calculation.
+    curLevelMatrix = &A;
+    for (int level = 0; level < numberOfMgLevels; ++level) {
+        curLevelMatrix->populateDataCache();
+        curLevelMatrix = curLevelMatrix->Ac;
+    }
+    // Passed this point, we have to manually unmap regions that are created.
 
     // Capture total time of setup.
     setup_time = mytimer() - setup_time;
@@ -560,7 +560,11 @@ startBenchmarkTask(
     if (quickPath) numberOfCalls = 1;
     //
     const auto *const Asclrs = A.sclrs->data();
-    A.cachedScalars = *(A.sclrs->data());
+
+    // Now unmap structures that are done using accessors.
+#ifdef LGNCG_TASKING
+    lrt->unmap_all_regions(ctx);
+#endif
 
     ////////////////////////////////////////////////////////////////////////////
     // Problem Sanity Phase

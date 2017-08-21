@@ -79,6 +79,18 @@ struct SparseMatrixScalars {
     local_int_t totalToBeSent = 0;
 };
 
+/**
+ * To avoid mapping/remapping, this holds a cache of data that we care about.
+ */
+struct DataCache {
+    SparseMatrixScalars sclrs;
+    int *neighbors = nullptr;
+
+    ~DataCache(void) {
+        if (neighbors) delete[] neighbors;
+    }
+};
+
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -544,12 +556,25 @@ struct SparseMatrix : public PhysicalMultiBase {
     const bool isSpmvOptimized = false;
     const bool isMgOptimized = false;
     const bool isWaxpbyOptimized = false;
-    //
-    SparseMatrixScalars cachedScalars;
+    // Cache used to avoid mapping/remapping warnings.
+    DataCache dcache;
     /**
      *
      */
     SparseMatrix(void) = default;
+
+    /**
+     *
+     */
+    void
+    populateDataCache(void) {
+        dcache.sclrs = *(sclrs->data());
+        const int maxNumNeighbors = HPCG_STENCIL - 1;
+        dcache.neighbors = new int[maxNumNeighbors];
+        for (int i = 0; i < maxNumNeighbors; ++i) {
+            dcache.neighbors[i] = neighbors->data()[i];
+        }
+    }
 
     /**
      *
