@@ -100,11 +100,25 @@ ExchangeHalo(
         EXCHANGE_HALO_TID,
         TaskArgument(&args, sizeof(args))
     );
-    // x
-    x.intent(RO_E, tl, ctx, lrt);
+    LogicalRegion xPrivateLR;
+    {
+        auto xis = x.logicalRegion.get_index_space();
+        auto xip = lrt->get_index_partition(ctx, xis, 0 /* color */);
+        auto xlp = lrt->get_logical_partition(ctx, x.logicalRegion, xip);
+        xPrivateLR = lrt->get_logical_subregion_by_color(
+            ctx,
+            xlp,
+            DomainPoint::from_point<1>(0) // First is private.
+        );
+    }
+    // x (private partition).
+    RegionRequirement xrr(
+        xPrivateLR, RO_E, xPrivateLR
+    );
+    tl.add_region_requirement(xrr).add_field(x.fid);
     // Matrix pieces.
     A.neighbors->intent(RO_E, tl, ctx, lrt);
-    //A.elementsToSend
+    A.elementsToSend->intent(RO_E, tl, ctx, lrt);
     A.sendLength->intent(RO_E, tl, ctx, lrt);
     A.synchronizers->intent(RW_E, tl, ctx, lrt);
     // Pull Buffers.
@@ -123,6 +137,16 @@ ExchangeHalo(
         );
         static const int fid = 0;
         tl.add_region_requirement(srcrr).add_field(fid);
+    }
+    for (int n = 0; n < nTxNeighbors; ++n) {
+        LogicalArray<floatType> *dstArray = x.ghosts[n];
+        assert(dstArray->hasParentLogicalRegion());
+        RegionRequirement dstrr(
+            dstArray->logicalRegion,
+            WO_E,
+            dstArray->getParentLogicalRegion()
+        );
+        tl.add_region_requirement(dstrr).add_field(dstArray->fid);
     }
     //
     lrt->execute_task(ctx, tl);
@@ -244,6 +268,10 @@ ExchangeHaloTask(
     const int *const neighbors = Aneighbors.data();
     assert(neighbors);
     //
+    Array<local_int_t> AelementsToSend(regions[rid++], ctx, lrt);
+    const local_int_t *const elementsToSend = AelementsToSend.data();
+    assert(elementsToSend);
+    //
     Array<local_int_t> AsendLength(regions[rid++], ctx, lrt);
     const local_int_t *const sendLengthsd = AsendLength.data();
     assert(sendLengthsd);
@@ -255,7 +283,64 @@ ExchangeHaloTask(
     //
     std::vector<Array<floatType> *> ApullBuffers;
     for (int n = 0; n < nTxNeighbors; ++n) {
-        ApullBuffers.push_back(new Array<floatType>(regions[rid++], ctx, lrt));
+        auto *item = new Array<floatType>(regions[rid++], ctx, lrt);
+        assert(item->data());
+        ApullBuffers.push_back(item);
+    }
+    std::vector<LogicalRegion> srclrs;
+    for (int n = 0; n < nRxNeighbors; ++n) {
+        srclrs.push_back(regions[rid++].get_logical_region());
+    }
+    std::vector<LogicalRegion> dstlrs;
+    for (int n = 0; n < nRxNeighbors; ++n) {
+        dstlrs.push_back(regions[rid++].get_logical_region());
+    }
+    //
+    myPBs.done.wait();
+    myPBs.done = lrt->advance_phase_barrier(ctx, myPBs.done);
+    // Fill up pull buffers (the buffers that neighboring task will pull from).
+    for (int n = 0, txidx = 0; n < nTxNeighbors; ++n) {
+        floatType *const pbd = ApullBuffers[n]->data();
+        //
+        for (int i = 0; i < sendLengthsd[n]; ++i) {
+            pbd[i] = xv[elementsToSend[txidx++]];
+        }
+    }
+    myPBs.ready.arrive(1);
+    myPBs.ready = lrt->advance_phase_barrier(ctx, myPBs.ready);
+    //
+    for (int n = 0; n < nTxNeighbors; ++n) {
+        static const int fid = 0;
+        // Source region requirement.
+        RegionRequirement srcrr(
+            srclrs[n], RO_E, srclrs[n]
+        );
+        srcrr.add_field(fid);
+        // Destination region requirement.
+        //
+        RegionRequirement dstrr(
+            dstlrs[n], WO_E, dstlrs[n]
+        );
+        dstrr.add_field(fid);
+        //
+        TaskLauncher tl(
+            REGION_TO_REGION_COPY_TID,
+            TaskArgument(NULL, 0)
+        );
+        tl.add_region_requirement(srcrr);
+        tl.add_region_requirement(dstrr);
+        //
+        syncs->neighbors[n].ready = lrt->advance_phase_barrier(
+            ctx, syncs->neighbors[n].ready
+        );
+        tl.add_wait_barrier(syncs->neighbors[n].ready);
+        //
+        tl.add_arrival_barrier(syncs->neighbors[n].done);
+        syncs->neighbors[n].done = lrt->advance_phase_barrier(
+            ctx, syncs->neighbors[n].done
+        );
+        //
+        lrt->execute_task(ctx, tl);
     }
     // Cleanup
     for (int n = 0; n < nTxNeighbors; ++n) {

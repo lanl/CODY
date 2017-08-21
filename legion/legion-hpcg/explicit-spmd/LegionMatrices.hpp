@@ -533,7 +533,8 @@ struct SparseMatrix : public PhysicalMultiBase {
     // PopulateGlobalToLocalMap.
     std::map< global_int_t, local_int_t > globalToLocalMap;
     // Only valid after a call to SetupHalo.
-    local_int_t *elementsToSend = nullptr;
+    LogicalArray<local_int_t> lElementsToSend;
+    Array<local_int_t> *elementsToSend = nullptr;
     // A mapping between neighbor IDs and their regions.
     std::map<int, PhysicalRegion> nidToPullRegion;
     // Pull regions that I populate for consumption by other tasks.
@@ -597,7 +598,12 @@ struct SparseMatrix : public PhysicalMultiBase {
         delete synchronizers;
         delete matdIdxToMatRowCol;
         // Task-local allocation of non-region memory.
-        if (elementsToSend) delete[] elementsToSend;
+        if (elementsToSend) {
+            // TODO
+            //lElementsToSend.unmapRegion
+            //elementsToSend->deallocate
+            delete elementsToSend;
+        }
         for (auto *i : pullBuffers) delete i;
         if (Ac) delete Ac;
         if (mgData) delete mgData;

@@ -217,7 +217,15 @@ SetupHalo(
         totalToBeReceived += (curNeighbor->second).size();
     }
     // Build the arrays and lists needed by the ExchangeHalo function.
-    local_int_t *elementsToSend = new local_int_t[totalToBeSent];
+    A.lElementsToSend.allocate(
+        "elementsToSend", totalToBeSent, ctx, lrt
+    );
+    auto *AelementsToSend = new Array<local_int_t>(
+        A.lElementsToSend.mapRegion(RW_E, ctx, lrt), ctx, lrt
+    );
+    local_int_t *elementsToSend = AelementsToSend->data();
+    assert(elementsToSend);
+    //
     int *neighbors = new int[sendList.size()];
     local_int_t *receiveLength = new local_int_t[receiveList.size()];
     local_int_t *sendLength = new local_int_t[sendList.size()];
@@ -263,7 +271,7 @@ SetupHalo(
         }
     }
     // Store contents in our matrix struct.
-    A.elementsToSend = elementsToSend;
+    A.elementsToSend = AelementsToSend;
 #if 0 // Debug
     {
         const int me = Ageom->rank;
