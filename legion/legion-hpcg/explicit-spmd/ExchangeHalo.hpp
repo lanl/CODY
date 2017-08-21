@@ -50,6 +50,14 @@
 
 #include <cstdlib>
 
+/**
+ *
+ */
+struct ExchangeHaloArgs {
+    int nTxNeighbors;
+    int nRxNeighbors;
+};
+
 /*
  * PhaseBarriers debug: -level barrier=2 -logfile barriers.log
  */
@@ -63,6 +71,63 @@
     communicated; on exit: the vector with non-local entries updated by other
     processors
  */
+#if 1
+inline void
+ExchangeHalo(
+    SparseMatrix &A,
+    Array<floatType> &x,
+    Context ctx,
+    Runtime *lrt
+) {
+    // Extract Matrix pieces
+    const int rank = A.geom->data()->rank;
+    const SparseMatrixScalars *const Asclrs = A.sclrs->data();
+    const int nTxNeighbors = Asclrs->numberOfSendNeighbors;
+    const int nRxNeighbors = Asclrs->numberOfRecvNeighbors;
+    const int *const neighbors = A.neighbors->data();
+    assert(neighbors);
+    // Nothing to do.
+    if (nTxNeighbors == 0) return;
+    // Make sure that x's ghosts are already setup.
+    if (!x.hasGhosts()) {
+        assert(false && "x does not have ghost regions setup.");
+    }
+    ExchangeHaloArgs args {
+        .nTxNeighbors = nTxNeighbors,
+        .nRxNeighbors = nRxNeighbors
+    };
+    TaskLauncher tl(
+        EXCHANGE_HALO_TID,
+        TaskArgument(&args, sizeof(args))
+    );
+    // x
+    x.intent(RO_E, tl, ctx, lrt);
+    // Matrix pieces.
+    A.neighbors->intent(RO_E, tl, ctx, lrt);
+    //A.elementsToSend
+    A.sendLength->intent(RO_E, tl, ctx, lrt);
+    A.synchronizers->intent(RW_E, tl, ctx, lrt);
+    // Pull Buffers.
+    for (int n = 0; n < nTxNeighbors; ++n) {
+        A.pullBuffers[n]->intent(RW_E, tl, ctx, lrt);
+    }
+    // Pull regions in neighbor order.
+    for (int n = 0; n < nRxNeighbors; ++n) {
+        const int nid = neighbors[n];
+        auto srcIt = A.nidToPullRegion.find(nid);
+        assert(srcIt != A.nidToPullRegion.end());
+        auto srclr = srcIt->second.get_logical_region();
+        //
+        RegionRequirement srcrr(
+            srclr, RO_S, srclr
+        );
+        static const int fid = 0;
+        tl.add_region_requirement(srcrr).add_field(fid);
+    }
+    //
+    lrt->execute_task(ctx, tl);
+}
+#else
 inline void
 ExchangeHalo(
     SparseMatrix &A,
@@ -154,6 +219,7 @@ ExchangeHalo(
         lrt->execute_task(ctx, tl);
     }
 }
+#endif
 
 /**
  *
@@ -165,6 +231,36 @@ ExchangeHaloTask(
     Context ctx,
     Runtime *lrt
 ) {
+    const auto *const args = (ExchangeHaloArgs *)task->args;
+    const int nTxNeighbors = args->nTxNeighbors;
+    const int nRxNeighbors = args->nRxNeighbors;
+    int rid = 0;
+    // x
+    Array<floatType> x(regions[rid++], ctx, lrt);
+    const floatType *const xv = x.data();
+    assert(xv);
+    // Matrix pieces.
+    Array<int> Aneighbors(regions[rid++], ctx, lrt);
+    const int *const neighbors = Aneighbors.data();
+    assert(neighbors);
+    //
+    Array<local_int_t> AsendLength(regions[rid++], ctx, lrt);
+    const local_int_t *const sendLengthsd = AsendLength.data();
+    assert(sendLengthsd);
+    //
+    Array<Synchronizers> Asyncs(regions[rid++], ctx, lrt);
+    Synchronizers *syncs = Asyncs.data();
+    assert(syncs);
+    PhaseBarriers &myPBs = syncs->mine;
+    //
+    std::vector<Array<floatType> *> ApullBuffers;
+    for (int n = 0; n < nTxNeighbors; ++n) {
+        ApullBuffers.push_back(new Array<floatType>(regions[rid++], ctx, lrt));
+    }
+    // Cleanup
+    for (int n = 0; n < nTxNeighbors; ++n) {
+        delete ApullBuffers[n];
+    }
 }
 
 /**
