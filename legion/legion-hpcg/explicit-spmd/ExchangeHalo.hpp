@@ -132,7 +132,7 @@ ExchangeHalo(
         auto srclr = srcIt->second.get_logical_region();
         //
         RegionRequirement srcrr(
-            srclr, RO_S, srclr
+            srclr, RO_E, srclr
         );
         static const int fid = 0;
         tl.add_region_requirement(srcrr).add_field(fid);
