@@ -560,6 +560,7 @@ startBenchmarkTask(
     if (quickPath) numberOfCalls = 1;
     //
     const auto *const Asclrs = A.sclrs->data();
+    A.cachedScalars = *(A.sclrs->data());
 
     ////////////////////////////////////////////////////////////////////////////
     // Problem Sanity Phase

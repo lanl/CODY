@@ -79,8 +79,7 @@ ExchangeHalo(
     Runtime *lrt
 ) {
     // Extract Matrix pieces
-    const int rank = A.geom->data()->rank;
-    const SparseMatrixScalars *const Asclrs = A.sclrs->data();
+    const SparseMatrixScalars *const Asclrs = &A.cachedScalars;
     const int nTxNeighbors = Asclrs->numberOfSendNeighbors;
     const int nRxNeighbors = Asclrs->numberOfRecvNeighbors;
     const int *const neighbors = A.neighbors->data();

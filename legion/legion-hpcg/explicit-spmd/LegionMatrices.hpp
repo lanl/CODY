@@ -544,7 +544,8 @@ struct SparseMatrix : public PhysicalMultiBase {
     const bool isSpmvOptimized = false;
     const bool isMgOptimized = false;
     const bool isWaxpbyOptimized = false;
-
+    //
+    SparseMatrixScalars cachedScalars;
     /**
      *
      */
