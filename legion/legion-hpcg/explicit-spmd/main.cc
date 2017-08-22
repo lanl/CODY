@@ -468,7 +468,11 @@ startBenchmarkTask(
     Array<floatType> b     (regions[rid++], ctx, lrt);
     Array<floatType> x     (regions[rid++], ctx, lrt);
     Array<floatType> xexact(regions[rid++], ctx, lrt);
-    //
+    // Now unmap structures that are done using accessors.
+#ifdef LGNCG_TASKING
+    lrt->unmap_all_regions(ctx);
+#endif
+    // Past this point, we have to manually unmap any mapped regions.
     ////////////////////////////////////////////////////////////////////////////
     // Private data for this task.
     ////////////////////////////////////////////////////////////////////////////
@@ -560,11 +564,6 @@ startBenchmarkTask(
     if (quickPath) numberOfCalls = 1;
     //
     const auto *const Asclrs = A.sclrs->data();
-
-    // Now unmap structures that are done using accessors.
-#ifdef LGNCG_TASKING
-    lrt->unmap_all_regions(ctx);
-#endif
 
     ////////////////////////////////////////////////////////////////////////////
     // Problem Sanity Phase

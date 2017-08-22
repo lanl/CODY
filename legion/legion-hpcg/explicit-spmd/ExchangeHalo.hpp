@@ -50,6 +50,11 @@
 
 #include <cstdlib>
 
+#if 0
+#define LGNCG_DO_TASKY_EXCHANGE
+#endif
+
+#ifdef LGNCG_DO_TASKY_EXCHANGE
 /**
  *
  */
@@ -251,6 +256,7 @@ ExchangeHaloTask(
         delete ApullBuffers[n];
     }
 }
+#endif
 
 /**
  *
@@ -258,6 +264,7 @@ ExchangeHaloTask(
 inline void
 registerExchangeHaloTasks(void)
 {
+#if LGNCG_DO_TASKY_EXCHANGE
     HighLevelRuntime::register_legion_task<ExchangeHaloTask>(
         EXCHANGE_HALO_TID /* task id */,
         Processor::LOC_PROC /* proc kind  */,
@@ -267,4 +274,99 @@ registerExchangeHaloTasks(void)
         TaskConfigOptions(false /* leaf task */),
         "ExchangeHaloTask"
     );
+#endif
 }
+
+#ifndef LGNCG_DO_TASKY_EXCHANGE
+inline void
+ExchangeHalo(
+    SparseMatrix &A,
+    Array<floatType> &x,
+    Context ctx,
+    Runtime *lrt
+) {
+    using namespace std;
+    // Extract Matrix pieces
+    const SparseMatrixScalars *const Asclrs = &A.dcache.sclrs;
+    const int nNeighbors = Asclrs->numberOfSendNeighbors;
+    // Nothing to do.
+    if (nNeighbors == 0) return;
+    // Else we have neighbors and data to move around.
+    const int *const neighbors = A.dcache.neighbors;
+    // Non-region memory populated during SetupHalo().
+    const local_int_t *const elementsToSend = A.elementsToSend->data();
+    assert(elementsToSend);
+    // Setup ghost regions if not already there.
+    if (!x.hasGhosts()) {
+        assert(false && "x does not have ghost regions setup.");
+    }
+    //
+    const floatType *const xv = x.data();
+    assert(xv);
+    //
+    Synchronizers *syncs = A.synchronizers->data();
+    PhaseBarriers &myPBs = syncs->mine;
+    //
+    myPBs.done.wait();
+    myPBs.done = lrt->advance_phase_barrier(ctx, myPBs.done);
+    // Fill up pull buffers (the buffers that neighboring task will pull from).
+    const local_int_t *const sendLengthsd = A.sendLength->data();
+    assert(sendLengthsd);
+    //
+    for (int n = 0, txidx = 0; n < nNeighbors; ++n) {
+        floatType *const pbd = A.pullBuffers[n]->data();
+        assert(pbd);
+        //
+        for (int i = 0; i < sendLengthsd[n]; ++i) {
+            pbd[i] = xv[elementsToSend[txidx++]];
+        }
+    }
+    myPBs.ready.arrive(1);
+    myPBs.ready = lrt->advance_phase_barrier(ctx, myPBs.ready);
+    //
+    for (int n = 0; n < nNeighbors; ++n) {
+        //
+        const int nid = neighbors[n];
+        // Source
+        auto srcIt = A.nidToPullRegion.find(nid);
+        assert(srcIt != A.nidToPullRegion.end());
+        auto srclr = srcIt->second.get_logical_region();
+        //
+        RegionRequirement srcrr(
+            srclr, RO_E, srclr
+        );
+        // Only ever one field for all of our structures.
+        static const int srcFid = 0;
+        srcrr.add_field(srcFid);
+        // Destination.
+        LogicalArray<floatType> *dstArray = x.ghosts[n];
+        assert(dstArray->hasParentLogicalRegion());
+        //
+        RegionRequirement dstrr(
+            dstArray->logicalRegion,
+            WO_E,
+            dstArray->getParentLogicalRegion()
+        );
+        dstrr.add_field(dstArray->fid);
+        //
+        TaskLauncher tl(
+            REGION_TO_REGION_COPY_TID,
+            TaskArgument(NULL, 0)
+        );
+        tl.add_region_requirement(srcrr);
+        tl.add_region_requirement(dstrr);
+        //
+        syncs->neighbors[n].ready = lrt->advance_phase_barrier(
+            ctx, syncs->neighbors[n].ready
+        );
+        tl.add_wait_barrier(syncs->neighbors[n].ready);
+        //
+        tl.add_arrival_barrier(syncs->neighbors[n].done);
+        syncs->neighbors[n].done = lrt->advance_phase_barrier(
+            ctx, syncs->neighbors[n].done
+        );
+        //
+        lrt->execute_task(ctx, tl);
+    }
+}
+#endif
