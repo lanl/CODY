@@ -294,7 +294,7 @@ ExchangeHalo(
     // Else we have neighbors and data to move around.
     const int *const neighbors = A.dcache.neighbors;
     // Non-region memory populated during SetupHalo().
-    const local_int_t *const elementsToSend = A.elementsToSend->data();
+    const local_int_t *const elementsToSend = A.dcache.elementsToSend;
     assert(elementsToSend);
     // Setup ghost regions if not already there.
     if (!x.hasGhosts()) {

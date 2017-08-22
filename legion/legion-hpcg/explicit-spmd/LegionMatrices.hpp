@@ -85,9 +85,11 @@ struct SparseMatrixScalars {
 struct DataCache {
     SparseMatrixScalars sclrs;
     int *neighbors = nullptr;
+    local_int_t *elementsToSend = nullptr;
 
     ~DataCache(void) {
         if (neighbors) delete[] neighbors;
+        if (elementsToSend) delete[] elementsToSend;
     }
 };
 
@@ -569,10 +571,16 @@ struct SparseMatrix : public PhysicalMultiBase {
     void
     populateDataCache(void) {
         dcache.sclrs = *(sclrs->data());
+        //
         const int maxNumNeighbors = HPCG_STENCIL - 1;
         dcache.neighbors = new int[maxNumNeighbors];
         for (int i = 0; i < maxNumNeighbors; ++i) {
             dcache.neighbors[i] = neighbors->data()[i];
+        }
+        //
+        dcache.elementsToSend = new local_int_t[dcache.sclrs.totalToBeSent];
+        for (local_int_t i = 0; i < dcache.sclrs.totalToBeSent; ++i) {
+            dcache.elementsToSend[i] = elementsToSend->data()[i];
         }
     }
 
