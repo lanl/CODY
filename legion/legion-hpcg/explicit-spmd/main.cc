@@ -313,7 +313,7 @@ mainTask(
         }
         //
         FutureMap fm = runtime->execute_must_epoch(ctx, mel);
-        fm.wait_all_results();
+        fm.wait_all_results(true /*silence_warnings*/);
         //
     }
     // Now that we have all the setup information stored in LogicalRegions,
@@ -363,7 +363,7 @@ mainTask(
         }
         //
         FutureMap fm = runtime->execute_must_epoch(ctx, mel);
-        fm.wait_all_results();
+        fm.wait_all_results(true /*silence_warnings*/);
         //
         const double totalTime = mytimer() - start;
         //
@@ -468,11 +468,7 @@ startBenchmarkTask(
     Array<floatType> b     (regions[rid++], ctx, lrt);
     Array<floatType> x     (regions[rid++], ctx, lrt);
     Array<floatType> xexact(regions[rid++], ctx, lrt);
-    // Now unmap structures that are done using accessors.
-#ifdef LGNCG_TASKING
-    lrt->unmap_all_regions(ctx);
-#endif
-    // Past this point, we have to manually unmap any mapped regions.
+
     ////////////////////////////////////////////////////////////////////////////
     // Private data for this task.
     ////////////////////////////////////////////////////////////////////////////
@@ -543,6 +539,12 @@ startBenchmarkTask(
              << setup_time << endl;
     }
 
+    // Now unmap structures that are done using accessors.
+#ifdef LGNCG_TASKING
+    lrt->unmap_all_regions(ctx);
+#endif
+    // Past this point, we have to manually unmap any mapped regions.
+
     ////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////
     // Start of benchmark.
@@ -557,7 +559,7 @@ startBenchmarkTask(
     //QuickPath means we do on one call of each block of repetitive code.
     if (quickPath) numberOfCalls = 1;
     //
-    const auto *const Asclrs = A.sclrs->data();
+    //const auto *const Asclrs = A.sclrs->data();
 
     ////////////////////////////////////////////////////////////////////////////
     // Problem Sanity Phase

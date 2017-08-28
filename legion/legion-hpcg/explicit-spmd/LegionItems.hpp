@@ -396,8 +396,6 @@ public:
         //
         InlineLauncher inl(req);
         physicalRegion = lrt->map_region(ctx, inl);
-        physicalRegion.wait_until_valid();
-        //
         return physicalRegion;
     }
 
@@ -446,7 +444,9 @@ public:
         logicalRegion = physicalRegion.get_logical_region();
         //
         using GRA = RegionAccessor<AccessorType::Generic, TYPE>;
-        GRA tAcc = physicalRegion.get_field_accessor(0).template typeify<TYPE>();
+        GRA tAcc = physicalRegion.get_field_accessor(0,
+						     true /*silence_warnings*/
+						     ).template typeify<TYPE>();
         //
         Domain tDom = runtime->get_index_space_domain(
             ctx, physicalRegion.get_logical_region().get_index_space()
