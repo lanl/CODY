@@ -84,10 +84,10 @@ ExchangeHalo(
     Runtime *lrt
 ) {
     // Extract Matrix pieces
-    const SparseMatrixScalars *const Asclrs = &A.dcache.sclrs;
+    const SparseMatrixScalars *const Asclrs = A.sclrs->data();
     const int nTxNeighbors = Asclrs->numberOfSendNeighbors;
     const int nRxNeighbors = Asclrs->numberOfRecvNeighbors;
-    const int *const neighbors = A.dcache.neighbors;
+    const int *const neighbors = A.neighbors->data();
     // Nothing to do.
     if (nTxNeighbors == 0) return;
     // Make sure that x's ghosts are already setup.
@@ -264,7 +264,7 @@ ExchangeHaloTask(
 inline void
 registerExchangeHaloTasks(void)
 {
-#if LGNCG_DO_TASKY_EXCHANGE
+#ifdef LGNCG_DO_TASKY_EXCHANGE
     HighLevelRuntime::register_legion_task<ExchangeHaloTask>(
         EXCHANGE_HALO_TID /* task id */,
         Processor::LOC_PROC /* proc kind  */,
@@ -287,14 +287,14 @@ ExchangeHalo(
 ) {
     using namespace std;
     // Extract Matrix pieces
-    const SparseMatrixScalars *const Asclrs = &A.dcache.sclrs;
+    const SparseMatrixScalars *const Asclrs = A.sclrs->data();
     const int nNeighbors = Asclrs->numberOfSendNeighbors;
     // Nothing to do.
     if (nNeighbors == 0) return;
     // Else we have neighbors and data to move around.
-    const int *const neighbors = A.dcache.neighbors;
+    const int *const neighbors = A.neighbors->data();
     // Non-region memory populated during SetupHalo().
-    const local_int_t *const elementsToSend = A.dcache.elementsToSend;
+    const local_int_t *const elementsToSend = A.elementsToSend->data();
     assert(elementsToSend);
     // Setup ghost regions if not already there.
     if (!x.hasGhosts()) {
