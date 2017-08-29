@@ -516,7 +516,6 @@ startBenchmarkTask(
         );
         curLevelMatrix = curLevelMatrix->Ac;
     }
-    // Passed this point, we have to manually unmap regions that are created.
 
     // Capture total time of setup.
     setup_time = mytimer() - setup_time;
