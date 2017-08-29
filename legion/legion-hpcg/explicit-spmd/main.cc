@@ -469,12 +469,6 @@ startBenchmarkTask(
     Array<floatType> x     (regions[rid++], ctx, lrt);
     Array<floatType> xexact(regions[rid++], ctx, lrt);
 
-    // Now unmap structures that are done using accessors.
-#ifdef LGNCG_TASKING
-    lrt->unmap_all_regions(ctx);
-#endif
-    // Past this point, we have to manually unmap any mapped regions.
-
     ////////////////////////////////////////////////////////////////////////////
     // Private data for this task.
     ////////////////////////////////////////////////////////////////////////////
@@ -545,6 +539,11 @@ startBenchmarkTask(
              << setup_time << endl;
     }
 
+    // Now unmap structures that are done using accessors.
+#ifdef LGNCG_TASKING
+    lrt->unmap_all_regions(ctx);
+#endif
+    // Past this point, we have to manually unmap any mapped regions.
 
     ////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////
