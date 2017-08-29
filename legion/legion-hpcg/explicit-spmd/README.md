@@ -14,3 +14,8 @@ python legion_spy.py -ez log_*.spy
 -ll:util 0 -hl:separate
 
 -level announce=2
+
+## Include RT usage warnings
+```
+-lg:warn
+```
