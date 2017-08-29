@@ -50,7 +50,7 @@
 
 #include <cstdlib>
 
-#if 0
+#ifdef LGNCG_TASKING
 #define LGNCG_DO_TASKY_EXCHANGE
 #endif
 
@@ -115,7 +115,7 @@ ExchangeHalo(
     }
     // x (private partition).
     RegionRequirement xrr(
-        xPrivateLR, RO_E, xPrivateLR
+        xPrivateLR, RO_E, x.logicalRegion
     );
     tl.add_region_requirement(xrr).add_field(x.fid);
     // Matrix pieces.
@@ -217,6 +217,7 @@ ExchangeHaloTask(
     }
     myPBs.ready.arrive(1);
     myPBs.ready = lrt->advance_phase_barrier(ctx, myPBs.ready);
+    lrt->unmap_all_regions(ctx);
     //
     for (int n = 0; n < nTxNeighbors; ++n) {
         static const int fid = 0;
