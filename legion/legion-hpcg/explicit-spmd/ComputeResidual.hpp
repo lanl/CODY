@@ -133,7 +133,7 @@ ComputeResidual(
         dcReduceMax,
         ctx,
         lrt
-    ).get_result<floatType>(disableWarnings);
+    ).get_result<floatType>(silenceWarnings);
     //
     return 0;
 }

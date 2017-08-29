@@ -58,7 +58,7 @@ using namespace LegionRuntime::HighLevel;
 #define WO_S WRITE_ONLY, SIMULTANEOUS
 
 // Let the RT know that we 'know what we are doing'
-static constexpr bool disableWarnings = true;
+static constexpr bool silenceWarnings = true;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Task forward declarations.

@@ -166,7 +166,7 @@ CG(
     //
     normr = ComputeFuture(
                 &normrFuture, FMO_SQRT, NULL, ctx, lrt
-            ).get_result<floatType>(disableWarnings);
+            ).get_result<floatType>(silenceWarnings);
     //
     if (rank == 0) std::cout << "Initial Residual = "<< normr << std::endl;
     // Record initial residual for convergence testing.
@@ -202,7 +202,7 @@ CG(
             //
             beta = ComputeFuture(
                        &rtzFuture, FMO_DIV, &oldrtzFuture, ctx, lrt
-                   ).get_result<floatType>(disableWarnings);
+                   ).get_result<floatType>(silenceWarnings);
             //
             TICK(); // p = beta * p + z
             ComputeWAXPBY(nrow, 1.0, z, beta, p, p, ctx, lrt);
@@ -218,7 +218,7 @@ CG(
         //
         alpha = ComputeFuture(
                     &rtzFuture, FMO_DIV, &pApFuture, ctx, lrt
-                ).get_result<floatType>(disableWarnings);
+                ).get_result<floatType>(silenceWarnings);
         //
         TICK(); // x = x + alpha * p
         ComputeWAXPBY(nrow, 1.0, x, alpha, p, x, ctx, lrt);
@@ -232,7 +232,7 @@ CG(
         //
         normr = ComputeFuture(
                     &normrFuture, FMO_SQRT, NULL, ctx, lrt
-                ).get_result<floatType>(disableWarnings);
+                ).get_result<floatType>(silenceWarnings);
         //
         if (rank == 0 && ( k % print_freq == 0 || k == maxIter)) {
             cout << "Iteration = "<< k << "   Scaled Residual = "

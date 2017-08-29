@@ -313,7 +313,7 @@ mainTask(
         }
         //
         FutureMap fm = runtime->execute_must_epoch(ctx, mel);
-        fm.wait_all_results(true /*silence_warnings*/);
+        fm.wait_all_results(silenceWarnings /*silence_warnings*/);
         //
     }
     // Now that we have all the setup information stored in LogicalRegions,
@@ -363,7 +363,7 @@ mainTask(
         }
         //
         FutureMap fm = runtime->execute_must_epoch(ctx, mel);
-        fm.wait_all_results(true /*silence_warnings*/);
+        fm.wait_all_results(silenceWarnings /*silence_warnings*/);
         //
         const double totalTime = mytimer() - start;
         //
@@ -469,6 +469,12 @@ startBenchmarkTask(
     Array<floatType> x     (regions[rid++], ctx, lrt);
     Array<floatType> xexact(regions[rid++], ctx, lrt);
 
+    // Now unmap structures that are done using accessors.
+#ifdef LGNCG_TASKING
+    lrt->unmap_all_regions(ctx);
+#endif
+    // Past this point, we have to manually unmap any mapped regions.
+
     ////////////////////////////////////////////////////////////////////////////
     // Private data for this task.
     ////////////////////////////////////////////////////////////////////////////
@@ -539,11 +545,6 @@ startBenchmarkTask(
              << setup_time << endl;
     }
 
-    // Now unmap structures that are done using accessors.
-#ifdef LGNCG_TASKING
-    lrt->unmap_all_regions(ctx);
-#endif
-    // Past this point, we have to manually unmap any mapped regions.
 
     ////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////
@@ -654,7 +655,7 @@ startBenchmarkTask(
     Future localOptWorstF = Future::from_value(lrt, opt_worst_time);
     opt_worst_time = allReduce(
         localOptWorstF, *A.dcAllRedMaxFT, ctx, lrt
-    ).get_result<floatType>(disableWarnings);
+    ).get_result<floatType>(silenceWarnings);
     //
     if (rank == 0 && err_count) {
         cerr << err_count << " error(s) in call(s) to optimized CG." << endl;
